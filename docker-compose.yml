@@ -1,0 +1,109 @@
+version: '3.8'
+
+services:
+  # Frontend - React SPA served by nginx
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      secrets:
+        - backup_token
+      args:
+        # Pre-build backup configuration
+        - BACKUP_API_URL=${BACKUP_API_URL:-https://your-domain.com}
+        # Database provider
+        - VITE_DB_PROVIDER=${VITE_DB_PROVIDER:-supabase-cloud}
+        - VITE_DATABASE_URL=${VITE_DATABASE_URL:-}
+        # Vite environment variables
+        - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+        - VITE_SUPABASE_PUBLISHABLE_KEY=${VITE_SUPABASE_PUBLISHABLE_KEY}
+        - VITE_AWS_REGION=${VITE_AWS_REGION}
+        - VITE_AWS_S3_BUCKET=${VITE_AWS_S3_BUCKET}
+        - VITE_APP_NAME=${VITE_APP_NAME:-Roost}
+        - VITE_APP_URL=${VITE_APP_URL:-https://your-domain.com}
+        - VITE_API_URL=${VITE_API_URL:-https://your-domain.com}
+    container_name: roost-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    networks:
+      - roost-network
+    depends_on:
+      - backend
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`your-domain.com`)"
+      - "traefik.http.routers.frontend.entrypoints=websecure"
+      - "traefik.http.routers.frontend.tls.certresolver=letsencrypt"
+      - "traefik.http.services.frontend.loadbalancer.server.port=80"
+
+  # Backend - Express server for API, webhooks, and integrations
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: roost-backend
+    restart: unless-stopped
+    stop_grace_period: 10s
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DB_PROVIDER=${DB_PROVIDER:-supabase-cloud}
+      - DATABASE_URL=${DATABASE_URL:-}
+      - JWT_SECRET=${JWT_SECRET:-}
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SECRET_KEY=${SUPABASE_SECRET_KEY}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      - STRIPE_PRICE_ID=${STRIPE_PRICE_ID}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_SECURE=${SMTP_SECURE:-false}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
+      - SMTP_FROM_EMAIL=${SMTP_FROM_EMAIL}
+      - SMTP_FROM_NAME=${SMTP_FROM_NAME:-Roost}
+      - FRONTEND_URL=${FRONTEND_URL:-https://your-domain.com}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-https://your-domain.com}
+      # AWS S3 upload credentials (server-side only - never exposed to frontend)
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - AWS_S3_BUCKET=${AWS_S3_BUCKET}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      # Database backup configuration (uses PRIVATE S3 bucket - separate from public uploads)
+      - AWS_BACKUP_BUCKET=${AWS_BACKUP_BUCKET}
+      - AWS_BACKUP_REGION=${AWS_BACKUP_REGION:-${AWS_REGION}}
+      - AWS_BACKUP_ACCESS_KEY_ID=${AWS_BACKUP_ACCESS_KEY_ID:-${AWS_ACCESS_KEY_ID}}
+      - AWS_BACKUP_SECRET_ACCESS_KEY=${AWS_BACKUP_SECRET_ACCESS_KEY:-${AWS_SECRET_ACCESS_KEY}}
+      - SUPABASE_DB_PASSWORD=${SUPABASE_DB_PASSWORD}
+      - SUPABASE_DB_HOST=${SUPABASE_DB_HOST:-db}
+      - SUPABASE_DB_PORT=${SUPABASE_DB_PORT:-5432}
+      - SUPABASE_DB_USER=${SUPABASE_DB_USER:-postgres}
+      - BACKUP_SECRET_TOKEN=${BACKUP_SECRET_TOKEN}
+    networks:
+      - roost-network
+      - dokploy-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backend.rule=Host(`your-domain.com`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.backend.entrypoints=websecure"
+      - "traefik.http.routers.backend.tls.certresolver=letsencrypt"
+      - "traefik.http.services.backend.loadbalancer.server.port=3000"
+
+networks:
+  roost-network:
+    driver: bridge
+  dokploy-network:
+    external: true
+
+secrets:
+  backup_token:
+    environment: BACKUP_SECRET_TOKEN

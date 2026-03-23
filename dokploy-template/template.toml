@@ -1,0 +1,151 @@
+[variables]
+main_domain = "${domain}"
+postgres_password = "${password:32}"
+jwt_secret = "${password:64}"
+secret_key_base = "${password:64}"
+anon_key_payload = """{
+  "role": "anon",
+  "iss": "supabase",
+  "exp": ${timestamps:2030-01-01T00:00:00Z}
+}
+"""
+service_role_key_payload = """{
+  "role": "service_role",
+  "iss": "supabase",
+  "exp": ${timestamps:2030-01-01T00:00:00Z}
+}
+"""
+
+[[config.domains]]
+serviceName = "nginx"
+port = 80
+host = "${main_domain}"
+
+[config]
+env = [
+'# ============================================================',
+'# Roost - Self-Hosted Community Platform Configuration',
+'# ============================================================',
+'',
+'# Domain',
+'ROOST_DOMAIN=${main_domain}',
+'APP_NAME=Roost',
+'',
+'# Database',
+'POSTGRES_PASSWORD=${postgres_password}',
+'',
+'# JWT (shared between Supabase services and Roost backend)',
+'JWT_SECRET=${jwt_secret}',
+'SECRET_KEY_BASE=${secret_key_base}',
+'',
+'# Supabase Keys (auto-generated from JWT_SECRET)',
+'# Generate these at https://supabase.com/docs/guides/self-hosting/docker#api-keys',
+'# Or use: echo $JWT_SECRET | npx supabase-key generate anon',
+'ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${anon_key_payload}.placeholder',
+'SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${service_role_key_payload}.placeholder',
+'',
+'# Email (optional - for user signups and notifications)',
+'SMTP_HOST=',
+'SMTP_PORT=587',
+'SMTP_USER=',
+'SMTP_PASS=',
+'SMTP_FROM_EMAIL=noreply@${main_domain}',
+'',
+'# Stripe (optional - for paid memberships)',
+'STRIPE_ENABLED=false',
+'STRIPE_SECRET_KEY=',
+'STRIPE_WEBHOOK_SECRET=',
+'STRIPE_PRICE_ID=',
+'',
+'# S3 Storage (optional - for file uploads)',
+'AWS_REGION=us-east-1',
+'AWS_S3_BUCKET=',
+'AWS_ACCESS_KEY_ID=',
+'AWS_SECRET_ACCESS_KEY=',
+]
+
+
+# Mounts are defined here and Dokploy creates them at ../files/volumes/ paths.
+# The docker-compose.yml references these via volume mounts.
+# NOTE: For the schema.sql mount, the content is too large for inline TOML.
+# Instead, the schema.sql file is included in the repo and mounted directly
+# via docker-compose volumes from the build context.
+
+[[config.mounts]]
+filePath = "../files/volumes/nginx/nginx.conf"
+content = """
+upstream frontend {
+    server frontend:80;
+}
+upstream backend {
+    server backend:3001;
+}
+upstream supabase {
+    server kong:8000;
+}
+server {
+    listen 80;
+    server_name _;
+    client_max_body_size 100m;
+    gzip on;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml text/javascript image/svg+xml;
+    gzip_min_length 1000;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+
+    location /api/ {
+        proxy_pass http://backend/api/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $$http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $$host;
+        proxy_set_header X-Real-IP $$remote_addr;
+        proxy_set_header X-Forwarded-For $$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $$scheme;
+        proxy_read_timeout 86400;
+    }
+    location /auth/ {
+        proxy_pass http://supabase/auth/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $$host;
+        proxy_set_header X-Real-IP $$remote_addr;
+        proxy_set_header X-Forwarded-For $$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $$scheme;
+    }
+    location /rest/ {
+        proxy_pass http://supabase/rest/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $$host;
+        proxy_set_header X-Real-IP $$remote_addr;
+        proxy_set_header X-Forwarded-For $$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $$scheme;
+    }
+    location /realtime/ {
+        proxy_pass http://supabase/realtime/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $$http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $$host;
+        proxy_set_header X-Real-IP $$remote_addr;
+        proxy_set_header X-Forwarded-For $$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $$scheme;
+        proxy_read_timeout 86400;
+    }
+    location /storage/ {
+        proxy_pass http://supabase/storage/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $$host;
+        proxy_set_header X-Real-IP $$remote_addr;
+        proxy_set_header X-Forwarded-For $$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $$scheme;
+    }
+    location / {
+        proxy_pass http://frontend/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $$host;
+        proxy_set_header X-Real-IP $$remote_addr;
+        proxy_set_header X-Forwarded-For $$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $$scheme;
+    }
+}
+"""

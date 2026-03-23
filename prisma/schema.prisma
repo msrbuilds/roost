@@ -1,0 +1,908 @@
+// ============================================================
+// Roost - Prisma Schema for MongoDB
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// --- Profiles ---
+model Profile {
+  id                    String    @id @default(auto()) @map("_id") @db.ObjectId
+  username              String    @unique
+  email                 String    @unique
+  display_name          String
+  avatar_url            String?
+  bio                   String?
+  location              String?
+  website               String?
+  is_online             Boolean   @default(false)
+  last_seen_at          DateTime  @default(now())
+  role                  UserRole  @default(user)
+  is_banned             Boolean   @default(false)
+  ban_reason            String?
+  ban_expires_at        DateTime?
+  banned_by             String?   @db.ObjectId
+  banned_at             DateTime?
+  membership_type       MembershipType @default(free)
+  two_factor_enabled    Boolean   @default(false)
+  two_factor_secret     String?
+  two_factor_verified_at DateTime?
+  password_hash         String    // For local auth - bcrypt hashed
+  created_at            DateTime  @default(now())
+  updated_at            DateTime  @updatedAt
+
+  // Relations
+  created_groups        Group[]          @relation("GroupCreator")
+  group_memberships     GroupMember[]
+  posts                 Post[]
+  comments              Comment[]
+  reactions             Reaction[]
+  sent_messages         Message[]        @relation("MessageSender")
+  received_messages     Message[]        @relation("MessageRecipient")
+  assets                Asset[]
+  notifications         Notification[]
+  leaderboard_entries   LeaderboardEntry[]
+  point_activities      PointActivity[]
+  created_events        Event[]
+  event_attendees       EventAttendee[]
+  announcements         Announcement[]
+  announcement_dismissals AnnouncementDismissal[]
+  showcases             Showcase[]       @relation("ShowcaseAuthor")
+  moderated_showcases   Showcase[]       @relation("ShowcaseModerator")
+  showcase_reviews      ShowcaseReview[]
+  followers             Follow[]         @relation("Following")
+  following             Follow[]         @relation("Follower")
+  live_sessions         LiveSession[]
+  live_session_messages LiveSessionMessage[]
+  live_session_rsvps    LiveSessionRsvp[]
+  modules               Module[]
+  recordings            Recording[]
+  lesson_completions    LessonCompletion[]
+  feature_requests      FeatureRequest[]
+  feature_request_votes FeatureRequestVote[]
+  comment_votes         CommentVote[]
+  notification_prefs    NotificationPreferences?
+  activation_requests   ActivationRequest[]  @relation("ActivationRequester")
+  processed_activations ActivationRequest[]  @relation("ActivationProcessor")
+  activation_usage      ActivationUsage[]
+  two_factor_backup_codes TwoFactorBackupCode[]
+  group_assets          GroupAsset[]
+
+  @@map("profiles")
+}
+
+// --- Groups ---
+model Group {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  slug          String    @unique
+  description   String?
+  avatar_url    String?
+  cover_url     String?
+  is_private    Boolean   @default(false)
+  is_premium    Boolean   @default(false)
+  layout_mode   LayoutMode @default(default_layout)
+  created_by    String    @db.ObjectId
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+
+  // Relations
+  creator       Profile       @relation("GroupCreator", fields: [created_by], references: [id])
+  members       GroupMember[]
+  posts         Post[]
+  categories    Category[]
+  events        Event[]
+  announcements Announcement[]
+  leaderboard_entries LeaderboardEntry[]
+  point_activities    PointActivity[]
+  modules       Module[]
+  recordings    Recording[]
+  group_assets  GroupAsset[]
+
+  @@map("groups")
+}
+
+// --- Group Members ---
+model GroupMember {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  group_id  String    @db.ObjectId
+  user_id   String    @db.ObjectId
+  role      GroupRole @default(member)
+  joined_at DateTime  @default(now())
+
+  // Relations
+  group     Group     @relation(fields: [group_id], references: [id], onDelete: Cascade)
+  user      Profile   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([group_id, user_id])
+  @@map("group_members")
+}
+
+// --- Categories ---
+model Category {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  slug          String   @unique
+  color         String   @default("#6366f1")
+  icon          String?
+  group_id      String?  @db.ObjectId
+  display_order Int      @default(0)
+  is_active     Boolean  @default(true)
+  created_at    DateTime @default(now())
+
+  // Relations
+  group         Group?   @relation(fields: [group_id], references: [id], onDelete: Cascade)
+  posts         Post[]
+
+  @@map("categories")
+}
+
+// --- Posts ---
+model Post {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  title       String?
+  content     String
+  author_id   String   @db.ObjectId
+  group_id    String?  @db.ObjectId
+  category_id String?  @db.ObjectId
+  is_pinned   Boolean  @default(false)
+  is_edited   Boolean  @default(false)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  // Relations
+  author      Profile    @relation(fields: [author_id], references: [id])
+  group       Group?     @relation(fields: [group_id], references: [id], onDelete: Cascade)
+  category    Category?  @relation(fields: [category_id], references: [id], onDelete: SetNull)
+  comments    Comment[]
+  assets      Asset[]
+  reactions   Reaction[] @relation("PostReactions")
+
+  @@map("posts")
+}
+
+// --- Comments ---
+model Comment {
+  id                String    @id @default(auto()) @map("_id") @db.ObjectId
+  post_id           String?   @db.ObjectId
+  recording_id      String?   @db.ObjectId
+  author_id         String    @db.ObjectId
+  content           String
+  parent_comment_id String?   @db.ObjectId
+  is_edited         Boolean   @default(false)
+  vote_count        Int       @default(0)
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
+
+  // Relations
+  author            Profile    @relation(fields: [author_id], references: [id])
+  post              Post?      @relation(fields: [post_id], references: [id], onDelete: Cascade)
+  recording         Recording? @relation(fields: [recording_id], references: [id], onDelete: Cascade)
+  parent            Comment?   @relation("CommentReplies", fields: [parent_comment_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  replies           Comment[]  @relation("CommentReplies")
+  votes             CommentVote[]
+  reactions         Reaction[] @relation("CommentReactions")
+
+  @@map("comments")
+}
+
+// --- Comment Votes ---
+model CommentVote {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  user_id    String   @db.ObjectId
+  comment_id String   @db.ObjectId
+  vote_type  VoteType
+  created_at DateTime @default(now())
+
+  // Relations
+  user       Profile  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  comment    Comment  @relation(fields: [comment_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, comment_id])
+  @@map("comment_votes")
+}
+
+// --- Reactions ---
+model Reaction {
+  id             String       @id @default(auto()) @map("_id") @db.ObjectId
+  user_id        String       @db.ObjectId
+  reactable_type ReactableType
+  reactable_id   String       @db.ObjectId
+  reaction_type  ReactionType @default(like)
+  created_at     DateTime     @default(now())
+
+  // Relations
+  user           Profile      @relation(fields: [user_id], references: [id])
+  post           Post?        @relation("PostReactions", fields: [reactable_id], references: [id])
+  comment        Comment?     @relation("CommentReactions", fields: [reactable_id], references: [id])
+
+  @@unique([user_id, reactable_type, reactable_id])
+  @@map("reactions")
+}
+
+// --- Messages ---
+model Message {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  sender_id    String   @db.ObjectId
+  recipient_id String   @db.ObjectId
+  content      String
+  is_read      Boolean  @default(false)
+  read_at      DateTime?
+  created_at   DateTime @default(now())
+
+  // Relations
+  sender       Profile  @relation("MessageSender", fields: [sender_id], references: [id])
+  recipient    Profile  @relation("MessageRecipient", fields: [recipient_id], references: [id])
+  assets       Asset[]
+
+  @@map("messages")
+}
+
+// --- Assets ---
+model Asset {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  filename    String
+  file_url    String
+  file_size   BigInt?
+  mime_type   String?
+  asset_type  AssetType
+  uploaded_by String    @db.ObjectId
+  post_id     String?   @db.ObjectId
+  message_id  String?   @db.ObjectId
+  created_at  DateTime  @default(now())
+
+  // Relations
+  uploader    Profile   @relation(fields: [uploaded_by], references: [id])
+  post        Post?     @relation(fields: [post_id], references: [id], onDelete: Cascade)
+  message     Message?  @relation(fields: [message_id], references: [id], onDelete: Cascade)
+  group_assets GroupAsset[]
+
+  @@map("assets")
+}
+
+// --- Notifications ---
+model Notification {
+  id            String           @id @default(auto()) @map("_id") @db.ObjectId
+  user_id       String           @db.ObjectId
+  type          NotificationType
+  title         String
+  message       String?
+  link          String?
+  is_read       Boolean          @default(false)
+  email_pending Boolean          @default(false)
+  email_sent_at DateTime?
+  created_at    DateTime         @default(now())
+
+  // Relations
+  user          Profile          @relation(fields: [user_id], references: [id])
+
+  @@map("notifications")
+}
+
+// --- Notification Preferences ---
+model NotificationPreferences {
+  id                   String   @id @default(auto()) @map("_id") @db.ObjectId
+  user_id              String   @unique @db.ObjectId
+  notify_comments      Boolean  @default(true)
+  notify_replies       Boolean  @default(true)
+  notify_mentions      Boolean  @default(true)
+  notify_messages      Boolean  @default(true)
+  notify_reactions     Boolean  @default(true)
+  email_comments       Boolean  @default(true)
+  email_replies        Boolean  @default(true)
+  email_mentions       Boolean  @default(true)
+  email_messages       Boolean  @default(true)
+  email_announcements  Boolean  @default(true)
+  created_at           DateTime @default(now())
+  updated_at           DateTime @updatedAt
+
+  // Relations
+  user                 Profile  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("notification_preferences")
+}
+
+// --- Leaderboard ---
+model LeaderboardEntry {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  user_id      String   @db.ObjectId
+  group_id     String?  @db.ObjectId
+  points       Int      @default(0)
+  period_start DateTime
+  period_end   DateTime
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  // Relations
+  user         Profile  @relation(fields: [user_id], references: [id])
+  group        Group?   @relation(fields: [group_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, group_id, period_start])
+  @@map("leaderboard_entries")
+}
+
+model PointActivity {
+  id           String         @id @default(auto()) @map("_id") @db.ObjectId
+  user_id      String         @db.ObjectId
+  group_id     String?        @db.ObjectId
+  action_type  PointActionType
+  points       Int
+  description  String?
+  reference_id String?        @db.ObjectId
+  created_at   DateTime       @default(now())
+
+  // Relations
+  user         Profile        @relation(fields: [user_id], references: [id])
+  group        Group?         @relation(fields: [group_id], references: [id], onDelete: Cascade)
+
+  @@map("point_activities")
+}
+
+// --- Events ---
+model Event {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  description String?
+  start_time  DateTime
+  end_time    DateTime
+  location    String?
+  is_virtual  Boolean   @default(false)
+  meeting_url String?
+  group_id    String    @db.ObjectId
+  created_by  String    @db.ObjectId
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+
+  // Relations
+  group       Group     @relation(fields: [group_id], references: [id])
+  creator     Profile   @relation(fields: [created_by], references: [id])
+  attendees   EventAttendee[]
+
+  @@map("events")
+}
+
+model EventAttendee {
+  id         String     @id @default(auto()) @map("_id") @db.ObjectId
+  event_id   String     @db.ObjectId
+  user_id    String     @db.ObjectId
+  status     RsvpStatus @default(going)
+  created_at DateTime   @default(now())
+  updated_at DateTime   @updatedAt
+
+  // Relations
+  event      Event      @relation(fields: [event_id], references: [id], onDelete: Cascade)
+  user       Profile    @relation(fields: [user_id], references: [id])
+
+  @@unique([event_id, user_id])
+  @@map("event_attendees")
+}
+
+// --- Announcements ---
+model Announcement {
+  id             String            @id @default(auto()) @map("_id") @db.ObjectId
+  title          String
+  content        String
+  type           AnnouncementType  @default(info)
+  scope          AnnouncementScope @default(global)
+  group_id       String?           @db.ObjectId
+  is_active      Boolean           @default(true)
+  is_dismissible Boolean           @default(true)
+  starts_at      DateTime          @default(now())
+  expires_at     DateTime?
+  created_by     String            @db.ObjectId
+  created_at     DateTime          @default(now())
+  updated_at     DateTime          @updatedAt
+
+  // Relations
+  group          Group?            @relation(fields: [group_id], references: [id], onDelete: Cascade)
+  creator        Profile           @relation(fields: [created_by], references: [id])
+  dismissals     AnnouncementDismissal[]
+
+  @@map("announcements")
+}
+
+model AnnouncementDismissal {
+  id              String       @id @default(auto()) @map("_id") @db.ObjectId
+  announcement_id String       @db.ObjectId
+  user_id         String       @db.ObjectId
+  dismissed_at    DateTime     @default(now())
+
+  // Relations
+  announcement    Announcement @relation(fields: [announcement_id], references: [id], onDelete: Cascade)
+  user            Profile      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([announcement_id, user_id])
+  @@map("announcement_dismissals")
+}
+
+// --- Showcases ---
+model Showcase {
+  id               String          @id @default(auto()) @map("_id") @db.ObjectId
+  title            String
+  tagline          String
+  description      String
+  url              String
+  thumbnail_url    String?
+  category         ShowcaseCategory
+  tech_stack       String[]        @default([])
+  author_id        String          @db.ObjectId
+  status           ShowcaseStatus  @default(pending)
+  moderation_notes String?
+  moderated_by     String?         @db.ObjectId
+  moderated_at     DateTime?
+  launch_date      DateTime?
+  is_featured      Boolean         @default(false)
+  featured_at      DateTime?
+  vote_count       Int             @default(0)
+  review_count     Int             @default(0)
+  average_rating   Float           @default(0)
+  created_at       DateTime        @default(now())
+  updated_at       DateTime        @updatedAt
+
+  // Relations
+  author           Profile         @relation("ShowcaseAuthor", fields: [author_id], references: [id])
+  moderator        Profile?        @relation("ShowcaseModerator", fields: [moderated_by], references: [id])
+  images           ShowcaseImage[]
+  tag_relations    ShowcaseTagRelation[]
+  reviews          ShowcaseReview[]
+
+  @@map("showcases")
+}
+
+model ShowcaseImage {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  showcase_id   String   @db.ObjectId
+  image_url     String
+  display_order Int      @default(0)
+  caption       String?
+  created_at    DateTime @default(now())
+
+  // Relations
+  showcase      Showcase @relation(fields: [showcase_id], references: [id], onDelete: Cascade)
+
+  @@map("showcase_images")
+}
+
+model ShowcaseTag {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  name       String   @unique
+  slug       String   @unique
+  color      String   @default("#6B7280")
+  created_at DateTime @default(now())
+
+  // Relations
+  tag_relations ShowcaseTagRelation[]
+
+  @@map("showcase_tags")
+}
+
+model ShowcaseTagRelation {
+  id          String      @id @default(auto()) @map("_id") @db.ObjectId
+  showcase_id String      @db.ObjectId
+  tag_id      String      @db.ObjectId
+
+  // Relations
+  showcase    Showcase    @relation(fields: [showcase_id], references: [id], onDelete: Cascade)
+  tag         ShowcaseTag @relation(fields: [tag_id], references: [id], onDelete: Cascade)
+
+  @@unique([showcase_id, tag_id])
+  @@map("showcase_tag_relations")
+}
+
+model ShowcaseReview {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  showcase_id     String   @db.ObjectId
+  author_id       String   @db.ObjectId
+  content         String
+  rating          Int
+  maker_reply     String?
+  maker_replied_at DateTime?
+  is_edited       Boolean  @default(false)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  // Relations
+  showcase        Showcase @relation(fields: [showcase_id], references: [id], onDelete: Cascade)
+  author          Profile  @relation(fields: [author_id], references: [id], onDelete: Cascade)
+
+  @@unique([showcase_id, author_id])
+  @@map("showcase_reviews")
+}
+
+// --- Follows ---
+model Follow {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  follower_id  String   @db.ObjectId
+  following_id String   @db.ObjectId
+  created_at   DateTime @default(now())
+
+  // Relations
+  follower     Profile  @relation("Follower", fields: [follower_id], references: [id], onDelete: Cascade)
+  following    Profile  @relation("Following", fields: [following_id], references: [id], onDelete: Cascade)
+
+  @@unique([follower_id, following_id])
+  @@map("follows")
+}
+
+// --- Live Sessions ---
+model LiveSession {
+  id                String              @id @default(auto()) @map("_id") @db.ObjectId
+  title             String              @default("Live Session")
+  description       String?
+  youtube_embed_url String?
+  scheduled_at      DateTime?
+  status            LiveSessionStatus   @default(idle)
+  started_at        DateTime?
+  ended_at          DateTime?
+  created_by        String?             @db.ObjectId
+  created_at        DateTime            @default(now())
+  updated_at        DateTime            @updatedAt
+
+  // Relations
+  creator           Profile?            @relation(fields: [created_by], references: [id])
+  messages          LiveSessionMessage[]
+  rsvps             LiveSessionRsvp[]
+
+  @@map("live_sessions")
+}
+
+model LiveSessionRsvp {
+  id           String      @id @default(auto()) @map("_id") @db.ObjectId
+  session_id   String      @db.ObjectId
+  user_id      String      @db.ObjectId
+  email        String
+  display_name String?
+  created_at   DateTime    @default(now())
+
+  // Relations
+  session      LiveSession @relation(fields: [session_id], references: [id], onDelete: Cascade)
+  user         Profile     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([session_id, user_id])
+  @@map("live_session_rsvps")
+}
+
+model LiveSessionMessage {
+  id         String      @id @default(auto()) @map("_id") @db.ObjectId
+  session_id String      @db.ObjectId
+  user_id    String      @db.ObjectId
+  content    String
+  created_at DateTime    @default(now())
+
+  // Relations
+  session    LiveSession @relation(fields: [session_id], references: [id], onDelete: Cascade)
+  user       Profile     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("live_session_messages")
+}
+
+// --- Modules (Learn Mode) ---
+model Module {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  group_id      String    @db.ObjectId
+  title         String
+  description   String?
+  thumbnail_url String?
+  display_order Int       @default(0)
+  created_by    String    @db.ObjectId
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+
+  // Relations
+  group         Group     @relation(fields: [group_id], references: [id], onDelete: Cascade)
+  creator       Profile   @relation(fields: [created_by], references: [id])
+  recordings    Recording[]
+  lesson_completions LessonCompletion[]
+  group_assets  GroupAsset[]
+
+  @@map("modules")
+}
+
+model Recording {
+  id             String        @id @default(auto()) @map("_id") @db.ObjectId
+  group_id       String        @db.ObjectId
+  module_id      String?       @db.ObjectId
+  title          String
+  description    String?
+  video_url      String
+  video_platform VideoPlatform
+  video_id       String
+  thumbnail_url  String?
+  display_order  Int           @default(0)
+  published_by   String        @db.ObjectId
+  created_at     DateTime      @default(now())
+
+  // Relations
+  group          Group         @relation(fields: [group_id], references: [id], onDelete: Cascade)
+  module         Module?       @relation(fields: [module_id], references: [id], onDelete: SetNull)
+  publisher      Profile       @relation(fields: [published_by], references: [id])
+  comments       Comment[]
+  lesson_completions LessonCompletion[]
+
+  @@map("recordings")
+}
+
+model LessonCompletion {
+  id           String    @id @default(auto()) @map("_id") @db.ObjectId
+  user_id      String    @db.ObjectId
+  recording_id String    @db.ObjectId
+  module_id    String    @db.ObjectId
+  completed_at DateTime  @default(now())
+
+  // Relations
+  user         Profile   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  recording    Recording @relation(fields: [recording_id], references: [id], onDelete: Cascade)
+  module       Module    @relation(fields: [module_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, recording_id])
+  @@map("lesson_completions")
+}
+
+// --- Group Assets ---
+model GroupAsset {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  group_id    String   @db.ObjectId
+  asset_id    String   @db.ObjectId
+  module_id   String?  @db.ObjectId
+  uploaded_by String   @db.ObjectId
+  created_at  DateTime @default(now())
+
+  // Relations
+  group       Group    @relation(fields: [group_id], references: [id], onDelete: Cascade)
+  asset       Asset    @relation(fields: [asset_id], references: [id], onDelete: Cascade)
+  module      Module?  @relation(fields: [module_id], references: [id], onDelete: SetNull)
+  uploader    Profile  @relation(fields: [uploaded_by], references: [id])
+
+  @@unique([group_id, asset_id])
+  @@map("group_assets")
+}
+
+// --- Feature Requests ---
+model FeatureRequest {
+  id          String               @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  description String
+  author_id   String               @db.ObjectId
+  status      FeatureRequestStatus @default(pending)
+  vote_count  Int                  @default(0)
+  created_at  DateTime             @default(now())
+  updated_at  DateTime             @updatedAt
+
+  // Relations
+  author      Profile              @relation(fields: [author_id], references: [id])
+  votes       FeatureRequestVote[]
+
+  @@map("feature_requests")
+}
+
+model FeatureRequestVote {
+  id         String         @id @default(auto()) @map("_id") @db.ObjectId
+  request_id String         @db.ObjectId
+  user_id    String         @db.ObjectId
+  created_at DateTime       @default(now())
+
+  // Relations
+  request    FeatureRequest @relation(fields: [request_id], references: [id], onDelete: Cascade)
+  user       Profile        @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([request_id, user_id])
+  @@map("feature_request_votes")
+}
+
+// --- Activation Products ---
+model ActivationProduct {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  slug          String    @unique
+  description   String?
+  product_type  String    @default("plugin")
+  monthly_limit Int       @default(1)
+  is_active     Boolean   @default(true)
+  icon_url      String?
+  instructions  String?
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+
+  // Relations
+  requests      ActivationRequest[]
+  usage         ActivationUsage[]
+
+  @@map("activation_products")
+}
+
+model ActivationRequest {
+  id           String                  @id @default(auto()) @map("_id") @db.ObjectId
+  user_id      String                  @db.ObjectId
+  product_id   String                  @db.ObjectId
+  status       ActivationRequestStatus @default(pending)
+  website_url  String
+  wp_username  String
+  wp_password  String
+  notes        String?
+  admin_notes  String?
+  processed_by String?                 @db.ObjectId
+  processed_at DateTime?
+  created_at   DateTime                @default(now())
+  updated_at   DateTime                @updatedAt
+
+  // Relations
+  user         Profile                 @relation("ActivationRequester", fields: [user_id], references: [id], onDelete: Cascade)
+  product      ActivationProduct       @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  processor    Profile?                @relation("ActivationProcessor", fields: [processed_by], references: [id])
+
+  @@map("activation_requests")
+}
+
+model ActivationUsage {
+  id          String            @id @default(auto()) @map("_id") @db.ObjectId
+  user_id     String            @db.ObjectId
+  product_id  String            @db.ObjectId
+  month_year  DateTime
+  usage_count Int               @default(0)
+  created_at  DateTime          @default(now())
+  updated_at  DateTime          @updatedAt
+
+  // Relations
+  user        Profile           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  product     ActivationProduct @relation(fields: [product_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, product_id, month_year])
+  @@map("activation_usage")
+}
+
+// --- Two-Factor Backup Codes ---
+model TwoFactorBackupCode {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  user_id   String    @db.ObjectId
+  code_hash String
+  used_at   DateTime?
+  created_at DateTime @default(now())
+
+  // Relations
+  user      Profile   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("two_factor_backup_codes")
+}
+
+// --- Enums ---
+enum UserRole {
+  user
+  moderator
+  admin
+  superadmin
+}
+
+enum MembershipType {
+  free
+  premium
+}
+
+enum GroupRole {
+  admin
+  moderator
+  member
+}
+
+enum LayoutMode {
+  default_layout @map("default")
+  sidebar
+  learn
+}
+
+enum ReactionType {
+  like
+  love
+  fire
+  clap
+  think
+  haha
+}
+
+enum ReactableType {
+  post
+  comment
+  showcase
+}
+
+enum AssetType {
+  image
+  video
+  document
+  other
+}
+
+enum NotificationType {
+  new_comment
+  new_reaction
+  new_message
+  new_follower
+  mention
+  group_invite
+  group_join
+  event_reminder
+  comment_reply
+}
+
+enum RsvpStatus {
+  going
+  maybe
+  not_going
+}
+
+enum AnnouncementType {
+  info
+  warning
+  success
+  error
+}
+
+enum AnnouncementScope {
+  global
+  group
+}
+
+enum ShowcaseStatus {
+  pending
+  approved
+  rejected
+  featured
+}
+
+enum ShowcaseCategory {
+  web_app
+  mobile_app
+  saas
+  tool
+  api
+  website
+  game
+  extension
+  other
+}
+
+enum PointActionType {
+  post_created
+  comment_created
+  reaction_given
+  reaction_received
+  event_attended
+  daily_login
+  profile_completed
+  manual_adjustment
+}
+
+enum ActivationRequestStatus {
+  pending
+  in_progress
+  completed
+  rejected
+}
+
+enum FeatureRequestStatus {
+  pending
+  approved
+  completed
+  rejected
+}
+
+enum LiveSessionStatus {
+  idle
+  live
+  ended
+}
+
+enum VideoPlatform {
+  youtube
+  vimeo
+}
+
+enum VoteType {
+  up
+  down
+}
