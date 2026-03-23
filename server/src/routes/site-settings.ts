@@ -172,8 +172,11 @@ siteSettingsRouter.post('/upload', requireSuperadmin, upload.single('file'), asy
       const localPath = path.join(LOCAL_UPLOAD_DIR, `${type}-${crypto.randomBytes(8).toString('hex')}${ext}`);
       fs.writeFileSync(localPath, file.buffer);
 
-      // Serve via Express static (relative URL)
-      fileUrl = `/uploads/branding/${path.basename(localPath)}`;
+      // Return full URL so frontend (different port in dev) can resolve it
+      const apiUrl = process.env.FRONTEND_URL
+        ? `${process.env.FRONTEND_URL.replace(/:\d+$/, '')}:${process.env.PORT || 3000}`
+        : `http://localhost:${process.env.PORT || 3000}`;
+      fileUrl = `${apiUrl}/uploads/branding/${path.basename(localPath)}`;
     }
 
     // Update the setting in database
