@@ -3603,5 +3603,55 @@ REVOKE ALL ON FUNCTION public.setup_first_admin(TEXT) FROM authenticated;
 REVOKE ALL ON FUNCTION public.setup_first_admin(TEXT) FROM anon;
 
 -- =============================================================================
+-- SECTION 14: SITE SETTINGS (Admin-configurable branding)
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS site_settings (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    key TEXT UNIQUE NOT NULL,
+    value TEXT,
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_by UUID REFERENCES profiles(id)
+);
+
+-- Seed default settings
+INSERT INTO site_settings (key, value) VALUES
+    ('site_name', 'Roost'),
+    ('site_tagline', 'Learn, Build, Grow Together'),
+    ('site_description', 'A community platform for learning, building, and growing together.'),
+    ('primary_color', '#0ea5e9'),
+    ('logo_url', ''),
+    ('logo_dark_url', ''),
+    ('favicon_url', ''),
+    ('support_email', ''),
+    ('support_url', '')
+ON CONFLICT (key) DO NOTHING;
+
+ALTER TABLE site_settings ENABLE ROW LEVEL SECURITY;
+
+-- Anyone can read settings (needed for branding on public pages)
+DROP POLICY IF EXISTS "Anyone can view site settings" ON site_settings;
+CREATE POLICY "Anyone can view site settings"
+    ON site_settings FOR SELECT USING (true);
+
+-- Only superadmins can modify settings
+DROP POLICY IF EXISTS "Superadmins can update site settings" ON site_settings;
+CREATE POLICY "Superadmins can update site settings"
+    ON site_settings FOR UPDATE USING (
+        EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'superadmin')
+    );
+
+DROP POLICY IF EXISTS "Superadmins can insert site settings" ON site_settings;
+CREATE POLICY "Superadmins can insert site settings"
+    ON site_settings FOR INSERT WITH CHECK (
+        EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'superadmin')
+    );
+
+CREATE TRIGGER update_site_settings_updated_at BEFORE UPDATE ON site_settings
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+GRANT SELECT ON site_settings TO anon;
+GRANT SELECT, INSERT, UPDATE ON site_settings TO authenticated;
+
+-- =============================================================================
 -- SCHEMA COMPLETE
 -- =============================================================================

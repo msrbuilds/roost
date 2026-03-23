@@ -52,6 +52,7 @@ const AdminShowcases = lazy(() => import('./pages/admin/Showcases'));
 const AdminBackups = lazy(() => import('./pages/admin/Backups'));
 const AdminActivations = lazy(() => import('./pages/admin/Activations'));
 const AdminLiveRoom = lazy(() => import('./pages/admin/LiveRoom'));
+const AdminSiteSettings = lazy(() => import('./pages/admin/SiteSettings'));
 
 // Layouts - not lazy loaded for better UX
 import MainLayout from './layouts/MainLayout';
@@ -105,6 +106,7 @@ function App() {
                     <Route path="backups" element={<AdminBackups />} />
                     <Route path="activations" element={<AdminActivations />} />
                     <Route path="live-room" element={<AdminLiveRoom />} />
+                    <Route path="site-settings" element={<AdminSiteSettings />} />
                 </Route>
 
                 {/* Protected routes - available to all authenticated users */}

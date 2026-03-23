@@ -2,6 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSidebar } from '@/contexts/SidebarContext';
 import { APP_CONFIG } from '@/config/app';
+import { useSiteSettings } from '@/contexts/SiteSettingsContext';
 import {
     Home,
     Users,
@@ -52,6 +53,7 @@ export default function SideNav() {
     const { user, profile, signOut, isPremium } = useAuth();
     const location = useLocation();
     const { isCollapsed, toggleSidebar } = useSidebar();
+    const { settings: siteSettings } = useSiteSettings();
 
     const handleSignOut = async () => {
         try {
@@ -74,19 +76,19 @@ export default function SideNav() {
                 <Link to="/" className={`flex items-center ${isCollapsed ? '' : 'gap-3'}`}>
                     {/* Light mode logo */}
                     <img
-                        src="/logo-square-sm.png"
-                        alt={APP_CONFIG.name}
+                        src={siteSettings.logo_url || '/logo-square-sm.png'}
+                        alt={siteSettings.site_name || APP_CONFIG.name}
                         className="w-10 h-10 rounded-lg flex-shrink-0 object-cover dark:hidden"
                     />
                     {/* Dark mode logo */}
                     <img
-                        src="/logo-square-sm-dark.png"
-                        alt={APP_CONFIG.name}
+                        src={siteSettings.logo_dark_url || siteSettings.logo_url || '/logo-square-sm-dark.png'}
+                        alt={siteSettings.site_name || APP_CONFIG.name}
                         className="w-10 h-10 rounded-xl flex-shrink-0 object-cover hidden dark:block"
                     />
                     {!isCollapsed && (
                         <span className="font-bold text-xl text-surface-900 dark:text-surface-50 whitespace-nowrap">
-                            {APP_CONFIG.name}
+                            {siteSettings.site_name || APP_CONFIG.name}
                         </span>
                     )}
                 </Link>

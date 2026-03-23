@@ -12,6 +12,7 @@ import {
     Database,
     Key,
     Radio,
+    Settings,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
@@ -35,6 +36,7 @@ const navItems: NavItem[] = [
     { path: '/admin/showcases', label: 'Showcases', icon: Rocket, moderatorAccess: true },
     { path: '/admin/live-room', label: 'Live Room', icon: Radio },
     { path: '/admin/backups', label: 'Backups', icon: Database },
+    { path: '/admin/site-settings', label: 'Site Settings', icon: Settings },
 ];
 
 export default function AdminLayout() {

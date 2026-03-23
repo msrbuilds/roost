@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSidebar } from '@/contexts/SidebarContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useSiteSettings } from '@/contexts/SiteSettingsContext';
 import {
     Search,
     Bell,
@@ -62,6 +63,7 @@ function TopNav() {
     const { user, profile, signOut, isPremium } = useAuth();
     const { isCollapsed } = useSidebar();
     const { resolvedTheme, setTheme } = useTheme();
+    const { settings: siteSettings } = useSiteSettings();
     const location = useLocation();
     const { isLive } = useLiveStatus();
     const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -134,14 +136,14 @@ function TopNav() {
                         <Link to="/" className="flex items-center gap-2">
                             {/* Light mode logo */}
                             <img
-                                src="/logo-square-sm.png"
-                                alt={APP_CONFIG.name}
+                                src={siteSettings.logo_url || '/logo-square-sm.png'}
+                                alt={siteSettings.site_name || APP_CONFIG.name}
                                 className="w-8 h-8 rounded-lg flex-shrink-0 object-cover dark:hidden"
                             />
                             {/* Dark mode logo */}
                             <img
-                                src="/logo-square-sm-dark.png"
-                                alt={APP_CONFIG.name}
+                                src={siteSettings.logo_dark_url || siteSettings.logo_url || '/logo-square-sm-dark.png'}
+                                alt={siteSettings.site_name || APP_CONFIG.name}
                                 className="w-8 h-8 rounded-xl flex-shrink-0 object-cover hidden dark:block"
                             />
                         </Link>
