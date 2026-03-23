@@ -75,7 +75,7 @@ export default function ShowcaseSubmit() {
     const [showDraftNotice, setShowDraftNotice] = useState(false);
 
     // Track if draft was already loaded to prevent re-loading
-    const draftLoadedRef = useRef(false);
+    const draftLoadedRef = useRef<boolean>(false);
 
     // Load draft from localStorage on mount
     useEffect(() => {

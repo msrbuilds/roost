@@ -11,7 +11,7 @@ const MAX_INTERVAL = 5 * 60_000; // 5 minutes max backoff
 export function useLiveStatus() {
   const { user, isPremium } = useAuth();
   const [status, setStatus] = useState<LiveStatus | null>(cachedStatus);
-  const failCountRef = useRef(0);
+  const failCountRef = useRef<number>(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const getInterval = useCallback(() => {

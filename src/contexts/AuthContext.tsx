@@ -237,7 +237,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
 
     // Check premium status via database function
-    const premiumCheckedRef = useRef(false);
+    const premiumCheckedRef = useRef<boolean>(false);
     const checkPremiumStatus = useCallback(async (userId: string) => {
         try {
             // Only show loading spinner for the initial check, not background refreshes

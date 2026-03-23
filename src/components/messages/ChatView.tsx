@@ -25,7 +25,7 @@ export default function ChatView({ conversation, onBack }: ChatViewProps) {
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const previousScrollHeight = useRef(0);
+  const previousScrollHeight = useRef<number>(0);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

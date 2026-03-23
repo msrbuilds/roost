@@ -170,7 +170,7 @@ export default function PostFeed({
     }, [groupId, feedMode, offset, selectedCategoryId, adminOnly, sortBy, user]);
 
     // Track whether this is the initial mount (to skip reload if cache is fresh)
-    const isInitialMount = useRef(true);
+    const isInitialMount = useRef<boolean>(true);
 
     // Load posts on mount and when filters change
     useEffect(() => {

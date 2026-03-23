@@ -21,7 +21,7 @@ export default function LiveRoomChat({ sessionId }: LiveRoomChatProps) {
   const [isLoading, setIsLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const shouldAutoScroll = useRef(true);
+  const shouldAutoScroll = useRef<boolean>(true);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

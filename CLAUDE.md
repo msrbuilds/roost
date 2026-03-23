@@ -6,7 +6,7 @@ Roost is an installable, self-hosted community platform supporting multiple data
 ---
 
 ## Core Stack
-- **Frontend**: React 18 (Vite), TypeScript, Tailwind CSS
+- **Frontend**: React 19 (Vite), TypeScript, Tailwind CSS
 - **Backend**: Express.js (Node.js 20+)
 - **Database**: Supabase (default) or MongoDB + Prisma
 - **Auth**: Supabase Auth or Local JWT (MongoDB)
