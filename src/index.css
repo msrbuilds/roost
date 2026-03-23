@@ -1,0 +1,327 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* =============================================================================
+   BASE STYLES
+   ============================================================================= */
+
+@layer base {
+  /* Reset and base typography */
+  * {
+    @apply border-surface-200 dark:border-surface-700;
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply bg-surface-50 dark:bg-surface-950 text-surface-900 dark:text-surface-50 font-sans antialiased;
+    @apply transition-colors duration-200;
+  }
+
+  /* Focus styles */
+  :focus-visible {
+    @apply outline-none ring-2 ring-primary-500 ring-offset-2 dark:ring-offset-surface-900;
+  }
+
+  /* Selection */
+  ::selection {
+    @apply bg-primary-100 dark:bg-primary-900 text-primary-900 dark:text-primary-100;
+  }
+}
+
+/* =============================================================================
+   COMPONENT STYLES
+   ============================================================================= */
+
+@layer components {
+  /* Button variants */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-150;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-surface-900;
+    @apply disabled:opacity-50 disabled:pointer-events-none;
+  }
+
+  .btn-primary {
+    @apply btn bg-primary-600 text-white hover:bg-primary-700 focus-visible:ring-primary-500;
+  }
+
+  .btn-secondary {
+    @apply btn bg-surface-100 dark:bg-surface-800 text-surface-900 dark:text-surface-100 hover:bg-surface-200 dark:hover:bg-surface-700 focus-visible:ring-surface-400;
+  }
+
+  .btn-ghost {
+    @apply btn bg-transparent text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 hover:text-surface-900 dark:hover:text-surface-100;
+  }
+
+  .btn-danger {
+    @apply btn bg-error text-white hover:bg-red-600 focus-visible:ring-red-500;
+  }
+
+  /* Card styles */
+  .card {
+    @apply bg-white dark:bg-surface-900 rounded-xl border border-surface-200 dark:border-surface-700 shadow-card dark:shadow-card-dark;
+    word-wrap: break-word;
+  }
+
+  .card-hover {
+    @apply card transition-shadow duration-200 hover:shadow-soft dark:hover:shadow-soft-dark;
+  }
+
+  /* Input styles */
+  .input {
+    @apply w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2 text-sm;
+    @apply text-surface-900 dark:text-surface-100;
+    @apply placeholder:text-surface-400 dark:placeholder:text-surface-500;
+    @apply focus:border-primary-500 focus:ring-1 focus:ring-primary-500;
+    @apply disabled:bg-surface-50 dark:disabled:bg-surface-900 disabled:text-surface-500 dark:disabled:text-surface-400;
+  }
+
+  .input-error {
+    @apply input border-error focus:border-error focus:ring-error;
+  }
+
+  /* Label styles */
+  .label {
+    @apply block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1;
+  }
+
+  /* Avatar styles */
+  .avatar {
+    @apply relative inline-flex items-center justify-center rounded-full bg-surface-200 dark:bg-surface-700 overflow-hidden;
+  }
+
+  .avatar-sm {
+    @apply avatar w-8 h-8 text-xs;
+  }
+
+  .avatar-md {
+    @apply avatar w-10 h-10 text-sm;
+  }
+
+  .avatar-lg {
+    @apply avatar w-12 h-12 text-base;
+  }
+
+  .avatar-xl {
+    @apply avatar w-16 h-16 text-lg;
+  }
+
+  /* Badge styles */
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium;
+  }
+
+  .badge-primary {
+    @apply badge bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300;
+  }
+
+  .badge-success {
+    @apply badge bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300;
+  }
+
+  .badge-warning {
+    @apply badge bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300;
+  }
+
+  .badge-error {
+    @apply badge bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300;
+  }
+
+  /* Dropdown/Menu styles */
+  .dropdown-menu {
+    @apply absolute z-50 min-w-[180px] rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 p-1 shadow-elevated dark:shadow-elevated-dark;
+    @apply animate-scale-in origin-top-right;
+  }
+
+  .dropdown-item {
+    @apply flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-surface-700 dark:text-surface-200;
+    @apply hover:bg-surface-100 dark:hover:bg-surface-700 hover:text-surface-900 dark:hover:text-surface-50;
+    @apply cursor-pointer transition-colors;
+  }
+
+  /* Skeleton loader */
+  .skeleton {
+    @apply animate-pulse rounded bg-surface-200 dark:bg-surface-700;
+  }
+
+  /* Modal overlay */
+  .modal-overlay {
+    @apply fixed inset-0 bg-black/50 dark:bg-black/70 z-50;
+  }
+
+  /* Modal content */
+  .modal-content {
+    @apply bg-white dark:bg-surface-900 rounded-xl shadow-elevated dark:shadow-elevated-dark;
+  }
+
+  /* Table styles for admin */
+  .table-header {
+    @apply bg-surface-50 dark:bg-surface-800 text-surface-600 dark:text-surface-300;
+  }
+
+  .table-row {
+    @apply border-b border-surface-100 dark:border-surface-800 hover:bg-surface-50 dark:hover:bg-surface-800/50;
+  }
+
+  .table-cell {
+    @apply text-surface-900 dark:text-surface-100;
+  }
+}
+
+/* =============================================================================
+   UTILITY STYLES
+   ============================================================================= */
+
+@layer utilities {
+  /* Text utilities */
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Scrollbar styling */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: theme('colors.surface.300') transparent;
+  }
+
+  .dark .scrollbar-thin {
+    scrollbar-color: theme('colors.surface.600') transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply bg-surface-300 dark:bg-surface-600 rounded-full;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    @apply bg-surface-400 dark:bg-surface-500;
+  }
+
+  /* Hide scrollbar but keep functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* @mention link styling */
+  .mention-link {
+    @apply text-primary-600 dark:text-primary-400 font-medium hover:underline cursor-pointer;
+  }
+
+  /* RTL text styling (Urdu, Arabic, Persian) */
+  .rtl-text {
+    direction: rtl;
+    text-align: right;
+    font-family: 'Noto Nastaliq Urdu', 'Inter', serif;
+    line-height: 2.2;
+  }
+
+  /* Line clamp utilities */
+  .line-clamp-1 {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+/* =============================================================================
+   QUILL EDITOR DARK MODE
+   ============================================================================= */
+
+.dark .ql-toolbar.ql-snow {
+  border-color: #404040;
+  background-color: #262626;
+}
+
+.dark .ql-container.ql-snow {
+  border-color: #404040;
+  background-color: #171717;
+}
+
+.dark .ql-editor {
+  color: #fafafa;
+}
+
+.dark .ql-editor.ql-blank::before {
+  color: #525252;
+}
+
+.dark .ql-toolbar .ql-stroke {
+  stroke: #a3a3a3;
+}
+
+.dark .ql-toolbar .ql-fill {
+  fill: #a3a3a3;
+}
+
+.dark .ql-toolbar .ql-picker-label {
+  color: #a3a3a3;
+}
+
+.dark .ql-toolbar .ql-picker-options {
+  background-color: #262626;
+  border-color: #404040;
+}
+
+.dark .ql-toolbar .ql-picker-item {
+  color: #e5e5e5;
+}
+
+.dark .ql-toolbar .ql-picker-item:hover {
+  color: #fafafa;
+}
+
+.dark .ql-toolbar button:hover .ql-stroke,
+.dark .ql-toolbar button:focus .ql-stroke,
+.dark .ql-toolbar button.ql-active .ql-stroke {
+  stroke: #0ea5e9;
+}
+
+.dark .ql-toolbar button:hover .ql-fill,
+.dark .ql-toolbar button:focus .ql-fill,
+.dark .ql-toolbar button.ql-active .ql-fill {
+  fill: #0ea5e9;
+}
+
+.dark .ql-snow .ql-tooltip {
+  background-color: #262626;
+  border-color: #404040;
+  color: #fafafa;
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5);
+}
+
+.dark .ql-snow .ql-tooltip input[type="text"] {
+  background-color: #171717;
+  border-color: #404040;
+  color: #fafafa;
+}
