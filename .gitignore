@@ -96,3 +96,5 @@ backups/
 *.pid
 *.seed
 *.pid.lock
+# Docs
+docs/
