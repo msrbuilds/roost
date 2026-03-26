@@ -111,7 +111,10 @@ export class SupabaseAuthAdapter implements AuthAdapter {
     const { data, error } = await this.supabase.auth.signUp({
       email,
       password,
-      options: metadata ? { data: metadata } : undefined,
+      options: {
+        ...(metadata ? { data: metadata } : {}),
+        emailRedirectTo: `${window.location.origin}/login`,
+      },
     });
     return {
       user: mapUser(data.user),
