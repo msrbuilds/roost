@@ -6,6 +6,7 @@ services:
     image: supabase/postgres:15.8.1.060
     restart: unless-stopped
     volumes:
+      - ./dokploy-template/volumes/db/00-supabase-roles.sql:/docker-entrypoint-initdb.d/migrations/00-supabase-roles.sql:ro,Z
       - ./schema.sql:/docker-entrypoint-initdb.d/migrations/99-roost-schema.sql:ro,Z
       - db-data:/var/lib/postgresql/data:Z
     environment:
