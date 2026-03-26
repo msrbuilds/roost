@@ -109,9 +109,23 @@ services:
       APP_NAME: realtime
       SEED_SELF_HOST: "true"
       RUN_JANITOR: "true"
-      SELF_HOST_TENANT_ID: realtime
     expose:
       - 4000
+
+  # ==========================================================================
+  # Fix Realtime tenant ID (runs once after Realtime seeds)
+  # ==========================================================================
+  realtime-tenant-fix:
+    image: supabase/postgres:15.8.1.060
+    depends_on:
+      db:
+        condition: service_healthy
+      realtime:
+        condition: service_started
+    restart: "no"
+    entrypoint: ["sh", "-c", "sleep 15 && PGPASSWORD=$${POSTGRES_PASSWORD} psql -h db -U postgres -d postgres -c \"DO \\$\\$BEGIN IF EXISTS (SELECT 1 FROM _realtime.tenants WHERE external_id = 'realtime-dev') THEN ALTER TABLE _realtime.extensions DROP CONSTRAINT IF EXISTS extensions_tenant_external_id_fkey; UPDATE _realtime.tenants SET external_id = 'realtime', name = 'realtime' WHERE external_id = 'realtime-dev'; UPDATE _realtime.extensions SET tenant_external_id = 'realtime' WHERE tenant_external_id = 'realtime-dev'; ALTER TABLE _realtime.extensions ADD CONSTRAINT extensions_tenant_external_id_fkey FOREIGN KEY (tenant_external_id) REFERENCES _realtime.tenants(external_id); RAISE NOTICE 'Tenant renamed to realtime'; ELSE RAISE NOTICE 'Tenant already correct'; END IF; END\\$\\$;\""]
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
 
   # ==========================================================================
   # Supabase Storage - S3-compatible file storage API
