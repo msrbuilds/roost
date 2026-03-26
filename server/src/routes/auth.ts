@@ -4,15 +4,35 @@
 // ============================================================
 
 import { Router, Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 
 const router = Router();
-const prisma = new PrismaClient();
+
+// These are MongoDB-only dependencies — loaded dynamically to avoid
+// breaking the build when DB_PROVIDER=supabase and they aren't installed.
+/* eslint-disable @typescript-eslint/no-var-requires */
+let prisma: any;
+let bcrypt: any;
+let jwt: any;
+
+function loadMongoDBDeps() {
+  if (prisma) return;
+  // @ts-ignore — optional MongoDB dependency
+  const { PrismaClient } = require('@prisma/client');
+  // @ts-ignore — optional MongoDB dependency
+  bcrypt = require('bcryptjs');
+  // @ts-ignore — optional MongoDB dependency
+  jwt = require('jsonwebtoken');
+  prisma = new PrismaClient();
+}
 
 const JWT_SECRET = process.env.JWT_SECRET || 'change-me-in-production';
 const JWT_EXPIRES_IN = '7d';
+
+// Ensure MongoDB deps are loaded before any route handler runs
+router.use((_req, _res, next) => {
+  try { loadMongoDBDeps(); next(); }
+  catch (e) { next(e); }
+});
 
 interface JwtPayload {
   sub: string;
