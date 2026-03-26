@@ -278,6 +278,8 @@ services:
       - frontend
       - backend
       - kong
+    volumes:
+      - ./dokploy-template/nginx-proxy.conf:/etc/nginx/conf.d/default.conf:ro
     expose:
       - 80
 
