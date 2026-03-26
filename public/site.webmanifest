@@ -1,7 +1,7 @@
 {
-  "name": "Let's Vibe It",
-  "short_name": "Let's Vibe",
-  "description": "A community for learning and building together",
+  "name": "Roost",
+  "short_name": "Roost",
+  "description": "A community platform for learning, building, and growing together",
   "icons": [
     {
       "src": "/android-chrome-192x192.png",
@@ -14,7 +14,7 @@
       "type": "image/png"
     }
   ],
-  "theme_color": "#6366f1",
+  "theme_color": "#0ea5e9",
   "background_color": "#ffffff",
   "display": "standalone",
   "start_url": "/"
