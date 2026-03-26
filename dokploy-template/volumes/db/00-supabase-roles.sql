@@ -185,5 +185,12 @@ CREATE TABLE IF NOT EXISTS auth.users (
 ALTER TABLE auth.users OWNER TO supabase_auth_admin;
 
 -- =============================================================================
+-- 10. Create supabase_realtime publication
+-- =============================================================================
+-- Required by the Realtime service for CDC (Change Data Capture).
+-- Tables are added to this publication as needed.
+CREATE PUBLICATION IF NOT EXISTS supabase_realtime;
+
+-- =============================================================================
 -- Done! Database is ready for schema.sql and Supabase services.
 -- =============================================================================
