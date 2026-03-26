@@ -10,7 +10,13 @@ import {
     Loader2,
     Check,
     X,
+    Puzzle,
+    Radio,
+    Key,
+    Lightbulb,
+    Rocket,
 } from 'lucide-react';
+import type { FeatureAccess } from '@/contexts/SiteSettingsContext';
 
 const COLOR_PRESETS = [
     { name: 'Sky Blue', value: '#0ea5e9' },
@@ -47,6 +53,10 @@ export default function AdminSiteSettings() {
                 primary_color: form.primary_color,
                 support_email: form.support_email,
                 support_url: form.support_url,
+                feature_live_room: form.feature_live_room,
+                feature_activations: form.feature_activations,
+                feature_roadmap: form.feature_roadmap,
+                feature_showcase: form.feature_showcase,
             });
             setMessage({ type: 'success', text: 'Settings saved successfully!' });
         } catch (err) {
@@ -355,6 +365,51 @@ export default function AdminSiteSettings() {
                             placeholder="https://support.example.com"
                         />
                     </div>
+                </div>
+            </div>
+
+            {/* Feature Modules */}
+            <div className="card p-6">
+                <div className="flex items-center gap-2 mb-4">
+                    <Puzzle className="w-5 h-5 text-primary-500" />
+                    <h2 className="text-lg font-semibold text-surface-900 dark:text-surface-100">Feature Modules</h2>
+                </div>
+                <p className="text-sm text-surface-500 dark:text-surface-400 mb-4">
+                    Enable or disable features and control who can access them.
+                </p>
+
+                <div className="space-y-3">
+                    {([
+                        { key: 'feature_live_room' as const, name: 'Live Room', description: 'Live streaming sessions with chat', icon: Radio },
+                        { key: 'feature_activations' as const, name: 'Activations', description: 'Product activation and license management', icon: Key },
+                        { key: 'feature_roadmap' as const, name: 'Roadmap & Issues', description: 'Feature requests and bug reports from users', icon: Lightbulb },
+                        { key: 'feature_showcase' as const, name: 'Showcase', description: 'Member project gallery with reviews and voting', icon: Rocket },
+                    ]).map(feature => {
+                        const Icon = feature.icon;
+                        const value = (form[feature.key] || 'all') as FeatureAccess;
+                        return (
+                            <div key={feature.key} className="flex items-center justify-between p-3 bg-surface-50 dark:bg-surface-800/50 rounded-lg">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-white dark:bg-surface-700 rounded-lg">
+                                        <Icon className="w-4 h-4 text-surface-600 dark:text-surface-300" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-medium text-surface-900 dark:text-surface-100">{feature.name}</p>
+                                        <p className="text-xs text-surface-500 dark:text-surface-400">{feature.description}</p>
+                                    </div>
+                                </div>
+                                <select
+                                    value={value}
+                                    onChange={e => setForm(prev => ({ ...prev, [feature.key]: e.target.value as FeatureAccess }))}
+                                    className="px-3 py-1.5 bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-700 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                >
+                                    <option value="all">Everyone</option>
+                                    <option value="premium_only">Premium Only</option>
+                                    <option value="disabled">Disabled</option>
+                                </select>
+                            </div>
+                        );
+                    })}
                 </div>
             </div>
         </div>

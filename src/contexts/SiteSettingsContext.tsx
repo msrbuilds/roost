@@ -1,6 +1,9 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { supabase } from '@/services/supabase';
 
+// Feature module access levels: disabled, all users, or premium only
+export type FeatureAccess = 'disabled' | 'all' | 'premium_only';
+
 export interface SiteSettings {
   site_name: string;
   site_tagline: string;
@@ -11,6 +14,11 @@ export interface SiteSettings {
   favicon_url: string;
   support_email: string;
   support_url: string;
+  // Feature modules
+  feature_live_room: FeatureAccess;
+  feature_activations: FeatureAccess;
+  feature_roadmap: FeatureAccess;
+  feature_showcase: FeatureAccess;
 }
 
 const DEFAULT_SETTINGS: SiteSettings = {
@@ -23,6 +31,10 @@ const DEFAULT_SETTINGS: SiteSettings = {
   favicon_url: '',
   support_email: '',
   support_url: '',
+  feature_live_room: 'premium_only',
+  feature_activations: 'premium_only',
+  feature_roadmap: 'all',
+  feature_showcase: 'all',
 };
 
 interface SiteSettingsContextType {
@@ -31,6 +43,8 @@ interface SiteSettingsContextType {
   refresh: () => Promise<void>;
   updateSettings: (updates: Partial<SiteSettings>) => Promise<void>;
   uploadBrandingAsset: (file: File, type: 'logo' | 'logo_dark' | 'favicon') => Promise<string>;
+  isFeatureEnabled: (feature: 'live_room' | 'activations' | 'roadmap' | 'showcase', isPremium?: boolean) => boolean;
+  getFeatureAccess: (feature: 'live_room' | 'activations' | 'roadmap' | 'showcase') => FeatureAccess;
 }
 
 const SiteSettingsContext = createContext<SiteSettingsContextType | null>(null);
@@ -205,8 +219,22 @@ export function SiteSettingsProvider({ children }: { children: ReactNode }) {
     return data.url;
   }, []);
 
+  const getFeatureAccess = useCallback((feature: 'live_room' | 'activations' | 'roadmap' | 'showcase'): FeatureAccess => {
+    const key = `feature_${feature}` as keyof SiteSettings;
+    const value = settings[key] as string;
+    if (value === 'disabled' || value === 'all' || value === 'premium_only') return value;
+    return DEFAULT_SETTINGS[key] as FeatureAccess;
+  }, [settings]);
+
+  const isFeatureEnabled = useCallback((feature: 'live_room' | 'activations' | 'roadmap' | 'showcase', isPremium = false): boolean => {
+    const access = getFeatureAccess(feature);
+    if (access === 'disabled') return false;
+    if (access === 'all') return true;
+    return isPremium; // premium_only
+  }, [getFeatureAccess]);
+
   return (
-    <SiteSettingsContext.Provider value={{ settings, isLoading, refresh: fetchSettings, updateSettings, uploadBrandingAsset }}>
+    <SiteSettingsContext.Provider value={{ settings, isLoading, refresh: fetchSettings, updateSettings, uploadBrandingAsset, isFeatureEnabled, getFeatureAccess }}>
       {children}
     </SiteSettingsContext.Provider>
   );

@@ -31,21 +31,22 @@ interface NavItem {
     href: string;
     icon: LucideIcon;
     premiumOnly?: boolean;
+    featureKey?: 'live_room' | 'activations' | 'roadmap' | 'showcase';
 }
 
-// Main navigation items
-const navItems: NavItem[] = [
+// Main navigation items (featureKey items are filtered by admin settings)
+const allNavItems: NavItem[] = [
     { name: 'Home', href: '/', icon: Home },
     { name: 'Explore', href: '/explore', icon: Compass },
     { name: 'Classrooms', href: '/classrooms', icon: BookOpen },
-    { name: 'Showcase', href: '/showcase', icon: Rocket },
+    { name: 'Showcase', href: '/showcase', icon: Rocket, featureKey: 'showcase' },
     { name: 'Calendar', href: '/calendar', icon: Calendar, premiumOnly: true },
     { name: 'Members', href: '/members', icon: Users },
     { name: 'Leaderboard', href: '/leaderboard', icon: Trophy },
     { name: 'Messages', href: '/messages', icon: MessageSquare, premiumOnly: true },
-    { name: 'Live Room', href: '/live', icon: Radio, premiumOnly: true },
-    { name: 'Activations', href: '/activations', icon: Key, premiumOnly: true },
-    { name: 'Roadmap & Issues', href: '/roadmap', icon: Lightbulb },
+    { name: 'Live Room', href: '/live', icon: Radio, premiumOnly: true, featureKey: 'live_room' },
+    { name: 'Activations', href: '/activations', icon: Key, premiumOnly: true, featureKey: 'activations' },
+    { name: 'Roadmap & Issues', href: '/roadmap', icon: Lightbulb, featureKey: 'roadmap' },
     { name: 'Guide', href: '/guide', icon: HelpCircle },
 ];
 
@@ -53,7 +54,18 @@ export default function SideNav() {
     const { user, profile, signOut, isPremium } = useAuth();
     const location = useLocation();
     const { isCollapsed, toggleSidebar } = useSidebar();
-    const { settings: siteSettings } = useSiteSettings();
+    const { settings: siteSettings, getFeatureAccess } = useSiteSettings();
+
+    // Filter nav items based on feature module settings
+    const navItems = allNavItems.filter(item => {
+        if (!item.featureKey) return true;
+        const access = getFeatureAccess(item.featureKey);
+        if (access === 'disabled') return false;
+        // Override premiumOnly based on admin setting
+        if (access === 'all') item.premiumOnly = false;
+        else if (access === 'premium_only') item.premiumOnly = true;
+        return true;
+    });
 
     const handleSignOut = async () => {
         try {

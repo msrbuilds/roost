@@ -141,6 +141,7 @@ siteSettingsRouter.put('/', requireSuperadmin, async (req: Request, res: Respons
       'site_name', 'site_tagline', 'site_description',
       'primary_color', 'logo_url', 'logo_dark_url', 'favicon_url',
       'support_email', 'support_url',
+      'feature_live_room', 'feature_activations', 'feature_roadmap', 'feature_showcase',
     ];
 
     const updates = Object.entries(settings)
