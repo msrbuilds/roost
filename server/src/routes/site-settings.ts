@@ -76,6 +76,41 @@ async function requireSuperadmin(req: Request, res: Response, next: () => void) 
   }
 }
 
+// GET /api/site-settings/manifest.webmanifest — dynamic PWA manifest from site settings
+siteSettingsRouter.get('/manifest.webmanifest', async (_req: Request, res: Response) => {
+  try {
+    const { data } = await supabaseAdmin
+      .from('site_settings')
+      .select('key, value');
+
+    const settings: Record<string, string> = {};
+    for (const row of data || []) {
+      settings[row.key] = row.value || '';
+    }
+
+    const manifest = {
+      name: settings.site_name || 'Roost',
+      short_name: settings.site_name || 'Roost',
+      description: settings.site_description || 'A community platform for learning, building, and growing together',
+      icons: [
+        { src: '/android-chrome-192x192.png', sizes: '192x192', type: 'image/png' },
+        { src: '/android-chrome-512x512.png', sizes: '512x512', type: 'image/png' },
+      ],
+      theme_color: settings.primary_color || '#0ea5e9',
+      background_color: '#ffffff',
+      display: 'standalone',
+      start_url: '/',
+    };
+
+    res.setHeader('Content-Type', 'application/manifest+json');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.json(manifest);
+  } catch (error) {
+    console.error('Error generating manifest:', error);
+    res.status(500).json({ error: 'Failed to generate manifest' });
+  }
+});
+
 // GET /api/site-settings — public, returns all settings as key-value object
 siteSettingsRouter.get('/', async (_req: Request, res: Response) => {
   try {
