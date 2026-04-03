@@ -146,7 +146,7 @@ VITE_SUPABASE_PUBLISHABLE_KEY=your-anon-key
 # App
 VITE_APP_NAME="Your Community Name"
 VITE_APP_URL=http://localhost:5173
-VITE_API_URL=http://localhost:3000/api
+VITE_API_URL=http://localhost:3000
 ```
 
 ### Backend (server/.env)
@@ -285,5 +285,5 @@ docker compose logs -f
 
 ## Next Steps
 
-- [Deploy Roost with Docker](./docker-dokploy.md)
-- [Configure Email Notifications](./email-setup.md)
+- [Deploy Roost with Docker (VPS)](./docker-vps.md)
+- [Deploy Roost with Dockploy (VPS)](./dockploy-vps.md)

@@ -1,6 +1,59 @@
 version: '3.8'
 
 services:
+  # Edge proxy + automatic TLS (Let's Encrypt)
+  traefik:
+    image: traefik:v3.1
+    container_name: roost-traefik
+    restart: unless-stopped
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--certificatesresolvers.letsencrypt.acme.email=${LETSENCRYPT_EMAIL}"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik-letsencrypt:/letsencrypt
+    networks:
+      - roost-network
+
+  # Optional MongoDB service (enabled with COMPOSE_PROFILES=mongodb)
+  mongo:
+    image: mongo:7
+    container_name: roost-mongo
+    restart: unless-stopped
+    profiles:
+      - mongodb
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - roost-network
+
+  # Optional Redis service (enabled with COMPOSE_PROFILES=redis)
+  redis:
+    image: redis:7-alpine
+    container_name: roost-redis
+    restart: unless-stopped
+    profiles:
+      - redis
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+    volumes:
+      - redis-data:/data
+    networks:
+      - roost-network
+
   # Frontend - React SPA served by nginx
   frontend:
     build:
@@ -10,7 +63,7 @@ services:
         - backup_token
       args:
         # Pre-build backup configuration
-        - BACKUP_API_URL=${BACKUP_API_URL:-https://your-domain.com}
+        - BACKUP_API_URL=${BACKUP_API_URL:-https://${ROOST_DOMAIN:-your-domain.com}}
         # Database provider
         - VITE_DB_PROVIDER=${VITE_DB_PROVIDER:-supabase-cloud}
         - VITE_DATABASE_URL=${VITE_DATABASE_URL:-}
@@ -20,21 +73,24 @@ services:
         - VITE_AWS_REGION=${VITE_AWS_REGION}
         - VITE_AWS_S3_BUCKET=${VITE_AWS_S3_BUCKET}
         - VITE_APP_NAME=${VITE_APP_NAME:-Roost}
-        - VITE_APP_URL=${VITE_APP_URL:-https://your-domain.com}
-        - VITE_API_URL=${VITE_API_URL:-https://your-domain.com}
+        - VITE_APP_URL=${VITE_APP_URL:-https://${ROOST_DOMAIN:-your-domain.com}}
+        - VITE_API_URL=${VITE_API_URL:-https://${ROOST_DOMAIN:-your-domain.com}}
     container_name: roost-frontend
     restart: unless-stopped
-    ports:
-      - "80:80"
+    expose:
+      - "80"
     networks:
       - roost-network
     depends_on:
       - backend
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.frontend.rule=Host(`your-domain.com`)"
+      - "traefik.http.routers.frontend.rule=Host(`${ROOST_DOMAIN:-your-domain.com}`)"
+      - "traefik.http.routers.frontend.priority=1"
       - "traefik.http.routers.frontend.entrypoints=websecure"
       - "traefik.http.routers.frontend.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.frontend.tls=true"
+      - "traefik.docker.network=roost-network"
       - "traefik.http.services.frontend.loadbalancer.server.port=80"
 
   # Backend - Express server for API, webhooks, and integrations
@@ -45,8 +101,8 @@ services:
     container_name: roost-backend
     restart: unless-stopped
     stop_grace_period: 10s
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000"
     environment:
       - NODE_ENV=production
       - PORT=3000
@@ -65,13 +121,15 @@ services:
       - SMTP_PASS=${SMTP_PASS}
       - SMTP_FROM_EMAIL=${SMTP_FROM_EMAIL}
       - SMTP_FROM_NAME=${SMTP_FROM_NAME:-Roost}
-      - FRONTEND_URL=${FRONTEND_URL:-https://your-domain.com}
-      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-https://your-domain.com}
+      - FRONTEND_URL=${FRONTEND_URL:-https://${ROOST_DOMAIN:-your-domain.com}}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-https://${ROOST_DOMAIN:-your-domain.com}}
       # AWS S3 upload credentials (server-side only - never exposed to frontend)
       - AWS_REGION=${AWS_REGION:-us-east-1}
       - AWS_S3_BUCKET=${AWS_S3_BUCKET}
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - S3_ENDPOINT=${S3_ENDPOINT:-}
+      - REDIS_URL=${REDIS_URL:-}
       # Database backup configuration (uses PRIVATE S3 bucket - separate from public uploads)
       - AWS_BACKUP_BUCKET=${AWS_BACKUP_BUCKET}
       - AWS_BACKUP_REGION=${AWS_BACKUP_REGION:-${AWS_REGION}}
@@ -84,7 +142,6 @@ services:
       - BACKUP_SECRET_TOKEN=${BACKUP_SECRET_TOKEN}
     networks:
       - roost-network
-      - dokploy-network
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
       interval: 30s
@@ -93,16 +150,22 @@ services:
       start_period: 10s
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.backend.rule=Host(`your-domain.com`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.backend.rule=Host(`${ROOST_DOMAIN:-your-domain.com}`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.backend.priority=100"
       - "traefik.http.routers.backend.entrypoints=websecure"
       - "traefik.http.routers.backend.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.backend.tls=true"
+      - "traefik.docker.network=roost-network"
       - "traefik.http.services.backend.loadbalancer.server.port=3000"
+
+volumes:
+  traefik-letsencrypt:
+  mongo-data:
+  redis-data:
 
 networks:
   roost-network:
     driver: bridge
-  dokploy-network:
-    external: true
 
 secrets:
   backup_token:

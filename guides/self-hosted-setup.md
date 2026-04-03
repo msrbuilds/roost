@@ -26,7 +26,7 @@ bash install.sh
 The interactive installer will guide you through configuring:
 - Community name and branding
 - Database provider (Supabase Cloud, Supabase Self-hosted, or MongoDB)
-- Deployment target (Docker, Vercel, Netlify, or Local)
+- Deployment target (Docker VPS, Dockploy VPS, Vercel, Netlify, or Local)
 - Optional services (S3 storage, email, Redis, Stripe)
 
 ### 2. Set Up the Database
@@ -68,7 +68,7 @@ npx prisma db push
 npm run dev:all
 
 # Production (Docker)
-docker-compose up --build -d
+docker compose up --build -d
 ```
 
 ---
@@ -80,20 +80,25 @@ docker-compose up --build -d
 ```bash
 # Configure environment variables in .env.local and server/.env
 # Then build and run:
-docker-compose up --build -d
+docker compose up --build -d
 
 # View logs
-docker-compose logs -f
+docker compose logs -f
 
 # Update
-docker-compose down
-docker-compose up --build -d
+docker compose down
+docker compose up --build -d
 ```
 
 The Docker setup includes:
 - Frontend served by nginx with gzip, caching, and security headers
 - Backend with health checks and graceful shutdown
-- Traefik labels for automatic SSL (if using Traefik/Dokploy)
+- Built-in Traefik reverse proxy with automatic Let's Encrypt SSL
+- Optional MongoDB/Redis profiles (when configured by installer)
+
+Detailed VPS guides:
+- [Docker (VPS)](./docker-vps.md)
+- [Dockploy (VPS)](./dockploy-vps.md)
 
 ### Vercel + VPS
 
@@ -260,7 +265,7 @@ git pull
 npm run build:all
 
 # Docker
-docker-compose up --build -d
+docker compose up --build -d
 
 # Check for new migrations
 ls migrations/

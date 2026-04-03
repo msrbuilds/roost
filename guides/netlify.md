@@ -67,7 +67,7 @@ Go to **Site settings** > **Environment variables** and add:
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | `your-anon-key` |
 | `VITE_APP_NAME` | `Your Community` |
 | `VITE_APP_URL` | `https://your-site.netlify.app` |
-| `VITE_API_URL` | `https://your-backend-url.com/api` |
+| `VITE_API_URL` | `https://your-backend-url.com` |
 | `VITE_AWS_REGION` | `us-east-1` |
 | `VITE_AWS_S3_BUCKET` | `your-bucket` |
 | `VITE_ENABLE_SIGNUP` | `true` |
@@ -208,5 +208,5 @@ Add to `netlify.toml`:
 
 ## Next Steps
 
-- [Configure Email Notifications](./email-setup.md)
-- [Set up Storage (S3)](./storage-setup.md)
+- [Backend on Docker VPS](./docker-vps.md)
+- [MongoDB Setup](./mongodb-prisma.md)

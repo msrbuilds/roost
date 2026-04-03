@@ -114,7 +114,7 @@ VITE_DATABASE_URL=mongodb://localhost:27017/roost
 # App
 VITE_APP_NAME="Your Community Name"
 VITE_APP_URL=http://localhost:5173
-VITE_API_URL=http://localhost:3000/api
+VITE_API_URL=http://localhost:3000
 
 # Storage (optional)
 VITE_AWS_REGION=us-east-1
@@ -333,6 +333,6 @@ npx prisma generate
 
 ## Next Steps
 
-- [Deploy with Docker](./docker-dokploy.md)
+- [Deploy with Docker (VPS)](./docker-vps.md)
 - [Deploy to Vercel](./vercel.md)
-- [Configure Email](./email-setup.md)
+- [Deploy with Netlify](./netlify.md)

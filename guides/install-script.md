@@ -1,202 +1,163 @@
 # Install Script Usage Guide
 
-The interactive `install.sh` script configures your entire Roost setup in one go.
+The interactive `install.sh` script now supports full VPS setup flow plus deployment-specific config generation.
 
 ---
 
-## Running the Installer
+## Run the Installer
 
 ```bash
 bash install.sh
 ```
 
-The script walks through 7 steps:
+The script runs 7 steps.
 
 ---
 
-## Step 1: Dependency Check
+## Step 1: System Prep + Dependency Check
 
-The installer verifies:
-- Node.js 18+ is installed
-- npm is available
-- git is available
+You can choose:
 
-If anything is missing, it tells you what to install.
+- **Auto-install mode (Ubuntu/Debian VPS)**:
+  - Node.js 20+
+  - Git
+  - Docker + Docker Compose plugin
+  - Core system packages
+- **Manual mode**: script only validates dependencies.
 
 ---
 
-## Step 2: Basic Configuration
+## Step 2: Basic App Configuration
 
+Prompts include:
+
+```text
+? Community name [Roost]
+? Community tagline [Learn, Build, Grow Together]
+? Your domain (or localhost for dev) [localhost]
 ```
-? Community name [Roost]: My Awesome Community
-? Community tagline [Learn, Build, Grow Together]: Where builders connect
-? Your domain (or localhost for dev) [localhost]: mycommunity.com
-```
 
-- **Community name** — displayed in the header, emails, and meta tags
-- **Tagline** — shown on the homepage and auth pages
-- **Domain** — `localhost` for development, your actual domain for production
-
-If you enter `localhost`, URLs default to `http://localhost:5173` and `http://localhost:3000`.
-If you enter a domain, URLs use `https://your-domain.com`.
+`localhost` uses local HTTP URLs.
+Domain values use HTTPS URLs.
+For Docker VPS target, `localhost` is not allowed because SSL is enforced.
 
 ---
 
 ## Step 3: Database Provider
 
-```
-? Select your database provider:
-  1) Supabase Cloud (Recommended - easiest setup)
-  2) Supabase Self-hosted (Community Edition)
-  3) MongoDB (Local/Atlas with Prisma)
-```
-
-### If you choose Supabase Cloud or Self-hosted:
-```
-? Supabase Project URL: https://abcdef.supabase.co
-? Supabase Anon/Public Key: eyJ...
-? Supabase Service Role Key (for server): eyJ...
+```text
+1) Supabase Cloud
+2) Supabase Self-hosted
+3) MongoDB (Prisma)
 ```
 
-### If you choose MongoDB:
-```
-? MongoDB Connection URL [mongodb://localhost:27017/roost]:
-✓ JWT secret generated automatically
-```
+Provider-specific credentials are collected.
 
-The JWT secret is auto-generated using `openssl rand -base64 32`.
+For MongoDB, JWT secret is generated automatically.
 
 ---
 
 ## Step 4: Deployment Target
 
-```
-? Where will you deploy?
-  1) Docker / Dokploy (Self-hosted VPS)
-  2) Vercel (Frontend) + Separate Backend
-  3) Netlify (Frontend) + Separate Backend
-  4) Local Development Only
+```text
+1) Docker (Self-hosted VPS)
+2) Dockploy (Self-hosted VPS)
+3) Vercel (Frontend + separate backend)
+4) Netlify (Frontend + separate backend)
+5) Local Development Only
 ```
 
-- **Docker** — generates docker-compose configuration
-- **Vercel** — creates `vercel.json`
-- **Netlify** — creates `netlify.toml`
-- **Local** — no extra files, just dev setup
+Important:
+
+- Docker and Dockploy targets verify Docker runtime.
+- Docker target requires a real domain + Let’s Encrypt email for built-in SSL.
+- Dockploy target is Supabase self-hosted by design.
 
 ---
 
 ## Step 5: Optional Services
 
-### File Storage
-```
-? File storage provider:
-  1) AWS S3
-  2) S3-Compatible (MinIO, Cloudflare R2, etc.)
-  3) Local filesystem (dev only)
-```
+Prompts include:
 
-If you choose S3, you'll enter bucket name, region, and credentials.
+- Storage (AWS S3 / S3-compatible / local)
+- SMTP
+- Redis
+- Stripe
 
-### Email (SMTP)
-```
-? Configure email (SMTP) for notifications?
-  1) Yes
-  2) No, skip for now
-```
+For Docker target:
 
-If yes, you'll enter SMTP host, port, username, and password.
-
-### Redis
-```
-? Configure Redis for caching & rate limiting?
-  1) Yes
-  2) No, use in-memory (fine for small communities)
-```
-
-### Gumroad Integration
-```
-? Enable Gumroad integration (paid memberships)?
-  1) Yes
-  2) No
-```
-
-If yes, you'll enter your Gumroad access token and seller ID. A webhook token is auto-generated.
+- MongoDB default URL is switched to `mongodb://mongo:27017/roost`.
+- Redis default URL is `redis://redis:6379`.
+- Traefik reverse proxy + Let's Encrypt TLS are configured automatically.
 
 ---
 
 ## Step 6: File Generation
 
-The installer creates:
+Always generated:
 
-| File | Description |
-|------|-------------|
-| `.env.local` | Frontend environment variables |
-| `server/.env` | Backend environment variables |
-| `vercel.json` | (if Vercel selected) |
-| `netlify.toml` | (if Netlify selected) |
+- `.env.local`
+- `server/.env`
+
+Deployment-specific:
+
+- `Docker`: `.env` (compose runtime env)
+- `Dockploy`: `.env.dokploy`
+- `Vercel`: `vercel.json`
+- `Netlify`: `netlify.toml`
 
 ---
 
-## Step 7: Install Dependencies
+## Step 7: Dependency Installation
 
-```
-? Install npm dependencies now?
-  1) Yes
-  2) No, I'll do it later
-```
+If you choose yes, script installs frontend and backend npm dependencies.
 
-If yes, the installer runs:
+For MongoDB mode, it also installs:
+
+- `prisma`
+- `@prisma/client`
+- `jsonwebtoken`
+- `bcryptjs`
+
+---
+
+## Quick Start Output by Target
+
+### Docker
+
 ```bash
-npm install                    # Frontend deps
-cd server && npm install       # Backend deps
-
-# If MongoDB selected:
-npm install prisma @prisma/client
-npx prisma generate
-cd server && npm install jsonwebtoken bcryptjs
+docker compose up -d --build
 ```
 
----
+### Dockploy
 
-## After Installation
+Use `.env.dokploy` values in Dockploy environment UI (or run manually with `docker-compose.dokploy.yml`).
 
-The installer shows a summary and quick start commands:
+### Vercel / Netlify
 
-```
-════════════════════════════════════════
-  Installation Complete!
-════════════════════════════════════════
-
-  Community:    My Awesome Community
-  Database:     supabase-cloud
-  Deploy:       docker
-  URL:          https://mycommunity.com
-
-Quick Start:
-
-  docker-compose up --build
-```
+Frontend deploy commands are shown; backend remains separate.
 
 ---
 
 ## Re-running the Installer
 
-You can run `bash install.sh` again at any time. It will overwrite the `.env.local` and `server/.env` files with new values.
+You can run `bash install.sh` any time. It overwrites generated env/config files.
 
-**Tip**: Back up your existing env files before re-running:
+Back up current values first if needed:
+
 ```bash
 cp .env.local .env.local.backup
 cp server/.env server/.env.backup
+cp .env .env.backup 2>/dev/null || true
+cp .env.dokploy .env.dokploy.backup 2>/dev/null || true
 ```
 
 ---
 
-## What the Installer Does NOT Do
+## What Installer Does Not Do Automatically
 
-- Run database migrations (you need to do this manually — see the database guide for your provider)
-- Set up DNS records for your domain
-- Configure your server's firewall
-- Set up SSL certificates (handled by Traefik/Vercel/Netlify)
-- Create your first admin user
+- DNS record setup
+- Database schema execution (`schema.sql` / `prisma db push`)
+- First admin creation
 
-For these steps, see the deployment guide for your chosen platform.
+Use deployment/database guides for those operational steps.

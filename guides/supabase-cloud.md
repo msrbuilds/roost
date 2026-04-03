@@ -95,7 +95,7 @@ VITE_SUPABASE_PUBLISHABLE_KEY=eyJhbGciOiJIUzI1NiIs...your-anon-key
 # App
 VITE_APP_NAME="Your Community Name"
 VITE_APP_URL=http://localhost:5173
-VITE_API_URL=http://localhost:3000/api
+VITE_API_URL=http://localhost:3000
 ```
 
 ### Backend (server/.env)
@@ -232,6 +232,6 @@ If you want image/file uploads:
 
 ## Next Steps
 
-- [Deploy with Docker](./docker-dokploy.md)
+- [Deploy with Docker (VPS)](./docker-vps.md)
+- [Deploy with Dockploy (VPS)](./dockploy-vps.md)
 - [Deploy to Vercel](./vercel.md)
-- [Configure Email Notifications](./email-setup.md)

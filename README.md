@@ -44,7 +44,7 @@ bash install.sh
 
 The installer will guide you through:
 - Database provider selection (Supabase Cloud, Supabase Self-hosted, MongoDB)
-- Deployment target (Docker, Vercel, Netlify, Local dev)
+- Deployment target (Docker VPS, Dockploy VPS, Vercel, Netlify, Local dev)
 - Storage, email, and optional integrations
 
 ### Option 2: Manual Setup
@@ -78,7 +78,8 @@ cd server && npm run dev  # Backend (port 3000)
 
 | Platform | Type | Guide |
 |----------|------|-------|
-| **Docker / Dokploy** | Self-hosted VPS (full stack) | [Full Guide](guides/docker-dokploy.md) |
+| **Docker (VPS)** | Self-hosted VPS with Docker Compose + Traefik SSL | [Full Guide](guides/docker-vps.md) |
+| **Dockploy (VPS)** | Self-hosted VPS with Dockploy | [Full Guide](guides/dockploy-vps.md) |
 | **Vercel** | Frontend only (backend separate) | [Full Guide](guides/vercel.md) |
 | **Netlify** | Frontend only (backend separate) | [Full Guide](guides/netlify.md) |
 
@@ -132,6 +133,7 @@ roost/
 ├── guides/                 # Step-by-step setup & deployment guides
 ├── install.sh              # Interactive installer
 ├── docker-compose.yml      # Docker orchestration
+├── docker-compose.dokploy.yml # Dockploy orchestration
 ├── Dockerfile              # Frontend container
 ├── vercel.json             # Vercel config
 ├── netlify.toml            # Netlify config
