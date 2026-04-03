@@ -51,7 +51,7 @@ The installer will guide you through:
 
 ```bash
 # Clone and install
-git clone https://github.com/your-org/roost.git
+git clone https://github.com/msrbuilds/roost.git
 cd roost
 npm install
 cd server && npm install && cd ..
