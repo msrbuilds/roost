@@ -42,7 +42,7 @@ docker compose version
 
 ```bash
 # Clone the project
-git clone https://github.com/your-org/roost.git
+git clone https://github.com/msrbuilds/roost.git
 cd roost
 
 # Run the installer
