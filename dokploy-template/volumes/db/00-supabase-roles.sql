@@ -162,6 +162,8 @@ AS $$
     (current_setting('request.jwt.claims', true)::jsonb ->> 'sub')
   )::uuid
 $$;
+ALTER FUNCTION auth.uid() OWNER TO supabase_auth_admin;
+GRANT EXECUTE ON FUNCTION auth.uid() TO anon, authenticated, service_role;
 
 CREATE OR REPLACE FUNCTION auth.role()
 RETURNS text
@@ -173,6 +175,8 @@ AS $$
     (current_setting('request.jwt.claims', true)::jsonb ->> 'role')
   )::text
 $$;
+ALTER FUNCTION auth.role() OWNER TO supabase_auth_admin;
+GRANT EXECUTE ON FUNCTION auth.role() TO anon, authenticated, service_role;
 
 CREATE OR REPLACE FUNCTION auth.email()
 RETURNS text
@@ -184,6 +188,8 @@ AS $$
     (current_setting('request.jwt.claims', true)::jsonb ->> 'email')
   )::text
 $$;
+ALTER FUNCTION auth.email() OWNER TO supabase_auth_admin;
+GRANT EXECUTE ON FUNCTION auth.email() TO anon, authenticated, service_role;
 
 -- =============================================================================
 -- 9. Create auth.users stub table
