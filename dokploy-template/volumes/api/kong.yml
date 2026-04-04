@@ -3,10 +3,10 @@ _format_version: "1.1"
 consumers:
   - username: anon
     keyauth_credentials:
-      - key: $SUPABASE_ANON_KEY
+      - key: "__SUPABASE_ANON_KEY__"
   - username: service_role
     keyauth_credentials:
-      - key: $SUPABASE_SERVICE_KEY
+      - key: "__SUPABASE_SERVICE_KEY__"
 
 acls:
   - consumer: anon

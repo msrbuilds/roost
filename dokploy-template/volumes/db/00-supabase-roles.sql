@@ -17,7 +17,15 @@ DO $$ BEGIN CREATE ROLE supabase_admin LOGIN PASSWORD :'pgpass' SUPERUSER CREATE
 DO $$ BEGIN CREATE ROLE authenticator LOGIN PASSWORD :'pgpass' NOINHERIT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN CREATE ROLE anon NOLOGIN; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN CREATE ROLE authenticated NOLOGIN; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN CREATE ROLE service_role NOLOGIN; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE ROLE service_role NOLOGIN BYPASSRLS; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- Ensure service-role passwords are always aligned with POSTGRES_PASSWORD,
+-- even if roles already existed before this script ran.
+ALTER ROLE supabase_auth_admin WITH LOGIN PASSWORD :'pgpass' INHERIT;
+ALTER ROLE supabase_storage_admin WITH LOGIN PASSWORD :'pgpass' INHERIT CREATEDB;
+ALTER ROLE supabase_admin WITH LOGIN PASSWORD :'pgpass' SUPERUSER CREATEDB CREATEROLE;
+ALTER ROLE authenticator WITH LOGIN PASSWORD :'pgpass' NOINHERIT;
+ALTER ROLE service_role WITH NOLOGIN BYPASSRLS;
 
 -- =============================================================================
 -- 2. Grant role memberships
@@ -28,18 +36,27 @@ GRANT service_role TO authenticator;
 GRANT supabase_auth_admin TO postgres;
 GRANT supabase_storage_admin TO postgres;
 
+-- Ensure service roles can connect and create objects as required by migrations.
+GRANT CONNECT, TEMPORARY, CREATE ON DATABASE postgres TO supabase_auth_admin;
+GRANT CONNECT, TEMPORARY, CREATE ON DATABASE postgres TO supabase_storage_admin;
+GRANT CONNECT, TEMPORARY, CREATE ON DATABASE postgres TO authenticator;
+GRANT CONNECT, TEMPORARY, CREATE ON DATABASE postgres TO supabase_admin;
+
 -- =============================================================================
 -- 3. Create schemas
 -- =============================================================================
 CREATE SCHEMA IF NOT EXISTS auth AUTHORIZATION supabase_auth_admin;
+GRANT CREATE ON SCHEMA auth TO supabase_auth_admin;
 GRANT USAGE ON SCHEMA auth TO authenticator;
 GRANT USAGE ON SCHEMA auth TO service_role;
 GRANT USAGE ON SCHEMA auth TO anon;
 GRANT USAGE ON SCHEMA auth TO authenticated;
 
 CREATE SCHEMA IF NOT EXISTS storage AUTHORIZATION supabase_storage_admin;
+GRANT CREATE ON SCHEMA storage TO supabase_storage_admin;
 
 CREATE SCHEMA IF NOT EXISTS _realtime AUTHORIZATION supabase_admin;
+GRANT USAGE, CREATE ON SCHEMA _realtime TO supabase_admin;
 
 CREATE SCHEMA IF NOT EXISTS extensions;
 GRANT USAGE ON SCHEMA extensions TO anon;
@@ -57,20 +74,40 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp" SCHEMA extensions;
 -- =============================================================================
 GRANT ALL ON SCHEMA public TO supabase_auth_admin;
 GRANT ALL ON SCHEMA public TO supabase_storage_admin;
+GRANT ALL ON SCHEMA public TO supabase_admin;
 GRANT ALL ON SCHEMA public TO authenticator;
 GRANT USAGE ON SCHEMA public TO anon;
 GRANT USAGE ON SCHEMA public TO authenticated;
 GRANT USAGE ON SCHEMA public TO service_role;
+GRANT USAGE ON SCHEMA auth TO service_role;
+GRANT USAGE ON SCHEMA storage TO service_role;
+
+-- Explicit CREATE grants for migration tooling that creates schema_migrations.
+GRANT CREATE ON SCHEMA public TO supabase_auth_admin;
+GRANT CREATE ON SCHEMA public TO supabase_storage_admin;
+GRANT CREATE ON SCHEMA public TO supabase_admin;
 
 GRANT ALL ON ALL TABLES IN SCHEMA public TO supabase_auth_admin;
 GRANT ALL ON ALL TABLES IN SCHEMA public TO supabase_storage_admin;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO supabase_auth_admin;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO supabase_storage_admin;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO service_role;
+GRANT ALL ON ALL ROUTINES IN SCHEMA public TO service_role;
+GRANT ALL ON ALL TABLES IN SCHEMA auth TO service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA auth TO service_role;
+GRANT ALL ON ALL ROUTINES IN SCHEMA auth TO service_role;
+GRANT ALL ON ALL TABLES IN SCHEMA storage TO service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA storage TO service_role;
+GRANT ALL ON ALL ROUTINES IN SCHEMA storage TO service_role;
 
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO supabase_auth_admin;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO supabase_auth_admin;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO supabase_storage_admin;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO supabase_storage_admin;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON ROUTINES TO service_role;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO anon;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO authenticated;
 
@@ -80,6 +117,12 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO authenticate
 -- GoTrue queries auth tables without schema prefix (e.g. "identities" not "auth.identities")
 -- This search_path ensures those queries resolve correctly.
 ALTER DATABASE postgres SET search_path TO public, auth, extensions;
+
+-- Role-level defaults to avoid "no schema selected to create in" during migrations.
+ALTER ROLE supabase_auth_admin SET search_path TO public, auth, extensions;
+ALTER ROLE supabase_storage_admin SET search_path TO storage, public, extensions;
+ALTER ROLE supabase_admin SET search_path TO _realtime, public, auth, extensions;
+ALTER ROLE authenticator SET search_path TO public, auth, extensions;
 
 -- =============================================================================
 -- 7. Create auth types for GoTrue

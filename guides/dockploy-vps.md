@@ -168,6 +168,248 @@ In that case:
 
 - Ensure `ANON_KEY`, `SERVICE_ROLE_KEY`, and `JWT_SECRET` are aligned.
 
+### `password authentication failed for user "supabase_auth_admin"` (or `authenticator` / `supabase_storage_admin`)
+
+This means your DB volume was initialized with a different `POSTGRES_PASSWORD` than the current one in Dockploy env.
+
+Fastest fix for fresh installs:
+
+1. Keep your current Dockploy env values.
+2. Stop the app stack.
+3. Delete the app `db-data` volume.
+4. Redeploy (roles are recreated with current password).
+
+If you must keep existing DB data, repair Supabase role passwords + grants + search paths inside Postgres.
+
+SQL:
+
+```sql
+ALTER ROLE supabase_auth_admin WITH PASSWORD '<POSTGRES_PASSWORD>';
+ALTER ROLE authenticator WITH PASSWORD '<POSTGRES_PASSWORD>';
+ALTER ROLE supabase_storage_admin WITH PASSWORD '<POSTGRES_PASSWORD>';
+ALTER ROLE supabase_admin WITH PASSWORD '<POSTGRES_PASSWORD>';
+
+GRANT CONNECT, TEMPORARY, CREATE ON DATABASE postgres TO supabase_auth_admin;
+GRANT CONNECT, TEMPORARY, CREATE ON DATABASE postgres TO authenticator;
+GRANT CONNECT, TEMPORARY, CREATE ON DATABASE postgres TO supabase_storage_admin;
+GRANT CONNECT, TEMPORARY, CREATE ON DATABASE postgres TO supabase_admin;
+
+GRANT ALL ON SCHEMA public TO supabase_auth_admin;
+GRANT ALL ON SCHEMA public TO authenticator;
+GRANT ALL ON SCHEMA public TO supabase_storage_admin;
+GRANT ALL ON SCHEMA public TO supabase_admin;
+
+ALTER ROLE supabase_auth_admin SET search_path TO public, auth, extensions;
+ALTER ROLE authenticator SET search_path TO public, auth, extensions;
+ALTER ROLE supabase_storage_admin SET search_path TO storage, public, extensions;
+ALTER ROLE supabase_admin SET search_path TO _realtime, public, auth, extensions;
+```
+
+If roles do not exist at all (`role "supabase_auth_admin" does not exist`), run bootstrap SQL once inside DB container:
+
+```bash
+APP_PREFIX="your-app-prefix" # example: roost-roost-hbo1wt
+DB_CTR="${APP_PREFIX}-db-1"
+
+docker exec -u postgres "$DB_CTR" psql -d postgres -f /docker-entrypoint-initdb.d/00-supabase-roles.sql \
+  || docker exec -u postgres "$DB_CTR" psql -d postgres -f /docker-entrypoint-initdb.d/migrations/00-supabase-roles.sql
+
+docker exec -u postgres "$DB_CTR" psql -d postgres -f /docker-entrypoint-initdb.d/99-roost-schema.sql \
+  || docker exec -u postgres "$DB_CTR" psql -d postgres -f /docker-entrypoint-initdb.d/migrations/99-roost-schema.sql
+```
+
+Container command example (Linux/macOS shell):
+
+```bash
+APP_PREFIX="your-app-prefix" # example: roost-roost-hbo1wt
+DB_CTR="${APP_PREFIX}-db-1"
+PASS="$(docker inspect "$DB_CTR" --format '{{range .Config.Env}}{{println .}}{{end}}' | sed -n 's/^POSTGRES_PASSWORD=//p')"
+
+docker exec -e PGPASSWORD="$PASS" "$DB_CTR" psql -U postgres -d postgres -v pass="$PASS" <<'SQL'
+ALTER ROLE supabase_auth_admin WITH PASSWORD :'pass';
+ALTER ROLE authenticator WITH PASSWORD :'pass';
+ALTER ROLE supabase_storage_admin WITH PASSWORD :'pass';
+ALTER ROLE supabase_admin WITH PASSWORD :'pass';
+GRANT CONNECT, TEMPORARY, CREATE ON DATABASE postgres TO supabase_auth_admin;
+GRANT CONNECT, TEMPORARY, CREATE ON DATABASE postgres TO authenticator;
+GRANT CONNECT, TEMPORARY, CREATE ON DATABASE postgres TO supabase_storage_admin;
+GRANT CONNECT, TEMPORARY, CREATE ON DATABASE postgres TO supabase_admin;
+GRANT ALL ON SCHEMA public TO supabase_auth_admin;
+GRANT ALL ON SCHEMA public TO authenticator;
+GRANT ALL ON SCHEMA public TO supabase_storage_admin;
+GRANT ALL ON SCHEMA public TO supabase_admin;
+ALTER ROLE supabase_auth_admin SET search_path TO public, auth, extensions;
+ALTER ROLE authenticator SET search_path TO public, auth, extensions;
+ALTER ROLE supabase_storage_admin SET search_path TO storage, public, extensions;
+ALTER ROLE supabase_admin SET search_path TO _realtime, public, auth, extensions;
+SQL
+```
+
+PowerShell (`pwsh`) variant:
+
+```powershell
+$appPrefix = "your-app-prefix" # example: roost-roost-hbo1wt
+$dbCtr = "$appPrefix-db-1"
+$pass = docker inspect $dbCtr --format '{{range .Config.Env}}{{println .}}{{end}}' |
+  Select-String '^POSTGRES_PASSWORD=' |
+  ForEach-Object { $_.ToString().Split('=')[1] }
+
+$sql = @"
+ALTER ROLE supabase_auth_admin WITH PASSWORD '$pass';
+ALTER ROLE authenticator WITH PASSWORD '$pass';
+ALTER ROLE supabase_storage_admin WITH PASSWORD '$pass';
+ALTER ROLE supabase_admin WITH PASSWORD '$pass';
+GRANT CONNECT, TEMPORARY, CREATE ON DATABASE postgres TO supabase_auth_admin;
+GRANT CONNECT, TEMPORARY, CREATE ON DATABASE postgres TO authenticator;
+GRANT CONNECT, TEMPORARY, CREATE ON DATABASE postgres TO supabase_storage_admin;
+GRANT CONNECT, TEMPORARY, CREATE ON DATABASE postgres TO supabase_admin;
+GRANT ALL ON SCHEMA public TO supabase_auth_admin;
+GRANT ALL ON SCHEMA public TO authenticator;
+GRANT ALL ON SCHEMA public TO supabase_storage_admin;
+GRANT ALL ON SCHEMA public TO supabase_admin;
+ALTER ROLE supabase_auth_admin SET search_path TO public, auth, extensions;
+ALTER ROLE authenticator SET search_path TO public, auth, extensions;
+ALTER ROLE supabase_storage_admin SET search_path TO storage, public, extensions;
+ALTER ROLE supabase_admin SET search_path TO _realtime, public, auth, extensions;
+"@
+
+$sql | docker exec -i -e PGPASSWORD=$pass $dbCtr psql -U postgres -d postgres
+```
+
+### `permission denied for schema public`, `permission denied for database postgres`, or Realtime `no schema has been selected to create in`
+
+These are the same root cause: service roles exist but are missing grants/search-path defaults.  
+Run the repair block above, then restart affected services.
+
+### Backend `/api/health` = 503 and Kong `/rest/v1/...` = 403
+
+If backend health is 503 and direct request through Kong returns 403, either:
+
+1. Kong key mapping is wrong, or
+2. `service_role` exists but lacks permissions in Postgres.
+
+Quick checks:
+
+```bash
+APP_PREFIX="your-app-prefix" # example: roost-roost-hbo1wt
+BACKEND="${APP_PREFIX}-backend-1"
+KONG="${APP_PREFIX}-kong-1"
+
+# Ensure Kong template placeholders were replaced
+docker exec "$KONG" sh -lc "grep -n '__SUPABASE_.*__' /home/kong/kong.yml || true"
+
+# Compare backend key vs key loaded in kong.yml (hash only)
+BKEY="$(docker inspect "$BACKEND" --format '{{range .Config.Env}}{{println .}}{{end}}' | sed -n 's/^SUPABASE_SECRET_KEY=//p')"
+KONG_FILE_KEY="$(docker exec "$KONG" sh -lc "cat /home/kong/kong.yml" \
+  | awk '/username: service_role/{f=1} f&&/key:/{sub(/^ +key: /,""); print; exit}' \
+  | tr -d '\r\n')"
+printf '%s' "$BKEY" | tr -d '\r\n' | sha256sum
+printf '%s' "$KONG_FILE_KEY" | sha256sum
+```
+
+If hashes differ, redeploy so Kong picks the current env values.
+
+If hashes match but 403 persists, fix `service_role` grants:
+
+```bash
+APP_PREFIX="your-app-prefix" # example: roost-roost-hbo1wt
+DB_CTR="${APP_PREFIX}-db-1"
+PASS="$(docker inspect "$DB_CTR" --format '{{range .Config.Env}}{{println .}}{{end}}' | sed -n 's/^POSTGRES_PASSWORD=//p')"
+
+docker exec -i -e PGPASSWORD="$PASS" "$DB_CTR" psql -U postgres -d postgres <<'SQL'
+ALTER ROLE service_role WITH NOLOGIN BYPASSRLS;
+GRANT USAGE ON SCHEMA public, auth, storage TO service_role;
+GRANT ALL ON ALL TABLES IN SCHEMA public, auth, storage TO service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public, auth, storage TO service_role;
+GRANT ALL ON ALL ROUTINES IN SCHEMA public, auth, storage TO service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON ROUTINES TO service_role;
+SQL
+```
+
+### `ERROR: type "auth.factor_type" does not exist` (GoTrue/Auth restart loop)
+
+This happens when GoTrue MFA migrations were partially applied in an earlier failed boot.
+
+Run this once against the DB container:
+
+```bash
+APP_PREFIX="your-app-prefix" # example: roost-roost-hbo1wt
+DB_CTR="${APP_PREFIX}-db-1"
+PASS="$(docker inspect "$DB_CTR" --format '{{range .Config.Env}}{{println .}}{{end}}' | sed -n 's/^POSTGRES_PASSWORD=//p')"
+
+docker exec -i -e PGPASSWORD="$PASS" "$DB_CTR" psql -U postgres -d postgres <<'SQL'
+CREATE SCHEMA IF NOT EXISTS auth AUTHORIZATION supabase_auth_admin;
+
+DO $$ BEGIN
+  CREATE TYPE auth.factor_type AS ENUM ('totp', 'webauthn');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE auth.factor_status AS ENUM ('unverified', 'verified');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+ALTER TYPE auth.factor_type OWNER TO supabase_auth_admin;
+ALTER TYPE auth.factor_status OWNER TO supabase_auth_admin;
+SQL
+```
+
+Then restart Auth and API services:
+
+```bash
+docker restart ${APP_PREFIX}-auth-1 ${APP_PREFIX}-kong-1 ${APP_PREFIX}-backend-1
+```
+
+### `Supabase error: relation "public.profiles" does not exist` on `/api/health`
+
+This means Roost app schema (`schema.sql`) was not applied to the current DB volume
+(common after partial first boots or volume reuse).
+
+Apply schema manually:
+
+```bash
+APP_PREFIX="your-app-prefix" # example: roost-roost-hbo1wt
+DB_CTR="${APP_PREFIX}-db-1"
+PASS="$(docker inspect "$DB_CTR" --format '{{range .Config.Env}}{{println .}}{{end}}' | sed -n 's/^POSTGRES_PASSWORD=//p')"
+
+# Prefer mounted init path; fallback to compose bind path if needed.
+docker exec -i -e PGPASSWORD="$PASS" "$DB_CTR" psql -U postgres -d postgres -f /docker-entrypoint-initdb.d/99-roost-schema.sql \
+  || docker exec -i -e PGPASSWORD="$PASS" "$DB_CTR" psql -U postgres -d postgres -f /docker-entrypoint-initdb.d/migrations/99-roost-schema.sql
+
+docker restart ${APP_PREFIX}-backend-1 ${APP_PREFIX}-kong-1 ${APP_PREFIX}-nginx-1
+```
+
+Verify:
+
+```bash
+docker exec -i -e PGPASSWORD="$PASS" "$DB_CTR" psql -U postgres -d postgres -c "select to_regclass('public.profiles');"
+curl -sS https://your-domain.com/api/health
+```
+
+If manual schema apply prints many `already exists` errors, that is usually expected on re-apply.
+What matters is core objects exist and backend can answer health.
+
+If schema apply reports `publication "supabase_realtime" does not exist`, run:
+
+```bash
+docker exec -i -e PGPASSWORD="$PASS" "$DB_CTR" psql -U postgres -d postgres <<'SQL'
+CREATE PUBLICATION IF NOT EXISTS supabase_realtime;
+DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE live_sessions; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE live_session_messages; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+SQL
+```
+
+Then restart app edge services and verify backend from inside nginx:
+
+```bash
+docker restart ${APP_PREFIX}-backend-1 ${APP_PREFIX}-kong-1 ${APP_PREFIX}-nginx-1
+docker exec ${APP_PREFIX}-nginx-1 wget -S -O- http://backend:3001/api/health
+curl -i https://your-domain.com/api/health
+```
+
 ### Domain not reachable
 
 - Verify DNS A record.

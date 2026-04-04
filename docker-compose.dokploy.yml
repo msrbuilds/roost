@@ -6,8 +6,8 @@ services:
     image: supabase/postgres:15.8.1.060
     restart: unless-stopped
     volumes:
-      - ./dokploy-template/volumes/db/00-supabase-roles.sql:/docker-entrypoint-initdb.d/migrations/00-supabase-roles.sql:ro,Z
-      - ./schema.sql:/docker-entrypoint-initdb.d/migrations/99-roost-schema.sql:ro,Z
+      - ./dokploy-template/volumes/db/00-supabase-roles.sql:/docker-entrypoint-initdb.d/00-supabase-roles.sql:ro,Z
+      - ./schema.sql:/docker-entrypoint-initdb.d/99-roost-schema.sql:ro,Z
       - db-data:/var/lib/postgresql/data:Z
     environment:
       POSTGRES_USER: postgres
@@ -215,7 +215,7 @@ services:
       KONG_NGINX_PROXY_PROXY_BUFFERS: 64 160k
       SUPABASE_ANON_KEY: ${ANON_KEY:?ANON_KEY is required}
       SUPABASE_SERVICE_KEY: ${SERVICE_ROLE_KEY:?SERVICE_ROLE_KEY is required}
-    entrypoint: bash -c 'cat /home/kong/temp.yml | sed "s|\$$SUPABASE_ANON_KEY|$${SUPABASE_ANON_KEY}|g; s|\$$SUPABASE_SERVICE_KEY|$${SUPABASE_SERVICE_KEY}|g" > /home/kong/kong.yml && /docker-entrypoint.sh kong docker-start'
+    entrypoint: bash -c 'cat /home/kong/temp.yml | sed "s|__SUPABASE_ANON_KEY__|$${SUPABASE_ANON_KEY}|g; s|__SUPABASE_SERVICE_KEY__|$${SUPABASE_SERVICE_KEY}|g" > /home/kong/kong.yml && /docker-entrypoint.sh kong docker-start'
     expose:
       - 8000
 
