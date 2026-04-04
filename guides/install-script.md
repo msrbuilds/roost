@@ -54,6 +54,7 @@ For Docker VPS target, `localhost` is not allowed because SSL is enforced.
 Provider-specific credentials are collected.
 
 For MongoDB, JWT secret is generated automatically.
+For Supabase Self-hosted, installer can auto-generate JWT/anon/service keys (recommended), with manual key entry optional.
 
 ---
 
@@ -72,6 +73,7 @@ Important:
 - Docker and Dockploy targets verify Docker runtime.
 - Docker target requires a real domain + Let’s Encrypt email for built-in SSL.
 - Dockploy target is Supabase self-hosted by design.
+- Dockploy target auto-generates required Supabase secrets/keys into `.env.dokploy`.
 
 ---
 

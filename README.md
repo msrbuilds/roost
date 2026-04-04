@@ -47,6 +47,7 @@ The installer will guide you through:
 - Deployment target (Docker VPS, Dockploy VPS, Vercel, Netlify, Local dev)
 - Storage, email, and optional integrations
 - Docker VPS path includes Traefik + Let's Encrypt SSL and optional self-hosted MinIO profile
+- Supabase self-hosted path can auto-generate JWT/anon/service keys and Dockploy-ready env values
 
 ### Option 2: Manual Setup
 

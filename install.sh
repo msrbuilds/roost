@@ -434,6 +434,20 @@ generate_compose_env() {
   local backup_token compose_profiles=""
   backup_token=$(generate_secret | tr -d '\n')
 
+  if [ "$DB_PROVIDER" = "supabase-selfhosted" ]; then
+    JWT_SECRET="${JWT_SECRET:-$(generate_secret | tr -d '\n')}"
+    SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY:-$(generate_hs256_jwt "anon" "$JWT_SECRET")}"
+    SUPABASE_SERVICE_KEY="${SUPABASE_SERVICE_KEY:-$(generate_hs256_jwt "service_role" "$JWT_SECRET")}"
+
+    if [ -z "${SUPABASE_URL:-}" ]; then
+      if [ "$APP_DOMAIN" = "localhost" ]; then
+        SUPABASE_URL="http://localhost:8000"
+      else
+        SUPABASE_URL="https://${APP_DOMAIN}"
+      fi
+    fi
+  fi
+
   if [ "$DB_PROVIDER" = "mongodb" ]; then
     compose_profiles="mongodb"
   fi
@@ -664,11 +678,27 @@ case $DB_PROVIDER in
     ;;
   supabase-selfhosted)
     echo ""
-    echo -e "${YELLOW}  Enter your self-hosted Supabase instance details${NC}"
+    echo -e "${YELLOW}  Configure your self-hosted Supabase instance${NC}"
     echo ""
-    ask "Supabase URL" "http://localhost:8000" SUPABASE_URL
-    ask_secret "Supabase Anon/Public Key" SUPABASE_ANON_KEY
-    ask_secret "Supabase Service Role Key" SUPABASE_SERVICE_KEY
+    if [ "$APP_DOMAIN" = "localhost" ]; then
+      ask "Supabase URL" "http://localhost:8000" SUPABASE_URL
+    else
+      ask "Supabase URL" "https://${APP_DOMAIN}" SUPABASE_URL
+    fi
+
+    ask_choice "How should Supabase keys be configured?" \
+      "Auto-generate JWT/anon/service keys (recommended)" \
+      "I already have existing keys"
+
+    if [ "$CHOICE_RESULT" = "0" ]; then
+      JWT_SECRET="${JWT_SECRET:-$(generate_secret | tr -d '\n')}"
+      SUPABASE_ANON_KEY="$(generate_hs256_jwt "anon" "$JWT_SECRET")"
+      SUPABASE_SERVICE_KEY="$(generate_hs256_jwt "service_role" "$JWT_SECRET")"
+      print_success "Generated self-hosted Supabase JWT, anon key, and service role key."
+    else
+      ask_secret "Supabase Anon/Public Key" SUPABASE_ANON_KEY
+      ask_secret "Supabase Service Role Key" SUPABASE_SERVICE_KEY
+    fi
     ;;
   mongodb)
     echo ""

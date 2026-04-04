@@ -65,7 +65,8 @@ Installer generates:
 ### Supabase Self-hosted
 
 - Choose `Supabase Self-hosted` in installer.
-- Provide your self-hosted Supabase URL and keys.
+- Provide your self-hosted Supabase URL.
+- Choose `Auto-generate JWT/anon/service keys` (recommended) or enter existing keys manually.
 - Use [Supabase Self-Hosted Guide](./supabase-selfhosted.md) for Supabase stack setup.
 
 ### MongoDB

@@ -6,7 +6,25 @@ This assumes Dockploy is already installed and running on your VPS.
 
 ---
 
-## Required Env Vars (Add First)
+## Recommended: Auto-generate Env (Installer)
+
+Run installer and choose:
+
+1. `Supabase Self-hosted`
+2. `Auto-generate JWT/anon/service keys`
+3. `Dockploy (Self-hosted VPS)`
+
+```bash
+bash install.sh
+```
+
+Installer generates `.env.dokploy` with all required Supabase secrets and keys.
+In Dockploy, paste values from `.env.dokploy` into app environment settings.
+This keeps user input focused on domain/community/options while cryptographic keys are generated safely.
+
+---
+
+## Manual Required Env Vars (If Not Using Installer)
 
 Add these in Dockploy app environment settings before first deploy:
 
@@ -26,7 +44,7 @@ Important:
 
 ---
 
-## Generate Secrets and Keys
+## Manual Secret Generation (If Not Using Installer)
 
 Run this on any machine with `openssl` + `node`:
 
@@ -328,6 +346,46 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON ROUTINES TO service_role;
 SQL
 ```
 
+### Frontend shows `503` and console says `name resolution failed`
+
+Typical symptoms:
+
+- Browser console: `Failed to load resource ... 503`
+- Supabase query errors with message like `name resolution failed`
+- Requests to `/rest/v1/...` fail from frontend
+
+Run this triage block:
+
+```bash
+APP_PREFIX="your-app-prefix" # example: roost-roost-hbo1wt
+
+docker ps --format 'table {{.Names}}\t{{.Status}}' | grep "$APP_PREFIX"
+docker logs --tail=120 ${APP_PREFIX}-rest-1
+docker logs --tail=120 ${APP_PREFIX}-kong-1
+docker logs --tail=120 ${APP_PREFIX}-db-1
+docker logs --tail=120 ${APP_PREFIX}-backend-1
+```
+
+Most common causes:
+
+1. `rest` is unhealthy/restarting because DB roles/schema were not initialized fully.
+   - Apply the DB repair steps in this guide (`password auth failed`, `factor_type missing`, `profiles missing`).
+2. Kong key mapping mismatch (`/rest/v1` returns 403).
+   - Apply the Kong/service-role fixes in this guide.
+3. Frontend built with stale env/domain.
+   - Rebuild/redeploy frontend after confirming `ROOST_DOMAIN` and Supabase keys are correct.
+
+Quick verify after fixes:
+
+```bash
+docker exec ${APP_PREFIX}-backend-1 sh -lc 'wget -S -qO- \
+  --header="apikey: $SUPABASE_SECRET_KEY" \
+  --header="Authorization: Bearer $SUPABASE_SECRET_KEY" \
+  "http://kong:8000/rest/v1/profiles?select=count&limit=1"; echo'
+
+curl -i https://your-domain.com/api/health
+```
+
 ### `ERROR: type "auth.factor_type" does not exist` (GoTrue/Auth restart loop)
 
 This happens when GoTrue MFA migrations were partially applied in an earlier failed boot.
@@ -396,7 +454,13 @@ If schema apply reports `publication "supabase_realtime" does not exist`, run:
 
 ```bash
 docker exec -i -e PGPASSWORD="$PASS" "$DB_CTR" psql -U postgres -d postgres <<'SQL'
-CREATE PUBLICATION IF NOT EXISTS supabase_realtime;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
+    CREATE PUBLICATION supabase_realtime;
+  END IF;
+END
+$$;
 DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE live_sessions; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE live_session_messages; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 SQL

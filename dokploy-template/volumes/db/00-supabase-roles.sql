@@ -11,10 +11,14 @@
 -- =============================================================================
 -- 1. Create service roles
 -- =============================================================================
-DO $$ BEGIN CREATE ROLE supabase_auth_admin LOGIN PASSWORD :'pgpass' INHERIT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN CREATE ROLE supabase_storage_admin LOGIN PASSWORD :'pgpass' INHERIT CREATEDB; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN CREATE ROLE supabase_admin LOGIN PASSWORD :'pgpass' SUPERUSER CREATEDB CREATEROLE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN CREATE ROLE authenticator LOGIN PASSWORD :'pgpass' NOINHERIT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+SELECT format('CREATE ROLE supabase_auth_admin LOGIN PASSWORD %L INHERIT;', :'pgpass')
+WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'supabase_auth_admin') \gexec
+SELECT format('CREATE ROLE supabase_storage_admin LOGIN PASSWORD %L INHERIT CREATEDB;', :'pgpass')
+WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'supabase_storage_admin') \gexec
+SELECT format('CREATE ROLE supabase_admin LOGIN PASSWORD %L SUPERUSER CREATEDB CREATEROLE;', :'pgpass')
+WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'supabase_admin') \gexec
+SELECT format('CREATE ROLE authenticator LOGIN PASSWORD %L NOINHERIT;', :'pgpass')
+WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticator') \gexec
 DO $$ BEGIN CREATE ROLE anon NOLOGIN; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN CREATE ROLE authenticated NOLOGIN; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN CREATE ROLE service_role NOLOGIN BYPASSRLS; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
@@ -232,7 +236,13 @@ ALTER TABLE auth.users OWNER TO supabase_auth_admin;
 -- =============================================================================
 -- Required by the Realtime service for CDC (Change Data Capture).
 -- Tables are added to this publication as needed.
-CREATE PUBLICATION IF NOT EXISTS supabase_realtime;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
+    CREATE PUBLICATION supabase_realtime;
+  END IF;
+END
+$$;
 
 -- =============================================================================
 -- Done! Database is ready for schema.sql and Supabase services.
