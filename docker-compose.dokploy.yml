@@ -11,9 +11,9 @@ services:
       - db-data:/var/lib/postgresql/data:Z
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
       POSTGRES_DB: postgres
-      JWT_SECRET: ${JWT_SECRET}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       JWT_EXP: 3600
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "postgres", "-h", "localhost"]
@@ -35,17 +35,17 @@ services:
     environment:
       GOTRUE_API_HOST: 0.0.0.0
       GOTRUE_API_PORT: 9999
-      API_EXTERNAL_URL: https://${ROOST_DOMAIN}
+      API_EXTERNAL_URL: https://${ROOST_DOMAIN:?ROOST_DOMAIN is required}
       GOTRUE_DB_DRIVER: postgres
-      GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:${POSTGRES_PASSWORD}@db:5432/postgres
-      GOTRUE_SITE_URL: https://${ROOST_DOMAIN}
-      GOTRUE_URI_ALLOW_LIST: https://${ROOST_DOMAIN}/**
+      GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@db:5432/postgres
+      GOTRUE_SITE_URL: https://${ROOST_DOMAIN:?ROOST_DOMAIN is required}
+      GOTRUE_URI_ALLOW_LIST: https://${ROOST_DOMAIN:?ROOST_DOMAIN is required}/**
       GOTRUE_DISABLE_SIGNUP: "false"
       GOTRUE_JWT_ADMIN_ROLES: service_role
       GOTRUE_JWT_AUD: authenticated
       GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
       GOTRUE_JWT_EXP: 3600
-      GOTRUE_JWT_SECRET: ${JWT_SECRET}
+      GOTRUE_JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       GOTRUE_EXTERNAL_EMAIL_ENABLED: "true"
       GOTRUE_MAILER_AUTOCONFIRM: ${GOTRUE_AUTOCONFIRM:-false}
       GOTRUE_MAILER_SECURE_EMAIL_CHANGE_ENABLED: "true"
@@ -72,12 +72,12 @@ services:
       db:
         condition: service_healthy
     environment:
-      PGRST_DB_URI: postgres://authenticator:${POSTGRES_PASSWORD}@db:5432/postgres
+      PGRST_DB_URI: postgres://authenticator:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@db:5432/postgres
       PGRST_DB_SCHEMAS: public,graphql_public
       PGRST_DB_ANON_ROLE: anon
-      PGRST_JWT_SECRET: ${JWT_SECRET}
+      PGRST_JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       PGRST_DB_USE_LEGACY_GUCS: "false"
-      PGRST_APP_SETTINGS_JWT_SECRET: ${JWT_SECRET}
+      PGRST_APP_SETTINGS_JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       PGRST_APP_SETTINGS_JWT_EXP: 3600
     command: ["postgrest"]
     expose:
@@ -97,12 +97,12 @@ services:
       DB_HOST: db
       DB_PORT: 5432
       DB_USER: supabase_admin
-      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
       DB_NAME: postgres
       DB_AFTER_CONNECT_QUERY: "SET search_path TO _realtime"
       DB_ENC_KEY: supabaserealtime
-      API_JWT_SECRET: ${JWT_SECRET}
-      SECRET_KEY_BASE: ${SECRET_KEY_BASE}
+      API_JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE:?SECRET_KEY_BASE is required}
       ERL_AFLAGS: "-proto_dist inet_tcp"
       DNS_NODES: "''"
       RLIMIT_NOFILE: 10000
@@ -125,9 +125,9 @@ services:
     restart: "no"
     volumes:
       - ./dokploy-template/volumes/db/fix-realtime-tenant.sql:/fix-realtime-tenant.sql:ro
-    entrypoint: ["sh", "-c", "sleep 15 && PGPASSWORD=${POSTGRES_PASSWORD} psql -h db -U postgres -d postgres -f /fix-realtime-tenant.sql"]
+    entrypoint: ["sh", "-c", "sleep 15 && PGPASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required} psql -h db -U postgres -d postgres -f /fix-realtime-tenant.sql"]
     environment:
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
 
   # ==========================================================================
   # Supabase Storage - S3-compatible file storage API
@@ -141,11 +141,11 @@ services:
       rest:
         condition: service_started
     environment:
-      ANON_KEY: ${ANON_KEY}
-      SERVICE_KEY: ${SERVICE_ROLE_KEY}
+      ANON_KEY: ${ANON_KEY:?ANON_KEY is required}
+      SERVICE_KEY: ${SERVICE_ROLE_KEY:?SERVICE_ROLE_KEY is required}
       POSTGREST_URL: http://rest:3000
-      PGRST_JWT_SECRET: ${JWT_SECRET}
-      DATABASE_URL: postgres://supabase_storage_admin:${POSTGRES_PASSWORD}@db:5432/postgres
+      PGRST_JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      DATABASE_URL: postgres://supabase_storage_admin:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@db:5432/postgres
       FILE_SIZE_LIMIT: 52428800
       STORAGE_BACKEND: file
       FILE_STORAGE_BACKEND_PATH: /var/lib/storage
@@ -189,7 +189,7 @@ services:
       PG_META_DB_PORT: 5432
       PG_META_DB_NAME: postgres
       PG_META_DB_USER: supabase_admin
-      PG_META_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      PG_META_DB_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
     expose:
       - 8080
 
@@ -213,8 +213,8 @@ services:
       KONG_PLUGINS: request-transformer,cors,key-auth,acl,basic-auth
       KONG_NGINX_PROXY_PROXY_BUFFER_SIZE: 160k
       KONG_NGINX_PROXY_PROXY_BUFFERS: 64 160k
-      SUPABASE_ANON_KEY: ${ANON_KEY}
-      SUPABASE_SERVICE_KEY: ${SERVICE_ROLE_KEY}
+      SUPABASE_ANON_KEY: ${ANON_KEY:?ANON_KEY is required}
+      SUPABASE_SERVICE_KEY: ${SERVICE_ROLE_KEY:?SERVICE_ROLE_KEY is required}
     entrypoint: bash -c 'cat /home/kong/temp.yml | sed "s|\$$SUPABASE_ANON_KEY|$${SUPABASE_ANON_KEY}|g; s|\$$SUPABASE_SERVICE_KEY|$${SUPABASE_SERVICE_KEY}|g" > /home/kong/kong.yml && /docker-entrypoint.sh kong docker-start'
     expose:
       - 8000
@@ -228,11 +228,11 @@ services:
       dockerfile: Dockerfile
       args:
         - VITE_APP_NAME=${APP_NAME:-Roost}
-        - VITE_APP_URL=https://${ROOST_DOMAIN}
-        - VITE_API_URL=https://${ROOST_DOMAIN}
+        - VITE_APP_URL=https://${ROOST_DOMAIN:?ROOST_DOMAIN is required}
+        - VITE_API_URL=https://${ROOST_DOMAIN:?ROOST_DOMAIN is required}
         - VITE_DB_PROVIDER=supabase-selfhosted
-        - VITE_SUPABASE_URL=https://${ROOST_DOMAIN}
-        - VITE_SUPABASE_PUBLISHABLE_KEY=${ANON_KEY}
+        - VITE_SUPABASE_URL=https://${ROOST_DOMAIN:?ROOST_DOMAIN is required}
+        - VITE_SUPABASE_PUBLISHABLE_KEY=${ANON_KEY:?ANON_KEY is required}
         - VITE_STRIPE_ENABLED=${STRIPE_ENABLED:-false}
         - VITE_ENABLE_SIGNUP=true
     restart: unless-stopped
@@ -260,9 +260,9 @@ services:
       PORT: 3001
       DB_PROVIDER: supabase-selfhosted
       SUPABASE_URL: http://kong:8000
-      SUPABASE_SECRET_KEY: ${SERVICE_ROLE_KEY}
-      FRONTEND_URL: https://${ROOST_DOMAIN}
-      ALLOWED_ORIGINS: https://${ROOST_DOMAIN}
+      SUPABASE_SECRET_KEY: ${SERVICE_ROLE_KEY:?SERVICE_ROLE_KEY is required}
+      FRONTEND_URL: https://${ROOST_DOMAIN:?ROOST_DOMAIN is required}
+      ALLOWED_ORIGINS: https://${ROOST_DOMAIN:?ROOST_DOMAIN is required}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}
