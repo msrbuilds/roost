@@ -89,6 +89,10 @@ For Docker target:
 - MongoDB default URL is switched to `mongodb://mongo:27017/roost`.
 - Redis default URL is `redis://redis:6379`.
 - Traefik reverse proxy + Let's Encrypt TLS are configured automatically.
+- If you pick `S3-Compatible`, you can choose `Self-host MinIO on this VPS`.
+  - Installer auto-generates MinIO credentials (or lets you set them)
+  - Enables `COMPOSE_PROFILES=minio`
+  - Sets `S3_ENDPOINT=https://your-domain` and routes bucket paths via Traefik
 
 ---
 

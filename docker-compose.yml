@@ -1,11 +1,11 @@
-version: '3.8'
-
 services:
   # Edge proxy + automatic TLS (Let's Encrypt)
   traefik:
     image: traefik:v3.1
     container_name: roost-traefik
     restart: unless-stopped
+    environment:
+      - DOCKER_API_VERSION=1.40
     command:
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
@@ -54,6 +54,52 @@ services:
     networks:
       - roost-network
 
+  # Optional MinIO service (enabled with COMPOSE_PROFILES=minio)
+  minio:
+    image: minio/minio:latest
+    container_name: roost-minio
+    restart: unless-stopped
+    profiles:
+      - minio
+    command: server /data --console-address ":9001"
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+    volumes:
+      - minio-data:/data
+    networks:
+      - roost-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.minio-api.rule=Host(`${ROOST_DOMAIN:-your-domain.com}`) && (PathPrefix(`/${AWS_S3_BUCKET:-roost-uploads}`) || PathPrefix(`/${AWS_BACKUP_BUCKET:-roost-backups}`))"
+      - "traefik.http.routers.minio-api.priority=90"
+      - "traefik.http.routers.minio-api.entrypoints=websecure"
+      - "traefik.http.routers.minio-api.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.minio-api.tls=true"
+      - "traefik.docker.network=roost-network"
+      - "traefik.http.services.minio-api.loadbalancer.server.port=9000"
+
+  # Optional MinIO bucket bootstrap (enabled with COMPOSE_PROFILES=minio)
+  minio-init:
+    image: minio/mc:latest
+    container_name: roost-minio-init
+    restart: "no"
+    profiles:
+      - minio
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      until mc alias set roost http://minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD}; do
+        echo 'Waiting for MinIO...'; sleep 2;
+      done;
+      mc mb --ignore-existing roost/${AWS_S3_BUCKET};
+      if [ -n \"${AWS_BACKUP_BUCKET}\" ]; then mc mb --ignore-existing roost/${AWS_BACKUP_BUCKET}; fi;
+      mc anonymous set download roost/${AWS_S3_BUCKET};
+      "
+    networks:
+      - roost-network
+
   # Frontend - React SPA served by nginx
   frontend:
     build:
@@ -72,6 +118,7 @@ services:
         - VITE_SUPABASE_PUBLISHABLE_KEY=${VITE_SUPABASE_PUBLISHABLE_KEY}
         - VITE_AWS_REGION=${VITE_AWS_REGION}
         - VITE_AWS_S3_BUCKET=${VITE_AWS_S3_BUCKET}
+        - VITE_S3_ENDPOINT=${VITE_S3_ENDPOINT:-}
         - VITE_APP_NAME=${VITE_APP_NAME:-Roost}
         - VITE_APP_URL=${VITE_APP_URL:-https://${ROOST_DOMAIN:-your-domain.com}}
         - VITE_API_URL=${VITE_API_URL:-https://${ROOST_DOMAIN:-your-domain.com}}
@@ -135,6 +182,7 @@ services:
       - AWS_BACKUP_REGION=${AWS_BACKUP_REGION:-${AWS_REGION}}
       - AWS_BACKUP_ACCESS_KEY_ID=${AWS_BACKUP_ACCESS_KEY_ID:-${AWS_ACCESS_KEY_ID}}
       - AWS_BACKUP_SECRET_ACCESS_KEY=${AWS_BACKUP_SECRET_ACCESS_KEY:-${AWS_SECRET_ACCESS_KEY}}
+      - AWS_BACKUP_ENDPOINT=${AWS_BACKUP_ENDPOINT:-${S3_ENDPOINT}}
       - SUPABASE_DB_PASSWORD=${SUPABASE_DB_PASSWORD}
       - SUPABASE_DB_HOST=${SUPABASE_DB_HOST:-db}
       - SUPABASE_DB_PORT=${SUPABASE_DB_PORT:-5432}
@@ -162,6 +210,7 @@ volumes:
   traefik-letsencrypt:
   mongo-data:
   redis-data:
+  minio-data:
 
 networks:
   roost-network:

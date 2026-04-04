@@ -14,7 +14,7 @@ const s3Region = process.env.AWS_REGION || 'us-east-1';
 const s3Bucket = process.env.AWS_S3_BUCKET || '';
 const s3AccessKey = process.env.AWS_ACCESS_KEY_ID || '';
 const s3SecretKey = process.env.AWS_SECRET_ACCESS_KEY || '';
-const s3Endpoint = process.env.S3_ENDPOINT || undefined;
+const s3Endpoint = process.env.S3_ENDPOINT?.trim().replace(/\/+$/, '') || undefined;
 
 const hasS3 = !!(s3Bucket && s3AccessKey && s3SecretKey);
 
@@ -197,8 +197,12 @@ siteSettingsRouter.post('/upload', requireSuperadmin, upload.single('file'), asy
         CacheControl: 'public, max-age=31536000',
       }));
 
-      const endpoint = s3Endpoint || `https://${s3Bucket}.s3.${s3Region}.amazonaws.com`;
-      fileUrl = `${endpoint}/${filename}`;
+      const normalizedFilename = filename.replace(/^\/+/, '');
+      if (s3Endpoint) {
+        fileUrl = `${s3Endpoint}/${s3Bucket}/${normalizedFilename}`;
+      } else {
+        fileUrl = `https://${s3Bucket}.s3.${s3Region}.amazonaws.com/${normalizedFilename}`;
+      }
     } else {
       // Fallback: save to local filesystem
       if (!fs.existsSync(LOCAL_UPLOAD_DIR)) {

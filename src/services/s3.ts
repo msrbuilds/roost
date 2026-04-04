@@ -153,8 +153,13 @@ export async function deleteFile(key: string): Promise<void> {
 // Get public URL for a file (no credentials needed - public bucket read)
 export function getPublicUrl(key: string): string {
     const bucketName = import.meta.env.VITE_AWS_S3_BUCKET;
+    const endpoint = import.meta.env.VITE_S3_ENDPOINT?.trim().replace(/\/+$/, '');
+    const normalizedKey = key.replace(/^\/+/, '');
+    if (endpoint) {
+        return `${endpoint}/${bucketName}/${normalizedKey}`;
+    }
     const region = import.meta.env.VITE_AWS_REGION;
-    return `https://${bucketName}.s3.${region}.amazonaws.com/${key}`;
+    return `https://${bucketName}.s3.${region}.amazonaws.com/${normalizedKey}`;
 }
 
 // Get signed URL for private files - now handled via backend

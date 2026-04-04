@@ -46,6 +46,7 @@ The installer will guide you through:
 - Database provider selection (Supabase Cloud, Supabase Self-hosted, MongoDB)
 - Deployment target (Docker VPS, Dockploy VPS, Vercel, Netlify, Local dev)
 - Storage, email, and optional integrations
+- Docker VPS path includes Traefik + Let's Encrypt SSL and optional self-hosted MinIO profile
 
 ### Option 2: Manual Setup
 

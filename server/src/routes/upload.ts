@@ -12,6 +12,7 @@ const region = process.env.AWS_REGION || 'us-east-1';
 const bucketName = process.env.AWS_S3_BUCKET || '';
 const accessKeyId = process.env.AWS_ACCESS_KEY_ID || '';
 const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY || '';
+const s3Endpoint = process.env.S3_ENDPOINT?.trim().replace(/\/+$/, '') || undefined;
 
 const s3Client = new S3Client({
   region,
@@ -19,6 +20,7 @@ const s3Client = new S3Client({
     accessKeyId,
     secretAccessKey,
   },
+  ...(s3Endpoint ? { endpoint: s3Endpoint, forcePathStyle: true } : {}),
 });
 
 // Allowed MIME types
@@ -99,7 +101,11 @@ function generateFileKey(folder: string, fileName: string): string {
 
 // Get public URL for a file
 function getPublicUrl(key: string): string {
-  return `https://${bucketName}.s3.${region}.amazonaws.com/${key}`;
+  const normalizedKey = key.replace(/^\/+/, '');
+  if (s3Endpoint) {
+    return `${s3Endpoint}/${bucketName}/${normalizedKey}`;
+  }
+  return `https://${bucketName}.s3.${region}.amazonaws.com/${normalizedKey}`;
 }
 
 /**

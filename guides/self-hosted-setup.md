@@ -94,7 +94,7 @@ The Docker setup includes:
 - Frontend served by nginx with gzip, caching, and security headers
 - Backend with health checks and graceful shutdown
 - Built-in Traefik reverse proxy with automatic Let's Encrypt SSL
-- Optional MongoDB/Redis profiles (when configured by installer)
+- Optional MongoDB/Redis/MinIO profiles (when configured by installer)
 
 Detailed VPS guides:
 - [Docker (VPS)](./docker-vps.md)
@@ -180,6 +180,10 @@ stripe listen --forward-to localhost:3000/api/webhooks/stripe
 
 ### MinIO (Self-Hosted S3)
 
+If you deploy with `Docker (VPS)` and choose `S3-Compatible` -> `Self-host MinIO on this VPS`, the installer configures MinIO automatically in Docker Compose.
+
+For manual/local MinIO setup, you can still run:
+
 ```bash
 # Run MinIO
 docker run -d -p 9000:9000 -p 9001:9001 \
@@ -210,6 +214,7 @@ Use R2 with S3-compatible API. Set `S3_ENDPOINT` to your R2 endpoint.
 | `VITE_API_URL` | Yes | http://localhost:3000 | Backend API URL |
 | `VITE_AWS_REGION` | No | us-east-1 | S3 region |
 | `VITE_AWS_S3_BUCKET` | No | — | S3 bucket name |
+| `VITE_S3_ENDPOINT` | No | — | Public S3-compatible endpoint (MinIO/R2) |
 | `VITE_STRIPE_ENABLED` | No | false | Enable Stripe payments |
 | `VITE_ENABLE_SIGNUP` | No | true | Allow new signups |
 | `VITE_ENABLE_SHOWCASE` | No | true | Enable project showcase |
@@ -227,6 +232,7 @@ Use R2 with S3-compatible API. Set `S3_ENDPOINT` to your R2 endpoint.
 | `SUPABASE_SECRET_KEY` | Yes* | — | Supabase service role key |
 | `AWS_ACCESS_KEY_ID` | No | — | S3 access key |
 | `AWS_SECRET_ACCESS_KEY` | No | — | S3 secret key |
+| `S3_ENDPOINT` | No | — | S3-compatible endpoint URL |
 | `SMTP_HOST` | No | — | SMTP server host |
 | `SMTP_PORT` | No | 587 | SMTP port |
 | `SMTP_USER` | No | — | SMTP username |

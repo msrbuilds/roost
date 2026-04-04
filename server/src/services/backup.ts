@@ -13,12 +13,18 @@ const execAsync = promisify(exec);
 
 // S3 Configuration for Backups
 // Uses a SEPARATE private bucket for security (database backups should never be public)
+const backupEndpoint =
+  process.env.AWS_BACKUP_ENDPOINT?.trim().replace(/\/+$/, '') ||
+  process.env.S3_ENDPOINT?.trim().replace(/\/+$/, '') ||
+  undefined;
+
 const s3Client = new S3Client({
   region: process.env.AWS_BACKUP_REGION || process.env.AWS_REGION || 'us-east-1',
   credentials: {
     accessKeyId: process.env.AWS_BACKUP_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID || '',
     secretAccessKey: process.env.AWS_BACKUP_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY || '',
   },
+  ...(backupEndpoint ? { endpoint: backupEndpoint, forcePathStyle: true } : {}),
 });
 
 // IMPORTANT: Use AWS_BACKUP_BUCKET for a private bucket separate from public uploads

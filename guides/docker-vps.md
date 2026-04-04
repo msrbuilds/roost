@@ -13,6 +13,7 @@ This Docker path now includes Traefik + Let's Encrypt SSL by default.
 - Automatic Let's Encrypt SSL certificates
 - Supabase Cloud / Supabase Self-hosted / MongoDB
 - Optional Redis container profile
+- Optional self-hosted MinIO profile for S3-compatible storage
 
 ---
 
@@ -39,6 +40,9 @@ When prompted:
 2. Enter a real domain (not `localhost`).
 3. Enter Let’s Encrypt email (required).
 4. Choose database provider and optional services.
+5. For `S3-Compatible` storage, choose:
+   - `Self-host MinIO on this VPS` (auto profile), or
+   - external provider (R2 / remote MinIO)
 
 Installer generates:
 
@@ -70,6 +74,15 @@ Installer generates:
   - `COMPOSE_PROFILES=mongodb`
 
 MongoDB will run automatically with `docker compose up`.
+
+### MinIO (S3-Compatible, Self-hosted on this VPS)
+
+If selected in installer:
+
+- `.env` includes MinIO root credentials, bucket, and `S3_ENDPOINT=https://your-domain`.
+- `COMPOSE_PROFILES=minio` is enabled.
+- Traefik routes `https://your-domain/<bucket>/...` to MinIO.
+- A `minio-init` job auto-creates the bucket and applies anonymous download policy.
 
 ---
 
@@ -129,6 +142,16 @@ docker compose up -d --build
 - Confirm ports 80/443 are open.
 - Check logs: `docker compose logs -f traefik`
 
+### Traefik log: `client version 1.24 is too old`
+
+This means Traefik cannot query your Docker socket API.
+
+- Pull latest repo changes (includes Traefik `DOCKER_API_VERSION=1.40`):
+  - `git pull`
+  - `docker compose up -d --force-recreate traefik`
+- Verify:
+  - `docker compose logs --tail=80 traefik`
+
 ### Containers fail due missing env values
 
 - Re-run `bash install.sh` and choose Docker target again.
@@ -143,6 +166,13 @@ docker compose up -d --build
 
 - Confirm `.env` has `REDIS_URL=redis://redis:6379`.
 - Confirm `.env` has `COMPOSE_PROFILES=redis` (or `mongodb,redis`).
+
+### MinIO upload URL fails or 403 signature mismatch
+
+- Confirm `.env` has `S3_ENDPOINT=https://your-domain`.
+- Confirm `.env` has `COMPOSE_PROFILES` including `minio`.
+- Confirm bucket in `.env` matches upload URL prefix (`AWS_S3_BUCKET`).
+- Check MinIO init logs: `docker compose logs -f minio-init`.
 
 ### CORS errors
 

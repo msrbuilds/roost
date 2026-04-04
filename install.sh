@@ -22,6 +22,9 @@ VPS_BOOTSTRAP=false
 DOKPLOY_POSTGRES_PASSWORD=""
 DOKPLOY_SECRET_KEY_BASE=""
 LETSENCRYPT_EMAIL=""
+MINIO_ENABLED=false
+MINIO_ROOT_USER=""
+MINIO_ROOT_PASSWORD=""
 
 # --- Helper Functions ---
 print_banner() {
@@ -297,6 +300,14 @@ generate_compose_env() {
     fi
   fi
 
+  if [ "$MINIO_ENABLED" = true ]; then
+    if [ -n "$compose_profiles" ]; then
+      compose_profiles="${compose_profiles},minio"
+    else
+      compose_profiles="minio"
+    fi
+  fi
+
   cat > .env << ENVEOF
 # ============================================================
 # Roost - Docker Compose Environment
@@ -316,6 +327,7 @@ VITE_SUPABASE_URL=${SUPABASE_URL:-}
 VITE_SUPABASE_PUBLISHABLE_KEY=${SUPABASE_ANON_KEY:-}
 VITE_AWS_REGION=${AWS_REGION}
 VITE_AWS_S3_BUCKET=${AWS_S3_BUCKET}
+VITE_S3_ENDPOINT=${VITE_S3_ENDPOINT:-${S3_ENDPOINT:-}}
 VITE_APP_NAME="${COMMUNITY_NAME}"
 VITE_APP_URL=${APP_URL}
 VITE_API_URL=${APP_URL}
@@ -345,6 +357,10 @@ AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
 AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
 S3_ENDPOINT=${S3_ENDPOINT:-}
 
+# MinIO (optional, Docker profile)
+MINIO_ROOT_USER=${MINIO_ROOT_USER:-}
+MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-}
+
 # Redis
 REDIS_URL=${REDIS_URL:-}
 
@@ -359,6 +375,7 @@ AWS_BACKUP_BUCKET=${AWS_BACKUP_BUCKET:-}
 AWS_BACKUP_REGION=${AWS_BACKUP_REGION:-${AWS_REGION}}
 AWS_BACKUP_ACCESS_KEY_ID=${AWS_BACKUP_ACCESS_KEY_ID:-${AWS_ACCESS_KEY_ID:-}}
 AWS_BACKUP_SECRET_ACCESS_KEY=${AWS_BACKUP_SECRET_ACCESS_KEY:-${AWS_SECRET_ACCESS_KEY:-}}
+AWS_BACKUP_ENDPOINT=${AWS_BACKUP_ENDPOINT:-${S3_ENDPOINT:-}}
 SUPABASE_DB_PASSWORD=${SUPABASE_DB_PASSWORD:-}
 SUPABASE_DB_HOST=${SUPABASE_DB_HOST:-}
 SUPABASE_DB_PORT=${SUPABASE_DB_PORT:-5432}
@@ -603,20 +620,94 @@ ask_choice "File storage provider:" \
 
 STORAGE_IDX=$CHOICE_RESULT
 case $STORAGE_IDX in
-  0|1)
+  0)
+    MINIO_ENABLED=false
     ask "S3 Region" "us-east-1" AWS_REGION
     ask "S3 Bucket Name" "roost-uploads" AWS_S3_BUCKET
     ask_secret "AWS Access Key ID" AWS_ACCESS_KEY_ID
     ask_secret "AWS Secret Access Key" AWS_SECRET_ACCESS_KEY
-    if [ "$STORAGE_IDX" = "1" ]; then
-      ask "S3 Endpoint URL" "" S3_ENDPOINT
+    S3_ENDPOINT=""
+    VITE_S3_ENDPOINT=""
+    ;;
+  1)
+    if [ "$DEPLOY_TARGET" = "docker" ]; then
+      ask_choice "S3-compatible provider for Docker VPS:" \
+        "Self-host MinIO on this VPS (auto-configure)" \
+        "External S3-compatible provider (Cloudflare R2, remote MinIO, etc.)"
+
+      if [ "$CHOICE_RESULT" = "0" ]; then
+        MINIO_ENABLED=true
+        AWS_REGION="us-east-1"
+        ask "MinIO Bucket Name" "roost-uploads" AWS_S3_BUCKET
+        ask "MinIO Access Key ID" "roostminio" MINIO_ROOT_USER
+
+        while true; do
+          ask_secret "MinIO Secret Access Key (leave blank to auto-generate)" MINIO_ROOT_PASSWORD
+          if [ -z "$MINIO_ROOT_PASSWORD" ]; then
+            MINIO_ROOT_PASSWORD="$(generate_secret | tr -dc 'A-Za-z0-9' | head -c 32)"
+            if [ -z "$MINIO_ROOT_PASSWORD" ]; then
+              MINIO_ROOT_PASSWORD="roostminio$(date +%s)"
+            fi
+            print_success "Generated MinIO secret access key automatically."
+          fi
+
+          if [ ${#MINIO_ROOT_PASSWORD} -lt 8 ]; then
+            print_warning "MinIO secret key must be at least 8 characters."
+            continue
+          fi
+          break
+        done
+
+        AWS_ACCESS_KEY_ID="$MINIO_ROOT_USER"
+        AWS_SECRET_ACCESS_KEY="$MINIO_ROOT_PASSWORD"
+        S3_ENDPOINT="https://${APP_DOMAIN}"
+        VITE_S3_ENDPOINT="$S3_ENDPOINT"
+        print_success "MinIO enabled with endpoint ${S3_ENDPOINT} and bucket ${AWS_S3_BUCKET}"
+      else
+        MINIO_ENABLED=false
+        MINIO_ROOT_USER=""
+        MINIO_ROOT_PASSWORD=""
+        ask "S3-Compatible Region" "us-east-1" AWS_REGION
+        ask "S3-Compatible Bucket Name" "roost-uploads" AWS_S3_BUCKET
+        ask_secret "S3-Compatible Access Key ID" AWS_ACCESS_KEY_ID
+        ask_secret "S3-Compatible Secret Access Key" AWS_SECRET_ACCESS_KEY
+        while true; do
+          ask "S3 Endpoint URL" "" S3_ENDPOINT
+          if [ -n "$S3_ENDPOINT" ]; then
+            break
+          fi
+          print_warning "S3 endpoint is required for S3-compatible providers."
+        done
+        VITE_S3_ENDPOINT="$S3_ENDPOINT"
+      fi
+    else
+      MINIO_ENABLED=false
+      MINIO_ROOT_USER=""
+      MINIO_ROOT_PASSWORD=""
+      ask "S3-Compatible Region" "us-east-1" AWS_REGION
+      ask "S3-Compatible Bucket Name" "roost-uploads" AWS_S3_BUCKET
+      ask_secret "S3-Compatible Access Key ID" AWS_ACCESS_KEY_ID
+      ask_secret "S3-Compatible Secret Access Key" AWS_SECRET_ACCESS_KEY
+      while true; do
+        ask "S3 Endpoint URL" "" S3_ENDPOINT
+        if [ -n "$S3_ENDPOINT" ]; then
+          break
+        fi
+        print_warning "S3 endpoint is required for S3-compatible providers."
+      done
+      VITE_S3_ENDPOINT="$S3_ENDPOINT"
     fi
     ;;
   2)
+    MINIO_ENABLED=false
+    MINIO_ROOT_USER=""
+    MINIO_ROOT_PASSWORD=""
     AWS_REGION="local"
     AWS_S3_BUCKET="local"
     AWS_ACCESS_KEY_ID=""
     AWS_SECRET_ACCESS_KEY=""
+    S3_ENDPOINT=""
+    VITE_S3_ENDPOINT=""
     print_warning "Local storage selected: uploads saved to ./uploads/"
     ;;
 esac
@@ -709,6 +800,7 @@ VITE_DATABASE_URL=${MONGODB_URL:-}
 # AWS S3 / Storage
 VITE_AWS_REGION=${AWS_REGION}
 VITE_AWS_S3_BUCKET=${AWS_S3_BUCKET}
+VITE_S3_ENDPOINT=${VITE_S3_ENDPOINT:-}
 
 # Features
 VITE_ENABLE_SIGNUP=true
@@ -751,6 +843,7 @@ AWS_S3_BUCKET=${AWS_S3_BUCKET}
 AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
 AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
 ${S3_ENDPOINT:+S3_ENDPOINT=${S3_ENDPOINT}}
+${S3_ENDPOINT:+AWS_BACKUP_ENDPOINT=${S3_ENDPOINT}}
 
 # Email (SMTP)
 SMTP_HOST=${SMTP_HOST:-}
