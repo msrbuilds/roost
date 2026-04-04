@@ -89,6 +89,8 @@ For Docker target:
 - MongoDB default URL is switched to `mongodb://mongo:27017/roost`.
 - Redis default URL is `redis://redis:6379`.
 - Traefik reverse proxy + Let's Encrypt TLS are configured automatically.
+- If Docker daemon minimum API is `1.40+` (Docker Engine 29+), installer adds a systemd override:
+  - `DOCKER_MIN_API_VERSION=1.24` (Traefik Docker provider compatibility)
 - If you pick `S3-Compatible`, you can choose `Self-host MinIO on this VPS`.
   - Installer auto-generates MinIO credentials (or lets you set them)
   - Enables `COMPOSE_PROFILES=minio`
@@ -122,6 +124,19 @@ For MongoDB mode, it also installs:
 - `@prisma/client`
 - `jsonwebtoken`
 - `bcryptjs`
+
+---
+
+## Post-Install Checks (Docker Target)
+
+For `Docker (Self-hosted VPS)`, installer now runs automatic checks after setup:
+
+- `.env` generated
+- production domain + Let’s Encrypt email present
+- `docker compose config` validation
+- Docker minimum API compatibility status for Traefik
+
+If checks report blocking issues, fix them and re-run `bash install.sh`.
 
 ---
 

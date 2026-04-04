@@ -218,6 +218,88 @@ install_docker_runtime() {
   fi
 }
 
+api_version_to_int() {
+  local version="$1"
+  local major minor
+  major="${version%%.*}"
+  minor="${version#*.}"
+  minor="${minor%%.*}"
+
+  if ! [[ "$major" =~ ^[0-9]+$ ]]; then
+    major=0
+  fi
+  if ! [[ "$minor" =~ ^[0-9]+$ ]]; then
+    minor=0
+  fi
+
+  printf '%d' $((major * 100 + minor))
+}
+
+ensure_docker_api_compat_for_traefik() {
+  local min_api min_api_num dropin_dir dropin_file current_override
+
+  if ! command -v docker >/dev/null 2>&1; then
+    return
+  fi
+
+  min_api=$(docker version --format '{{.Server.MinAPIVersion}}' 2>/dev/null || true)
+  if [ -z "$min_api" ]; then
+    return
+  fi
+
+  min_api_num=$(api_version_to_int "$min_api")
+  if [ "$min_api_num" -lt 140 ]; then
+    print_success "Docker API minimum version (${min_api}) is already Traefik-compatible"
+    return
+  fi
+
+  if ! command -v systemctl >/dev/null 2>&1; then
+    print_warning "systemctl not available; configure DOCKER_MIN_API_VERSION=1.24 manually if Traefik logs Docker API errors."
+    return
+  fi
+
+  dropin_dir="/etc/systemd/system/docker.service.d"
+  dropin_file="${dropin_dir}/roost-min-api.conf"
+
+  current_override=""
+  if [ -f "$dropin_file" ]; then
+    current_override=$(grep -E '^Environment=DOCKER_MIN_API_VERSION=' "$dropin_file" 2>/dev/null || true)
+  fi
+
+  if [ -n "$current_override" ] && [[ "$current_override" == *"1.24"* ]]; then
+    print_success "Docker API compatibility override already configured for Traefik"
+    return
+  fi
+
+  print_warning "Docker minimum API version is ${min_api}; applying compatibility override for Traefik."
+
+  if ! run_with_sudo mkdir -p "$dropin_dir"; then
+    print_warning "Could not create Docker systemd drop-in directory. Configure DOCKER_MIN_API_VERSION=1.24 manually."
+    return
+  fi
+
+  if ! run_with_sudo tee "$dropin_file" >/dev/null <<'EOF'
+[Service]
+Environment=DOCKER_MIN_API_VERSION=1.24
+EOF
+  then
+    print_warning "Could not write Docker systemd override file. Configure DOCKER_MIN_API_VERSION=1.24 manually."
+    return
+  fi
+
+  if ! run_with_sudo systemctl daemon-reload; then
+    print_warning "Failed to reload systemd daemon. Run 'systemctl daemon-reload' manually."
+    return
+  fi
+
+  if ! run_with_sudo systemctl restart docker; then
+    print_warning "Failed to restart Docker automatically. Run 'systemctl restart docker' manually."
+    return
+  fi
+
+  print_success "Configured Docker compatibility override (DOCKER_MIN_API_VERSION=1.24)"
+}
+
 # --- Pre-flight Checks ---
 check_dependencies() {
   local missing=()
@@ -281,6 +363,70 @@ ensure_docker_runtime() {
   if ! command -v docker >/dev/null 2>&1 || ! docker compose version >/dev/null 2>&1; then
     print_error "Docker installation did not complete successfully."
     exit 1
+  fi
+}
+
+run_post_install_checks() {
+  local checks_failed=0
+  local min_api min_api_num
+
+  if [ "$DEPLOY_TARGET" != "docker" ]; then
+    return
+  fi
+
+  echo ""
+  echo -e "${BLUE}${BOLD}Post-install checks (Docker VPS)${NC}"
+  echo -e "${BLUE}─────────────────────────────────${NC}"
+
+  if [ -f ".env" ]; then
+    print_success "Docker runtime env file (.env) generated"
+  else
+    print_error "Missing .env file (required for docker compose)"
+    checks_failed=$((checks_failed + 1))
+  fi
+
+  if [ "$APP_DOMAIN" != "localhost" ] && [ -n "$APP_DOMAIN" ]; then
+    print_success "Production domain configured: ${APP_DOMAIN}"
+  else
+    print_error "Invalid Docker domain (must be a real domain, not localhost)"
+    checks_failed=$((checks_failed + 1))
+  fi
+
+  if [ -n "$LETSENCRYPT_EMAIL" ]; then
+    print_success "Let's Encrypt email configured"
+  else
+    print_error "Let's Encrypt email missing"
+    checks_failed=$((checks_failed + 1))
+  fi
+
+  if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+    print_success "Docker CLI + Compose available"
+
+    if docker compose config >/dev/null 2>&1; then
+      print_success "docker compose config validation passed"
+    else
+      print_warning "docker compose config validation failed. Check .env values."
+    fi
+
+    min_api=$(docker version --format '{{.Server.MinAPIVersion}}' 2>/dev/null || true)
+    if [ -n "$min_api" ]; then
+      min_api_num=$(api_version_to_int "$min_api")
+      if [ "$min_api_num" -le 124 ]; then
+        print_success "Docker Min API (${min_api}) is Traefik-compatible"
+      else
+        print_warning "Docker Min API is ${min_api}. If Traefik logs 'client version 1.24 is too old', re-run install.sh to apply compatibility override."
+      fi
+    else
+      print_warning "Could not detect Docker Server Min API version."
+    fi
+  else
+    print_warning "Docker runtime not available for validation."
+  fi
+
+  if [ "$checks_failed" -gt 0 ]; then
+    print_warning "Post-install checks found ${checks_failed} blocking issue(s). Re-run installer after fixing them."
+  else
+    print_success "Post-install checks completed"
   fi
 }
 
@@ -561,6 +707,10 @@ if [ "$DEPLOY_TARGET" = "docker" ] || [ "$DEPLOY_TARGET" = "dockploy" ]; then
     install_docker_runtime
   fi
   ensure_docker_runtime
+fi
+
+if [ "$DEPLOY_TARGET" = "docker" ]; then
+  ensure_docker_api_compat_for_traefik
 fi
 
 if [ "$DEPLOY_TARGET" = "docker" ] && [ "$APP_DOMAIN" = "localhost" ]; then
@@ -977,6 +1127,8 @@ elif [ "$DB_PROVIDER" = "mongodb" ]; then
   echo "  Run Prisma migrations:"
   echo "  npx prisma db push"
 fi
+
+run_post_install_checks
 
 # --- Final Summary ---
 echo ""

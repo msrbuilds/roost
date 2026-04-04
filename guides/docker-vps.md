@@ -3,6 +3,7 @@
 Complete VPS deployment guide for Roost using `docker-compose.yml`.
 
 This Docker path now includes Traefik + Let's Encrypt SSL by default.
+Installer also applies Docker Engine 29+ API compatibility for Traefik automatically.
 
 ---
 
@@ -49,6 +50,7 @@ Installer generates:
 - `.env.local`
 - `server/.env`
 - `.env` (Docker runtime env, including Traefik/SSL settings)
+- Post-install validation output (domain, SSL email, compose config, Traefik API compatibility)
 
 ---
 
@@ -146,7 +148,9 @@ docker compose up -d --build
 
 This means Traefik cannot query your Docker socket API.
 
-- Pull latest repo changes (includes Traefik `DOCKER_API_VERSION=1.40`):
+- Re-run installer once (latest installer auto-applies Docker API compatibility override):
+  - `bash install.sh`
+- Or pull latest repo changes and recreate:
   - `git pull`
   - `docker compose up -d --force-recreate traefik`
 - Verify:
