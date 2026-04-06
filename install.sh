@@ -547,12 +547,22 @@ ENVEOF
 
 generate_dokploy_env() {
   local postgres_password secret_key_base jwt_secret anon_key service_role_key
+  local minio_user minio_pass minio_bucket
 
   jwt_secret="${JWT_SECRET:-$(generate_secret | tr -d '\n')}"
   anon_key="${SUPABASE_ANON_KEY:-$(generate_hs256_jwt "anon" "$jwt_secret")}"
   service_role_key="${SUPABASE_SERVICE_KEY:-$(generate_hs256_jwt "service_role" "$jwt_secret")}"
   postgres_password="${DOKPLOY_POSTGRES_PASSWORD:-$(generate_secret | tr -d '\n')}"
   secret_key_base="${DOKPLOY_SECRET_KEY_BASE:-$(generate_secret | tr -d '\n')}"
+
+  # MinIO credentials — always generated for Dokploy (MinIO is baked into the stack)
+  minio_user="${MINIO_ROOT_USER:-minioadmin}"
+  minio_pass="${MINIO_ROOT_PASSWORD:-$(generate_secret | tr -dc 'A-Za-z0-9' | head -c 32)}"
+  minio_bucket="${AWS_S3_BUCKET:-roost-uploads}"
+  # Fallback if generate_secret fails
+  if [ -z "$minio_pass" ]; then
+    minio_pass="minioadmin$(date +%s)"
+  fi
 
   JWT_SECRET="$jwt_secret"
   SUPABASE_ANON_KEY="$anon_key"
@@ -583,6 +593,19 @@ ANON_KEY=${anon_key}
 SERVICE_ROLE_KEY=${service_role_key}
 SECRET_KEY_BASE=${secret_key_base}
 
+# MinIO Storage (included by default — no config needed)
+MINIO_ROOT_USER=${minio_user}
+MINIO_ROOT_PASSWORD=${minio_pass}
+MINIO_BUCKET=${minio_bucket}
+
+# AWS S3 Override (leave all blank to use MinIO)
+# To switch to AWS: fill in all four vars and set S3_ENDPOINT= (empty)
+AWS_REGION=${AWS_REGION:-us-east-1}
+AWS_S3_BUCKET=${AWS_S3_BUCKET:-}
+AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+S3_ENDPOINT=${S3_ENDPOINT:-}
+
 # Roost optional integrations
 SMTP_HOST=${SMTP_HOST:-}
 SMTP_PORT=${SMTP_PORT:-587}
@@ -593,10 +616,6 @@ STRIPE_ENABLED=${STRIPE_ENABLED}
 STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
 STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
 STRIPE_PRICE_ID=${STRIPE_PRICE_ID:-}
-AWS_REGION=${AWS_REGION}
-AWS_S3_BUCKET=${AWS_S3_BUCKET}
-AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
-AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
 ENVEOF
 
   print_success "Created .env.dokploy for docker-compose.dokploy.yml / Dokploy"

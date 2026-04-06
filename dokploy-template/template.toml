@@ -3,6 +3,9 @@ main_domain = "${domain}"
 postgres_password = "${password:32}"
 jwt_secret = "${password:64}"
 secret_key_base = "${password:64}"
+minio_root_user = "minioadmin"
+minio_root_password = "${password:32}"
+minio_bucket = "roost-uploads"
 anon_key_payload = """{
   "role": "anon",
   "iss": "supabase",
@@ -57,11 +60,22 @@ env = [
 'STRIPE_WEBHOOK_SECRET=',
 'STRIPE_PRICE_ID=',
 '',
-'# S3 Storage (optional - for file uploads)',
+'# MinIO Storage (included by default - no configuration needed)',
+'MINIO_ROOT_USER=${minio_root_user}',
+'MINIO_ROOT_PASSWORD=${minio_root_password}',
+'MINIO_BUCKET=${minio_bucket}',
+'',
+'# AWS S3 Override (optional - leave all blank to use MinIO)',
+'# To switch to AWS S3: fill in all vars below',
+'# S3_ENDPOINT must be set to https://s3.amazonaws.com (or regional endpoint)',
+'# S3_FORCE_PATH_STYLE must be set to false for AWS',
 'AWS_REGION=us-east-1',
-'AWS_S3_BUCKET=',
 'AWS_ACCESS_KEY_ID=',
 'AWS_SECRET_ACCESS_KEY=',
+'AWS_S3_BUCKET=',
+'S3_ENDPOINT=',
+'S3_FORCE_PATH_STYLE=',
+'VITE_S3_ENDPOINT=',
 ]
 
 
@@ -82,6 +96,9 @@ upstream backend {
 }
 upstream supabase {
     server kong:8000;
+}
+upstream minio {
+    server minio:9000;
 }
 server {
     listen 80;
@@ -138,6 +155,19 @@ server {
         proxy_set_header X-Real-IP $$remote_addr;
         proxy_set_header X-Forwarded-For $$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $$scheme;
+    }
+    location /files/ {
+        rewrite ^/files/(.*) /$$1 break;
+        proxy_pass http://minio;
+        proxy_http_version 1.1;
+        proxy_set_header Host $$http_host;
+        proxy_set_header X-Real-IP $$remote_addr;
+        proxy_set_header X-Forwarded-For $$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $$scheme;
+        proxy_connect_timeout 300;
+        proxy_read_timeout 300;
+        proxy_buffering off;
+        proxy_request_buffering off;
     }
     location /uploads/ {
         proxy_pass http://backend/uploads/;
