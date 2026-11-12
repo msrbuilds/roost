@@ -1,5 +1,21 @@
 import { test, expect } from '@playwright/test';
 import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
+
+// Exercise the real production policy locally, where astro preview does not
+// apply Cloudflare's _headers file. Deployed-site runs use actual HTTP headers.
+const csp = readFileSync(new URL('../public/_headers', import.meta.url), 'utf8')
+  .split('\n').find((line) => line.trim().startsWith('Content-Security-Policy:'))!
+  .trim().slice('Content-Security-Policy:'.length).trim();
+test.beforeEach(async ({ page, baseURL }) => {
+  if (baseURL?.startsWith('http://127.0.0.1:')) {
+    await page.route('**/*', async (route) => {
+      if (route.request().resourceType() !== 'document') return route.continue();
+      const response = await route.fetch();
+      await route.fulfill({ response, headers: { ...response.headers(), 'content-security-policy': csp } });
+    });
+  }
+});
 
 test('product, features, and docs fit desktop and mobile widths', async ({ page }) => {
   for (const width of [360, 390, 768, 1440]) {

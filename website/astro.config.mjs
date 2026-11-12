@@ -32,6 +32,8 @@ export default defineConfig({
   output: "static",
   trailingSlash: "always",
   integrations: [sitemap()],
+  // The deployed CSP allows same-origin scripts without inline execution.
+  vite: { build: { assetsInlineLimit: 0 } },
   markdown: {
     processor: unified({ remarkPlugins: [documentationLinks] }),
     shikiConfig: { theme: "github-dark", langAlias: { env: "dotenv" } },
