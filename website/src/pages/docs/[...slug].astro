@@ -16,7 +16,7 @@ const next = guides[index + 1];
 ---
 <Base title={guide.title} description={guide.description} docs>
   <div class="docs-layout container">
-    <button class="docs-menu-toggle" aria-expanded="false" aria-controls="docs-sidebar">Browse documentation <span>+</span></button>
+    <button class="docs-menu-toggle" disabled aria-expanded="false" aria-controls="docs-sidebar">Browse documentation <span>+</span></button>
     <aside id="docs-sidebar" class="docs-sidebar" aria-label="Documentation navigation"><a class="docs-home-link" href="/docs/">← All documentation</a>{guideGroups.map((group) => <div class="sidebar-group"><h2>{group}</h2>{guides.filter((item) => item.group === group).map((item) => <a href={`/docs/${item.id}/`} aria-current={item.id === guide.id ? 'page' : undefined}>{item.title}</a>)}</div>)}</aside>
     <main id="main" class="docs-main" data-pagefind-body><div class="breadcrumb"><a href="/docs/">Docs</a><span>/</span><span>{guide.group}</span></div><header class="doc-heading"><span class="small-label">{guide.group}</span><h1 data-pagefind-meta="title">{guide.title}</h1><p>{guide.description}</p></header><article class="docs-content"><Content /></article>
       <div class="doc-edit"><span>These docs live with the source code.</span><a href={`${repository}/edit/main/guides/${entry.id}.md`}>Improve this page ↗</a></div>
