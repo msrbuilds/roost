@@ -151,7 +151,7 @@ test('mobile menus and code copying work', async ({ page, context }) => {
 
 test('code boxes wrap without internal scrolling and preserve copied commands', async ({ page, context }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
-  for (const width of [360, 1440]) {
+  for (const width of [320, 360, 390, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     for (const route of ['/', '/docs/', '/docs/self-hosted-setup/', '/docs/backups/', '/docs/dockploy-vps/']) {
       await page.goto(route);

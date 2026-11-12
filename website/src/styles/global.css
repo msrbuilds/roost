@@ -730,16 +730,22 @@ input {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 9px 14px;
+  padding: 4px 12px;
   background: #203540;
   border-bottom: 1px solid #3a505b;
   border-radius: 11px 11px 0 0;
-  font-size: 11px;
+  font-size: 10px;
   letter-spacing: 0.06em;
   color: #c4d5dd;
 }
 .code-toolbar > span {
   text-transform: uppercase;
+}
+.code-toolbar .copy-code {
+  min-height: 28px;
+  min-width: 56px;
+  padding: 4px 9px;
+  font-size: 11px;
 }
 .code-block pre,
 .docs-content .code-block pre,
@@ -753,6 +759,10 @@ input {
   line-height: 1.85;
   max-height: none;
   overflow: visible;
+}
+.code-block:not(.code-block-inline) pre {
+  padding: 12px 14px;
+  line-height: 1.65;
 }
 .install-strip .code-block,
 .docs-start-code .code-block {
