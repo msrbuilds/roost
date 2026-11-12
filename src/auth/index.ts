@@ -10,14 +10,9 @@ let _auth: AuthAdapter | null = null;
 
 export async function getAuth(): Promise<AuthAdapter> {
   if (_auth) return _auth;
-  const config = getAuthConfig();
-  if (config.provider === 'supabase') {
-    const { SupabaseAuthAdapter } = await import('./adapters/supabase');
-    _auth = new SupabaseAuthAdapter();
-  } else {
-    const { LocalAuthAdapter } = await import('./adapters/local');
-    _auth = new LocalAuthAdapter();
-  }
+  getAuthConfig();
+  const { SupabaseAuthAdapter } = await import('./adapters/supabase');
+  _auth = new SupabaseAuthAdapter();
   return _auth;
 }
 

@@ -44,13 +44,14 @@ const TABS: { id: SettingsTab; label: string; icon: typeof User }[] = [
 ];
 
 export default function Settings() {
-    const { user, profile, refreshProfile } = useAuth();
+    const { user, profile, refreshProfile, signOut } = useAuth();
     const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
     const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
     const [is2FASetupModalOpen, setIs2FASetupModalOpen] = useState(false);
     const [is2FADisableModalOpen, setIs2FADisableModalOpen] = useState(false);
     const [is2FAEnabled, setIs2FAEnabled] = useState(false);
     const [is2FALoading, setIs2FALoading] = useState(true);
+    const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
     // Notification preferences state
     const [notificationPrefs, setNotificationPrefs] = useState<NotificationPreferences | null>(null);
@@ -87,7 +88,7 @@ export default function Settings() {
             if (!session) return;
 
             const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-            const response = await fetch(`${apiUrl}/api/2fa/status`, {
+            const response = await fetch(`${apiUrl}/api/auth/mfa/status`, {
                 headers: {
                     'Authorization': `Bearer ${session.access_token}`,
                 },
@@ -103,6 +104,37 @@ export default function Settings() {
             setIs2FALoading(false);
         }
     }, [user]);
+
+    const handleDeleteAccount = async () => {
+        const confirmation = window.prompt('This permanently deletes your account and content. Type DELETE to continue.');
+        if (confirmation !== 'DELETE') return;
+
+        setIsDeletingAccount(true);
+        setError(null);
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) throw new Error('You must be signed in to delete your account.');
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+            const response = await fetch(`${apiUrl}/api/auth/account`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${session.access_token}`,
+                },
+                body: JSON.stringify({ confirmation }),
+            });
+            if (!response.ok) {
+                const body = await response.json().catch(() => ({}));
+                throw new Error(body.error || 'Account deletion failed.');
+            }
+            await signOut();
+            window.location.assign('/login');
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Account deletion failed.');
+        } finally {
+            setIsDeletingAccount(false);
+        }
+    };
 
     // Initialize form with profile data
     useEffect(() => {
@@ -699,8 +731,12 @@ export default function Settings() {
                                 <p className="text-sm text-surface-500 dark:text-surface-400 mb-4">
                                     Once you delete your account, there is no going back. Please be certain.
                                 </p>
-                                <button className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors">
-                                    Delete Account
+                                <button
+                                    onClick={handleDeleteAccount}
+                                    disabled={isDeletingAccount}
+                                    className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-50"
+                                >
+                                    {isDeletingAccount ? 'Deleting…' : 'Delete Account'}
                                 </button>
                             </div>
                         </div>

@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ArrowLeft, Video, FileText, Plus, CheckCircle2, Circle, Play, Loader2, Edit2, Trash2 } from 'lucide-react';
 import type { ModuleWithProgress, RecordingWithCompletion, GroupAssetWithDetails, GroupRole } from '@/types';
 import { getModuleRecordings, getModuleAssets } from '@/services/module';
 import { useAuth } from '@/contexts/AuthContext';
 import ProgressBar from './ProgressBar';
+import { getSignedDownloadUrl } from '@/services/s3';
 
 interface ModuleDetailProps {
     module: ModuleWithProgress;
@@ -36,11 +37,7 @@ export default function ModuleDetail({
 
     const canManage = userRole && (userRole === 'admin' || userRole === 'moderator');
 
-    useEffect(() => {
-        loadContent();
-    }, [module.id]);
-
-    const loadContent = async () => {
+    const loadContent = useCallback(async () => {
         try {
             setIsLoading(true);
             const [recs, assetData] = await Promise.all([
@@ -54,7 +51,11 @@ export default function ModuleDetail({
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [module.id, user?.id]);
+
+    useEffect(() => {
+        void loadContent();
+    }, [loadContent]);
 
     const getThumbnailUrl = (platform: string, videoId: string) => {
         if (platform === 'youtube') {
@@ -266,14 +267,15 @@ export default function ModuleDetail({
                                 >
                                     <Icon className="w-5 h-5 text-surface-400 flex-shrink-0" />
                                     <div className="flex-1 min-w-0">
-                                        <a
-                                            href={asset.file_url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
+                                        <button
+                                            onClick={async () => {
+                                                try { window.open(await getSignedDownloadUrl(asset.file_url), '_blank', 'noopener,noreferrer'); }
+                                                catch { window.alert('This file is unavailable or you no longer have access.'); }
+                                            }}
                                             className="text-sm font-medium text-surface-900 dark:text-surface-50 hover:text-primary-600 dark:hover:text-primary-400 truncate block"
                                         >
                                             {asset.filename}
-                                        </a>
+                                        </button>
                                         <p className="text-xs text-surface-400 dark:text-surface-500">
                                             {formatFileSize(asset.file_size)}
                                             {asset.created_at && ` · ${formatDate(asset.created_at)}`}

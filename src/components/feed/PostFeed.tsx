@@ -26,8 +26,8 @@ interface FeedCacheEntry {
 const feedCache = new Map<string, FeedCacheEntry>();
 const FEED_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
-function getFeedCacheKey(feedMode: string, groupId?: string | null): string {
-    return `feed:${feedMode}:${groupId ?? 'general'}`;
+function getFeedCacheKey(userId: string | undefined, feedMode: string, groupId?: string | null): string {
+    return `feed:${userId ?? 'anonymous'}:${feedMode}:${groupId ?? 'general'}`;
 }
 
 // Lightweight offscreen wrapper: unmounts PostCard when far off-screen to reduce DOM size
@@ -59,7 +59,7 @@ export default function PostFeed({
     const { user, profile } = useAuth();
 
     // Check for cached feed state on initial render
-    const cacheKey = getFeedCacheKey(feedMode, groupId);
+    const cacheKey = getFeedCacheKey(user?.id, feedMode, groupId);
     const cachedFeed = feedCache.get(cacheKey);
     const hasFreshCache = cachedFeed && (Date.now() - cachedFeed.timestamp < FEED_CACHE_TTL);
 
@@ -407,7 +407,6 @@ export default function PostFeed({
             }
         };
     // Save on unmount only — we capture latest values via closure
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [posts, userReactions, followedAuthors, offset, hasMore, cacheKey]);
 
     const handleSuccess = () => {

@@ -2,7 +2,7 @@ DO $$
 BEGIN
   -- Realtime migrations may not have created tables yet on first boot.
   IF to_regclass('_realtime.tenants') IS NULL OR to_regclass('_realtime.extensions') IS NULL THEN
-    RAISE NOTICE 'Realtime tenant tables not ready; skipping tenant fix';
+    RAISE EXCEPTION 'Realtime tenant tables not ready; retry initialization';
   ELSE
     -- If both exist, delete the dev one (keep the correctly named one)
     IF EXISTS (SELECT 1 FROM _realtime.tenants WHERE external_id = 'realtime')
@@ -19,8 +19,10 @@ BEGIN
       ALTER TABLE _realtime.extensions ADD CONSTRAINT extensions_tenant_external_id_fkey FOREIGN KEY (tenant_external_id) REFERENCES _realtime.tenants(external_id);
       RAISE NOTICE 'Tenant renamed to realtime';
 
-    ELSE
+    ELSIF EXISTS (SELECT 1 FROM _realtime.tenants WHERE external_id = 'realtime') THEN
       RAISE NOTICE 'Tenant already correct';
+    ELSE
+      RAISE EXCEPTION 'Realtime seed tenant not ready; retry initialization';
     END IF;
   END IF;
 END

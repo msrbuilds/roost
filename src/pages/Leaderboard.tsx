@@ -1,10 +1,9 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Trophy } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { LeaderboardTable } from '../components/leaderboard';
 import { getUserRank } from '../services';
-import { useEffect } from 'react';
 import type { UserRankInfo } from '../types';
 import UserRankBadge from '../components/leaderboard/UserRankBadge';
 
@@ -20,13 +19,7 @@ export default function Leaderboard() {
     // Determine if this is a group leaderboard
     const groupId = slug; // If slug exists, it's a group leaderboard
 
-    useEffect(() => {
-        if (user) {
-            loadUserRank();
-        }
-    }, [user, groupId, period]);
-
-    const loadUserRank = async () => {
+    const loadUserRank = useCallback(async () => {
         if (!user) return;
 
         try {
@@ -35,7 +28,13 @@ export default function Leaderboard() {
         } catch (err) {
             console.error('Error loading user rank:', err);
         }
-    };
+    }, [user, groupId, period]);
+
+    useEffect(() => {
+        if (user) {
+            void loadUserRank();
+        }
+    }, [user, loadUserRank]);
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-surface-950 py-8">

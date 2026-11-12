@@ -62,6 +62,7 @@ export default function SubmitRequestModal({ isOpen, onClose, onSuccess }: Submi
                 const assetData = await createAsset({
                     filename: uploadResult.fileName,
                     file_url: uploadResult.url,
+                    storage_key: uploadResult.key,
                     file_size: uploadResult.fileSize,
                     mime_type: uploadResult.mimeType,
                     asset_type: 'image',
@@ -100,10 +101,7 @@ export default function SubmitRequestModal({ isOpen, onClose, onSuccess }: Submi
         try {
             setAssets((prev) => prev.filter((a) => a.id !== asset.id));
 
-            const urlParts = asset.file_url.split('/');
-            const key = urlParts.slice(3).join('/');
-
-            await deleteFile(key);
+            if (asset.storage_key) await deleteFile(asset.storage_key);
             await deleteAssetRecord(asset.id);
         } catch (err) {
             console.error('Failed to remove asset:', err);

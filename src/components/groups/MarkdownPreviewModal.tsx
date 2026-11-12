@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Download, Loader2, FileText } from 'lucide-react';
 import DOMPurify from 'dompurify';
@@ -20,17 +20,7 @@ export default function MarkdownPreviewModal({
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        if (isOpen && fileUrl) {
-            fetchContent();
-        }
-        return () => {
-            setContent('');
-            setError(null);
-        };
-    }, [isOpen, fileUrl]);
-
-    const fetchContent = async () => {
+    const fetchContent = useCallback(async () => {
         setIsLoading(true);
         setError(null);
         try {
@@ -46,7 +36,17 @@ export default function MarkdownPreviewModal({
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [fileUrl]);
+
+    useEffect(() => {
+        if (isOpen && fileUrl) {
+            void fetchContent();
+        }
+        return () => {
+            setContent('');
+            setError(null);
+        };
+    }, [isOpen, fileUrl, fetchContent]);
 
     const escapeHtml = (text: string): string => {
         return text

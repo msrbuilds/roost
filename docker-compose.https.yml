@@ -1,0 +1,19 @@
+# Optional automatic HTTPS when deploying directly without Dokploy's proxy.
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      ROOST_DOMAIN: ${ROOST_DOMAIN:?ROOST_DOMAIN is required}
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - nginx
+volumes:
+  caddy-data:
+  caddy-config:

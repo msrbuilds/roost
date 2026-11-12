@@ -682,7 +682,7 @@ export default function ShowcaseSubmit() {
                                                 : 'bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400 hover:opacity-80'
                                             }
                                         `}
-                                        style={isSelected ? { backgroundColor: tag.color } : undefined}
+                                        style={isSelected ? { backgroundColor: tag.color ?? '#64748b' } : undefined}
                                     >
                                         {tag.name}
                                     </button>

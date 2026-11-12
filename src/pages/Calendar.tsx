@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Plus, Filter } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { CalendarView } from '../components/calendar';
@@ -24,11 +24,7 @@ export default function Calendar() {
         }
     }, [user]);
 
-    useEffect(() => {
-        Promise.all([loadEvents(), loadUpcoming()]);
-    }, [selectedGroup]);
-
-    const loadEvents = async () => {
+    const loadEvents = useCallback(async () => {
         try {
             setLoading(true);
             // Load events for current month view
@@ -60,9 +56,9 @@ export default function Calendar() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [selectedGroup, user]);
 
-    const loadUpcoming = async () => {
+    const loadUpcoming = useCallback(async () => {
         try {
             const data = await getUpcomingEvents(selectedGroup, 5);
 
@@ -86,7 +82,11 @@ export default function Calendar() {
         } catch (err) {
             console.error('Error loading upcoming events:', err);
         }
-    };
+    }, [selectedGroup, user]);
+
+    useEffect(() => {
+        void Promise.all([loadEvents(), loadUpcoming()]);
+    }, [loadEvents, loadUpcoming]);
 
     const handleCreateEvent = async (data: EventFormData) => {
         if (!user) return;

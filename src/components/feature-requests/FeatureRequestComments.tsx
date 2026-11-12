@@ -106,7 +106,7 @@ function CommentItem({
                         </span>
                     )}
                     <span className="text-xs text-surface-400">
-                        {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+                        {formatDistanceToNow(new Date(comment.created_at ?? Date.now()), { addSuffix: true })}
                     </span>
                     {comment.is_edited && (
                         <span className="text-[10px] text-surface-400">(edited)</span>

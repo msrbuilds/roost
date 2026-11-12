@@ -4,6 +4,8 @@
 
 Roost is a full-featured, open-source community platform that you can deploy on your own infrastructure. Think Skool/Circle alternative that you own and control.
 
+**[Product website and documentation](https://roost.msrbuilds.com)**
+
 ---
 
 ## Features
@@ -25,25 +27,25 @@ Roost is a full-featured, open-source community platform that you can deploy on 
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | React 18, TypeScript, Vite, Tailwind CSS |
-| Backend | Express.js, Node.js 20+ |
-| Database | Supabase (Cloud/Self-hosted) or MongoDB + Prisma |
+| Frontend | React 19, TypeScript, Vite, Tailwind CSS |
+| Backend | Express.js, Node.js 22+ |
+| Database | Supabase (Cloud or self-hosted) |
 | Storage | AWS S3 / S3-compatible (MinIO, R2) |
 | Icons | Lucide React |
-| Editor | React Quill |
+| Editor | Native sanitized rich-text editor |
 
 ## Quick Start
 
 ### Option 1: Interactive Installer (Recommended)
 
 ```bash
-git clone https://github.com/your-org/roost.git
+git clone https://github.com/msrbuilds/roost.git
 cd roost
 bash install.sh
 ```
 
 The installer will guide you through:
-- Database provider selection (Supabase Cloud, Supabase Self-hosted, MongoDB)
+- Database provider selection (Supabase Cloud or Supabase Self-hosted)
 - Deployment target (Docker VPS, Dockploy VPS, Vercel, Netlify, Local dev)
 - Storage, email, and optional integrations
 - Docker VPS path includes Traefik + Let's Encrypt SSL and optional self-hosted MinIO profile
@@ -64,7 +66,7 @@ cp server/.env.example server/.env
 # Edit both .env files with your values
 
 # Start development
-npm run dev          # Frontend (port 5173)
+npm run dev          # Frontend (port 5000)
 cd server && npm run dev  # Backend (port 3000)
 ```
 
@@ -74,7 +76,6 @@ cd server && npm run dev  # Backend (port 3000)
 |----------|----------|-------|
 | **Supabase Cloud** | Easiest setup, recommended for most | [Full Guide](guides/supabase-cloud.md) |
 | **Supabase Self-hosted** | Full control, privacy-focused | [Full Guide](guides/supabase-selfhosted.md) |
-| **MongoDB + Prisma** | Fully local, no external deps | [Full Guide](guides/mongodb-prisma.md) |
 
 ## Deployment
 
@@ -100,7 +101,6 @@ Toggle features via environment variables:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `VITE_ENABLE_SIGNUP` | `true` | Allow new user registration |
-| `VITE_GUMROAD_ENABLED` | `false` | Enable Gumroad paid memberships |
 | `VITE_ENABLE_SHOWCASE` | `true` | Enable project showcase gallery |
 | `VITE_ENABLE_LIVE_ROOM` | `true` | Enable live streaming room |
 | `VITE_ENABLE_LEADERBOARD` | `true` | Enable points & leaderboard |
@@ -112,10 +112,10 @@ Toggle features via environment variables:
 roost/
 ├── src/                    # Frontend (React)
 │   ├── auth/               # Auth abstraction layer
-│   │   ├── adapters/       # Supabase Auth, Local JWT
+│   │   ├── adapters/       # Supabase Auth
 │   │   └── interfaces/     # Auth interface types
 │   ├── db/                 # Database abstraction layer
-│   │   ├── adapters/       # Supabase, MongoDB adapters
+│   │   ├── adapters/       # Supabase adapter
 │   │   └── interfaces/     # Database interface types
 │   ├── config/             # App configuration
 │   ├── components/         # React components
@@ -130,9 +130,9 @@ roost/
 │       ├── routes/         # API routes
 │       ├── services/       # Backend services
 │       └── lib/            # Shared utilities
-├── prisma/                 # Prisma schema (MongoDB)
-├── migrations/             # SQL migrations (Supabase)
+├── schema.sql              # Consolidated schema for fresh Supabase installs
 ├── guides/                 # Step-by-step setup & deployment guides
+├── website/                # Astro product website and searchable documentation
 ├── install.sh              # Interactive installer
 ├── docker-compose.yml      # Docker orchestration
 ├── docker-compose.dokploy.yml # Dockploy orchestration

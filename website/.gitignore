@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.astro/
+.wrangler/
+.env
+.env.*
+!.env.example
+!src/pages/docs/
+!src/pages/docs/**

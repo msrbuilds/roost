@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Plus, Video, Loader2, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getGroupRecordings } from '@/services/group';
 import type { GroupRole } from '@/types';
@@ -24,11 +24,7 @@ export default function GroupRecordings({ groupId, userRole }: GroupRecordingsPr
 
     const canPublish = userRole && (userRole === 'admin' || userRole === 'moderator');
 
-    useEffect(() => {
-        loadRecordings();
-    }, [groupId]);
-
-    const loadRecordings = async () => {
+    const loadRecordings = useCallback(async () => {
         try {
             setIsLoading(true);
             const data = await getGroupRecordings(groupId);
@@ -38,7 +34,11 @@ export default function GroupRecordings({ groupId, userRole }: GroupRecordingsPr
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [groupId]);
+
+    useEffect(() => {
+        void loadRecordings();
+    }, [loadRecordings]);
 
     const sortedRecordings = useMemo(() => {
         const sorted = [...recordings];

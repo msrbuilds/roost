@@ -6,10 +6,10 @@ Step-by-step guide to set up Roost with your own self-hosted Supabase instance (
 
 ## Prerequisites
 
-- A server/VPS with at least 2GB RAM and 2 CPU cores
+- A server/VPS sized for Supabase and Roost; the bundled staging stack was tested with 4GB RAM and 2 CPU cores
 - Docker and Docker Compose installed
 - A domain name (optional but recommended)
-- Node.js 18+ (for the Roost app)
+- Node.js 22+ (for the Roost app)
 
 ---
 
@@ -76,12 +76,10 @@ docker compose ps
 ### Option B: Using Supabase CLI (Local Dev)
 
 ```bash
-# Install Supabase CLI
-npm install -g supabase
-
-# Initialize a local Supabase instance
-supabase init
-supabase start
+# Run from the Roost repository (the Supabase CLI is a development dependency)
+npm install
+npx supabase init
+npx supabase start
 ```
 
 This gives you a local Supabase at `http://localhost:54321` with auto-generated keys printed in the terminal.
@@ -101,33 +99,23 @@ After setup, you'll need:
 
 ---
 
-## Step 3: Run Database Migrations
+## Step 3: Install the Database Schema
 
 ### Option A: Direct Database Connection
 
 ```bash
-# Connect directly to PostgreSQL
-psql postgresql://postgres:your-password@your-server-ip:5432/postgres
-
-# Run each migration file
-\i migrations/001_initial_schema.sql
-\i migrations/002_rls_policies.sql
-\i migrations/003_functions_triggers.sql
-# ... continue for all migration files
+# From the Roost repository, load the consolidated fresh-install schema
+psql "postgresql://postgres:your-password@your-server-ip:5432/postgres" \
+  -v ON_ERROR_STOP=1 -f schema.sql
 ```
 
 ### Option B: Via Supabase Dashboard
 
 1. Open your self-hosted Supabase dashboard
 2. Go to **SQL Editor**
-3. Paste and run each migration file in order
+3. Paste and run `schema.sql` once
 
-### Option C: Via Supabase CLI (if linked)
-
-```bash
-supabase link --project-ref your-project-ref
-supabase db push
-```
+The consolidated schema is for fresh installations. Back up and migrate an existing database separately rather than rerunning the complete file.
 
 ---
 
@@ -145,7 +133,7 @@ VITE_SUPABASE_PUBLISHABLE_KEY=your-anon-key
 
 # App
 VITE_APP_NAME="Your Community Name"
-VITE_APP_URL=http://localhost:5173
+VITE_APP_URL=http://localhost:5000
 VITE_API_URL=http://localhost:3000
 ```
 
@@ -164,8 +152,8 @@ SUPABASE_DB_PASSWORD=your-postgres-password
 DB_HOST=your-server-ip
 DB_PORT=5432
 
-ALLOWED_ORIGINS=http://localhost:5173
-FRONTEND_URL=http://localhost:5173
+ALLOWED_ORIGINS=http://localhost:5000
+FRONTEND_URL=http://localhost:5000
 ```
 
 ---

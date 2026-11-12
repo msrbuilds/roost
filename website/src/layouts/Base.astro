@@ -1,0 +1,30 @@
+---
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import '../styles/global.css';
+import '../styles/product-images.css';
+interface Props { title?: string; description?: string; noindex?: boolean; docs?: boolean; }
+const { title = 'A home for your community', description = 'Roost is a free, open-source community platform with conversations, classrooms, messaging, and events. Self-host it. Make it yours.', noindex = false, docs = false } = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title} · Roost</title><meta name="description" content={description} />
+    <link rel="canonical" href={canonical} /><link rel="icon" href="/favicon.png" type="image/png" />
+    <meta name="theme-color" content="#faf9f5" />{noindex && <meta name="robots" content="noindex,follow" />}
+    <meta property="og:type" content="website" /><meta property="og:title" content={`${title} · Roost`} /><meta property="og:description" content={description} /><meta property="og:url" content={canonical} /><meta property="og:image" content={new URL('/social-card.png', Astro.site)} /><meta property="og:site_name" content="Roost" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+  </head>
+  <body class:list={[docs && 'docs-page']}>
+    <a class="skip-link" href="#main">Skip to content</a><Header /><slot /><Footer />
+    <dialog id="search-dialog" class="search-dialog" aria-labelledby="search-title">
+      <div class="search-heading"><h2 id="search-title">Search the docs</h2><button data-search-close aria-label="Close search">Esc</button></div>
+      <label for="docs-search" class="sr-only">Search documentation</label><input id="docs-search" type="search" placeholder="Installation, backups, email…" autocomplete="off" />
+      <p id="search-status" role="status">Find your next step.</p><ul id="search-results"></ul>
+    </dialog>
+    <script src="../scripts/site.ts"></script>
+  </body>
+</html>

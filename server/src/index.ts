@@ -8,21 +8,21 @@ import { stripeApiRouter } from './routes/stripe-api.js';
 import { healthRouter } from './routes/health.js';
 import passwordResetRouter from './routes/password-reset.js';
 import emailPreviewRouter from './routes/email-preview.js';
-import twoFactorRouter from './routes/two-factor.js';
+import { accountRouter } from './routes/account.js';
 import { notificationsRouter } from './routes/notifications.js';
 import { backupRouter } from './routes/backup.js';
 import { activationApiRouter } from './routes/activation-api.js';
 import { uploadRouter } from './routes/upload.js';
 import { liveRoomRouter } from './routes/live-room.js';
 import { siteSettingsRouter } from './routes/site-settings.js';
-import path from 'path';
-import { initRedis, closeRedis, isRedisAvailable } from './lib/redis.js';
+import { initRedis, closeRedis, isRedisAvailable, isRedisConfigured } from './lib/redis.js';
 import {
   apiRateLimiter,
   webhookRateLimiter,
   createAdminRateLimiter,
   authRateLimiter,
 } from './middleware/redis-rate-limit.js';
+import { enforceAccountStatus } from './middleware/auth-assurance.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -36,7 +36,11 @@ if (shouldTrustProxy) {
 console.log(`Trust proxy: ${shouldTrustProxy ? 'enabled' : 'disabled'}`);
 
 // CORS configuration - must be before other middleware
-const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:5000'];
+const configuredOrigins = process.env.ALLOWED_ORIGINS?.split(',').map((origin) => origin.trim()).filter(Boolean) || [];
+if (process.env.NODE_ENV === 'production' && configuredOrigins.length === 0) {
+  throw new Error('ALLOWED_ORIGINS is required in production');
+}
+const allowedOrigins = configuredOrigins.length > 0 ? configuredOrigins : ['http://localhost:5000'];
 app.use(cors({
   origin: allowedOrigins,
   credentials: true,
@@ -51,10 +55,10 @@ app.use(helmet({
 
 // Rate limiting - use Redis-backed rate limiters for distributed state persistence
 // Falls back to in-memory if Redis is unavailable
-const USE_REDIS_RATE_LIMIT = process.env.REDIS_RATE_LIMIT !== 'false';
+const USE_REDIS_RATE_LIMIT = isRedisConfigured() && process.env.REDIS_RATE_LIMIT !== 'false';
 
 if (USE_REDIS_RATE_LIMIT) {
-  console.log('[RateLimit] Using Redis-backed rate limiting');
+  console.log('[RateLimit] Using Redis-backed rate limiting with in-memory fallback');
   app.use('/api/', apiRateLimiter);
   app.use('/api/webhooks/', webhookRateLimiter);
 } else {
@@ -111,6 +115,7 @@ app.use('/api/webhooks/stripe', express.raw({ type: 'application/json' }), strip
 // Body parsing
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 app.use(express.json({ limit: '1mb' }));
+app.use('/api', enforceAccountStatus);
 
 // Auth rate limiting (stricter for password reset to prevent abuse)
 // Use Redis-backed rate limiter for distributed state
@@ -126,7 +131,7 @@ const authLimiterMiddleware = USE_REDIS_RATE_LIMIT
 app.use('/api/health', healthRouter);
 app.use('/api/stripe', adminLimiter, stripeApiRouter);
 app.use('/api/auth', authLimiterMiddleware, passwordResetRouter);
-app.use('/api/2fa', adminLimiter, twoFactorRouter);
+app.use('/api/auth', authLimiterMiddleware, accountRouter);
 app.use('/api/notifications', notificationsRouter);
 app.use('/api/email-preview', emailPreviewRouter); // Dev only - disabled in production
 app.use('/api/backup', backupRouter);
@@ -134,14 +139,15 @@ app.use('/api/activations', adminLimiter, activationApiRouter);
 app.use('/api/upload', uploadRouter);
 app.use('/api/site-settings', siteSettingsRouter);
 
-// Serve local uploads (fallback when S3 is not configured)
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 app.use('/api/live-room', liveRoomRouter);
 
 // Error handling middleware
-app.use((err: Error, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+app.use((err: Error & { type?: string; status?: number }, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  if (err.type === 'entity.parse.failed' || err.status === 400) {
+    return res.status(400).json({ error: 'Malformed request body' });
+  }
   console.error('Server error:', err);
-  res.status(500).json({
+  return res.status(500).json({
     error: 'Internal server error',
     message: process.env.NODE_ENV === 'development' ? err.message : undefined,
   });

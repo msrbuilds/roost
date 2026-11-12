@@ -1,0 +1,20 @@
+# Add this file to the main compose command to use Brevo's API for all email.
+# Set SMTP_HOST=auth and SMTP_PORT=1025 in the deployment environment.
+services:
+  auth:
+    environment:
+      GOTRUE_SMTP_HOST: localhost
+  brevo-relay:
+    build: ./docker/brevo-relay
+    restart: unless-stopped
+    # GoTrue's SMTP authentication requires TLS except on localhost. Sharing
+    # its private network namespace keeps that hop local without bypassing TLS.
+    network_mode: service:auth
+    depends_on:
+      - auth
+    environment:
+      BREVO_API_KEY: ${BREVO_API_KEY:?BREVO_API_KEY is required}
+      SMTP_RELAY_USERNAME: ${SMTP_USER:?SMTP_USER is required}
+      SMTP_RELAY_PASSWORD: ${SMTP_PASS:?SMTP_PASS is required}
+      SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:?A verified Brevo sender is required}
+      SMTP_FROM_NAME: ${APP_NAME:-Roost}

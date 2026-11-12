@@ -41,7 +41,7 @@ export default function ShowcaseFilters({ filters, onFiltersChange }: ShowcaseFi
         }, 300);
 
         return () => clearTimeout(timeout);
-    }, [searchInput]);
+    }, [searchInput, filters, onFiltersChange]);
 
     const handleCategoryChange = (category: ShowcaseCategory | undefined) => {
         onFiltersChange({ ...filters, category });
@@ -173,7 +173,7 @@ export default function ShowcaseFilters({ filters, onFiltersChange }: ShowcaseFi
                                             : 'bg-surface-100 dark:bg-surface-700 text-surface-600 dark:text-surface-400 hover:opacity-80'
                                         }
                                     `}
-                                    style={isSelected ? { backgroundColor: tag.color } : { borderColor: tag.color, borderWidth: 1 }}
+                                    style={isSelected ? { backgroundColor: tag.color ?? '#64748b' } : { borderColor: tag.color ?? '#64748b', borderWidth: 1 }}
                                 >
                                     {tag.name}
                                 </button>

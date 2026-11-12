@@ -28,44 +28,27 @@ async function getAuthToken(): Promise<string> {
     return session.access_token;
 }
 
-// Request a pre-signed URL from the backend, then upload directly to S3
+// Upload through the authenticated API so internal MinIO hostnames and storage
+// credentials are never exposed to browsers.
 async function uploadViaPresignedUrl(file: File, folder: string): Promise<UploadResult> {
     const token = await getAuthToken();
-
-    // Step 1: Get pre-signed URL from backend
-    const response = await fetch(`${API_URL}/api/upload/presign`, {
+    const body = new FormData();
+    body.append('folder', folder);
+    body.append('file', file, file.name);
+    const response = await fetch(`${API_URL}/api/upload/file`, {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({
-            fileName: file.name,
-            fileType: file.type,
-            fileSize: file.size,
-            folder,
-        }),
+        body,
     });
 
     if (!response.ok) {
         const error = await response.json().catch(() => ({ error: 'Upload failed' }));
-        throw new Error(error.error || 'Failed to get upload URL');
+        throw new Error(error.error || 'Failed to upload file');
     }
 
-    const { presignedUrl, key, publicUrl } = await response.json();
-
-    // Step 2: Upload file directly to S3 using the pre-signed URL
-    const uploadResponse = await fetch(presignedUrl, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': file.type,
-        },
-        body: file,
-    });
-
-    if (!uploadResponse.ok) {
-        throw new Error('Failed to upload file to storage');
-    }
+    const { key, publicUrl } = await response.json();
 
     return {
         key,
@@ -150,23 +133,18 @@ export async function deleteFile(key: string): Promise<void> {
     }
 }
 
-// Get public URL for a file (no credentials needed - public bucket read)
-export function getPublicUrl(key: string): string {
-    const bucketName = import.meta.env.VITE_AWS_S3_BUCKET;
-    const endpoint = import.meta.env.VITE_S3_ENDPOINT?.trim().replace(/\/+$/, '');
-    const normalizedKey = key.replace(/^\/+/, '');
-    if (endpoint) {
-        return `${endpoint}/${bucketName}/${normalizedKey}`;
-    }
-    const region = import.meta.env.VITE_AWS_REGION;
-    return `https://${bucketName}.s3.${region}.amazonaws.com/${normalizedKey}`;
-}
-
-// Get signed URL for private files - now handled via backend
-export async function getSignedDownloadUrl(key: string, _expiresIn: number = 3600): Promise<string> {
-    // For now, return the public URL since the bucket is public-read
-    // If private downloads are needed, add a backend endpoint for download pre-signing
-    return getPublicUrl(key);
+// Fetch an authorized private object and return a short-lived local blob URL.
+export async function getSignedDownloadUrl(keyOrUrl: string, _expiresIn: number = 3600): Promise<string> {
+    if (!keyOrUrl.startsWith('private:')) return keyOrUrl;
+    const token = await getAuthToken();
+    const key = keyOrUrl.slice('private:'.length);
+    const encodedKey = btoa(String.fromCharCode(...new TextEncoder().encode(key)))
+        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    const response = await fetch(`${API_URL}/api/upload/content/${encodedKey}`, {
+        headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) throw new Error('File access denied');
+    return URL.createObjectURL(await response.blob());
 }
 
 // Determine asset type from mime type
@@ -184,7 +162,6 @@ export default {
     uploadVideo,
     uploadDocument,
     deleteFile,
-    getPublicUrl,
     getSignedDownloadUrl,
     getAssetType,
 };

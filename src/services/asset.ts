@@ -5,6 +5,7 @@ export interface Asset {
     id: string;
     filename: string;
     file_url: string;
+    storage_key?: string | null;
     file_size: number;
     mime_type: string;
     asset_type: 'image' | 'video' | 'document' | 'other';

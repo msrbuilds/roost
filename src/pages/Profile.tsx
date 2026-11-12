@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { getProfileByUsername, getUserStats } from '@/services/profile';
 import { getUserRank } from '@/services/leaderboard';
-import { getPosts, type PostWithDetails } from '@/services/post';
+import { deletePost, getPosts, type PostWithDetails } from '@/services/post';
 import {
     toggleFollow,
     isFollowing as checkIsFollowing,
@@ -219,10 +219,8 @@ export default function ProfilePage() {
     };
 
     // Load user posts
-    const loadPosts = useCallback(async (reset = false) => {
+    const loadPosts = useCallback(async (reset = false, currentOffset = 0) => {
         if (!displayProfile) return;
-
-        const currentOffset = reset ? 0 : postsOffset;
 
         try {
             if (reset) {
@@ -250,36 +248,9 @@ export default function ProfilePage() {
             setPostsLoading(false);
             setPostsLoadingMore(false);
         }
-    }, [displayProfile, postsOffset]);
-
-    // Initial posts load
-    useEffect(() => {
-        if (displayProfile) {
-            loadPosts(true);
-        }
     }, [displayProfile]);
 
-    // Posts infinite scroll observer
-    useEffect(() => {
-        if (activeTab !== 'posts') return;
-
-        const observer = new IntersectionObserver(
-            (entries) => {
-                if (entries[0].isIntersecting && postsHasMore && !postsLoadingMore && !postsLoading) {
-                    loadMorePosts();
-                }
-            },
-            { threshold: 0.1 }
-        );
-
-        if (postsObserverTarget.current) {
-            observer.observe(postsObserverTarget.current);
-        }
-
-        return () => observer.disconnect();
-    }, [postsHasMore, postsLoadingMore, postsLoading, activeTab]);
-
-    const loadMorePosts = async () => {
+    const loadMorePosts = useCallback(async () => {
         if (!postsHasMore || postsLoadingMore || !displayProfile) return;
 
         setPostsLoadingMore(true);
@@ -301,18 +272,50 @@ export default function ProfilePage() {
         } finally {
             setPostsLoadingMore(false);
         }
-    };
+    }, [displayProfile, postsHasMore, postsLoadingMore, postsOffset]);
 
-    const handlePostDeleted = (postId: string) => {
-        setPosts(prev => prev.filter(p => p.id !== postId));
-        setUserStats(prev => ({ ...prev, postsCount: prev.postsCount - 1 }));
+    // Initial posts load
+    useEffect(() => {
+        if (displayProfile) {
+            void loadPosts(true);
+        }
+    }, [displayProfile, loadPosts]);
+
+    // Posts infinite scroll observer
+    useEffect(() => {
+        if (activeTab !== 'posts') return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting && postsHasMore && !postsLoadingMore && !postsLoading) {
+                    void loadMorePosts();
+                }
+            },
+            { threshold: 0.1 }
+        );
+
+        if (postsObserverTarget.current) {
+            observer.observe(postsObserverTarget.current);
+        }
+
+        return () => observer.disconnect();
+    }, [postsHasMore, postsLoadingMore, postsLoading, activeTab, loadMorePosts]);
+
+    const handlePostDeleted = async (postId: string) => {
+        if (!window.confirm('Delete this post permanently?')) return;
+        try {
+            await deletePost(postId);
+            setPosts(prev => prev.filter(p => p.id !== postId));
+            setUserStats(prev => ({ ...prev, postsCount: Math.max(0, prev.postsCount - 1) }));
+        } catch (err) {
+            console.error('Failed to delete post:', err);
+            window.alert('The post could not be deleted.');
+        }
     };
 
     // Load followers list
-    const loadFollowersList = useCallback(async (reset = false) => {
+    const loadFollowersList = useCallback(async (reset = false, currentOffset = 0) => {
         if (!displayProfile) return;
-
-        const currentOffset = reset ? 0 : followersOffset;
 
         try {
             if (reset) {
@@ -346,13 +349,11 @@ export default function ProfilePage() {
             setFollowersLoading(false);
             setFollowersLoadingMore(false);
         }
-    }, [displayProfile, followersOffset, authProfile]);
+    }, [displayProfile, authProfile]);
 
     // Load following list
-    const loadFollowingList = useCallback(async (reset = false) => {
+    const loadFollowingList = useCallback(async (reset = false, currentOffset = 0) => {
         if (!displayProfile) return;
-
-        const currentOffset = reset ? 0 : followingOffset;
 
         try {
             if (reset) {
@@ -386,17 +387,17 @@ export default function ProfilePage() {
             setFollowingLoading(false);
             setFollowingLoadingMore(false);
         }
-    }, [displayProfile, followingOffset, authProfile]);
+    }, [displayProfile, authProfile]);
 
     // Load followers/following when tab changes
     useEffect(() => {
         if (activeTab === 'followers' && followersList.length === 0 && displayProfile) {
-            loadFollowersList(true);
+            void loadFollowersList(true);
         }
         if (activeTab === 'following' && followingList.length === 0 && displayProfile) {
-            loadFollowingList(true);
+            void loadFollowingList(true);
         }
-    }, [activeTab, displayProfile]);
+    }, [activeTab, displayProfile, followersList.length, followingList.length, loadFollowersList, loadFollowingList]);
 
     // Followers infinite scroll
     useEffect(() => {
@@ -408,7 +409,7 @@ export default function ProfilePage() {
                     setFollowersLoadingMore(true);
                     const newOffset = followersOffset + FOLLOW_LIST_PAGE_SIZE;
                     setFollowersOffset(newOffset);
-                    loadFollowersList(false);
+                    void loadFollowersList(false, newOffset);
                 }
             },
             { threshold: 0.1 }
@@ -419,7 +420,7 @@ export default function ProfilePage() {
         }
 
         return () => observer.disconnect();
-    }, [followersHasMore, followersLoadingMore, followersLoading, activeTab]);
+    }, [followersHasMore, followersLoadingMore, followersLoading, activeTab, followersOffset, loadFollowersList]);
 
     // Following infinite scroll
     useEffect(() => {
@@ -431,7 +432,7 @@ export default function ProfilePage() {
                     setFollowingLoadingMore(true);
                     const newOffset = followingOffset + FOLLOW_LIST_PAGE_SIZE;
                     setFollowingOffset(newOffset);
-                    loadFollowingList(false);
+                    void loadFollowingList(false, newOffset);
                 }
             },
             { threshold: 0.1 }
@@ -442,7 +443,7 @@ export default function ProfilePage() {
         }
 
         return () => observer.disconnect();
-    }, [followingHasMore, followingLoadingMore, followingLoading, activeTab]);
+    }, [followingHasMore, followingLoadingMore, followingLoading, activeTab, followingOffset, loadFollowingList]);
 
     // Loading state
     if (isLoading) {

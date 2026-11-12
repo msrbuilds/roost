@@ -73,7 +73,7 @@ export default function FeatureRequestDetailPage() {
             return {
                 ...prev,
                 user_has_voted: !prev.user_has_voted,
-                vote_count: prev.user_has_voted ? prev.vote_count - 1 : prev.vote_count + 1,
+                vote_count: prev.user_has_voted ? (prev.vote_count ?? 0) - 1 : (prev.vote_count ?? 0) + 1,
             };
         });
 

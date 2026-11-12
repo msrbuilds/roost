@@ -28,28 +28,19 @@ export default function NotificationCenter({ isOpen, onClose, onNavigate, onUnre
   const observerTarget = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  const loadNotifications = useCallback(async (showLoading = true, reset = false) => {
+  const loadNotifications = useCallback(async (showLoading = true) => {
     if (!user) return;
-
-    const currentOffset = reset ? 0 : offset;
 
     if (showLoading) {
       setIsLoading(true);
     }
-    if (reset) {
-      setOffset(0);
-      setHasMore(true);
-    }
+    setOffset(0);
+    setHasMore(true);
     setError(null);
 
     try {
-      const data = await getNotifications(user.id, NOTIFICATIONS_PER_PAGE, currentOffset);
-
-      if (reset) {
-        setNotifications(data);
-      } else {
-        setNotifications(prev => [...prev, ...data]);
-      }
+      const data = await getNotifications(user.id, NOTIFICATIONS_PER_PAGE, 0);
+      setNotifications(data);
       setHasMore(data.length >= NOTIFICATIONS_PER_PAGE);
     } catch (err) {
       console.error('Error loading notifications:', err);
@@ -60,7 +51,7 @@ export default function NotificationCenter({ isOpen, onClose, onNavigate, onUnre
       }
       setLoadingMore(false);
     }
-  }, [user, offset]);
+  }, [user]);
 
   const loadMore = useCallback(async () => {
     if (!hasMore || loadingMore || !user) return;
@@ -87,9 +78,9 @@ export default function NotificationCenter({ isOpen, onClose, onNavigate, onUnre
       setNotifications([]);
       setOffset(0);
       setHasMore(true);
-      loadNotifications(true, true);
+      void loadNotifications(true);
     }
-  }, [isOpen]);
+  }, [isOpen, loadNotifications]);
 
   // Infinite scroll observer
   useEffect(() => {
@@ -127,14 +118,14 @@ export default function NotificationCenter({ isOpen, onClose, onNavigate, onUnre
         setNotifications([]);
         setOffset(0);
         setHasMore(true);
-        loadNotifications(false, true);
+        void loadNotifications(false);
       })
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, isOpen]);
+  }, [user, isOpen, loadNotifications]);
 
   const handleNotificationClick = async (notification: Notification) => {
     // Mark as read if not already
@@ -217,7 +208,7 @@ export default function NotificationCenter({ isOpen, onClose, onNavigate, onUnre
           ) : error ? (
             <div className="flex flex-col items-center justify-center p-8 text-center">
               <p className="text-sm text-error mb-2">{error}</p>
-              <button onClick={() => loadNotifications(true, true)} className="btn btn-secondary btn-sm">
+              <button onClick={() => void loadNotifications(true)} className="btn btn-secondary btn-sm">
                 Retry
               </button>
             </div>

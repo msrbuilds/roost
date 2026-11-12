@@ -53,7 +53,7 @@ router.post('/process-emails', async (req: Request, res: Response) => {
             errors: [] as string[],
         };
 
-        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5000';
 
         // Process each notification
         for (const notification of pendingNotifications as PendingNotification[]) {
@@ -66,14 +66,17 @@ router.post('/process-emails', async (req: Request, res: Response) => {
                     notificationType: notification.notification_type,
                     title: notification.title,
                     message: notification.message || undefined,
-                    link: notification.link ? `${frontendUrl}${notification.link}` : undefined,
+                    link: notification.link?.startsWith('/') && !notification.link.startsWith('//')
+                        ? new URL(notification.link, frontendUrl).toString()
+                        : undefined,
                 });
 
                 if (emailSent) {
                     // Mark as sent in database
-                    await supabaseAdmin.rpc('mark_notification_email_sent', {
+                    const { error: markError } = await supabaseAdmin.rpc('mark_notification_email_sent', {
                         p_notification_id: notification.notification_id,
                     });
+                    if (markError) throw markError;
                     results.sent++;
                 } else {
                     results.failed++;

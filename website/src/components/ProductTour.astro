@@ -1,0 +1,11 @@
+---
+import { Image } from 'astro:assets';
+import community from '../assets/community.png';
+import lessonImage from '../assets/lesson.png';
+interface Props { lesson?: boolean; }
+const { lesson = false } = Astro.props;
+---
+<section class:list={['container', 'product-tour', lesson && 'feature-tour']}>
+  <div class="section-heading"><div><span class="small-label">{lesson ? 'LESS SCATTERED. MORE LEARNING.' : 'A CLOSER LOOK'}</span><h2>{lesson ? 'A classroom that feels' : 'This is where your'}<br /><em>{lesson ? 'part of the community.' : 'community comes to life.'}</em></h2></div>{!lesson && <p>A shared feed. Familiar faces.<br />A reason to come back.</p>}</div>
+  <figure><Image src={lesson ? lessonImage : community} alt={lesson ? 'A Roost lesson page with course modules, progress, an embedded video, and discussion.' : 'Roost’s community feed with pinned posts, reactions, member activity, and a contributor leaderboard.'} width={1600} widths={[640, 1000, 1600]} sizes="(max-width: 800px) 95vw, 1200px" format="webp" loading="lazy" /><figcaption>{lesson ? 'Classroom learning' : 'Community feed'} · example content shown</figcaption></figure>
+</section>

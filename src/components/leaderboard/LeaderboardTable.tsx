@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import { Trophy } from 'lucide-react';
 import { getGlobalLeaderboard, getGroupLeaderboard, subscribeToLeaderboardChanges } from '../../services';
 import { useAuth } from '../../contexts/AuthContext';
@@ -22,46 +22,7 @@ export default function LeaderboardTable({ groupId, period }: LeaderboardTablePr
 
     const ITEMS_PER_PAGE = 50;
 
-    useEffect(() => {
-        // Reset state when groupId or period changes
-        setLeaderboard([]);
-        setOffset(0);
-        setHasMore(true);
-        loadLeaderboard(true, 0);
-
-        // Subscribe to real-time updates
-        const channel = subscribeToLeaderboardChanges(groupId || null, () => {
-            // On real-time update, reload from beginning
-            setLeaderboard([]);
-            setOffset(0);
-            setHasMore(true);
-            loadLeaderboard(false, 0);
-        });
-
-        return () => {
-            channel.unsubscribe();
-        };
-    }, [groupId, period]);
-
-    // Infinite scroll observer
-    useEffect(() => {
-        const observer = new IntersectionObserver(
-            (entries) => {
-                if (entries[0].isIntersecting && hasMore && !loadingMore && !loading) {
-                    loadMore();
-                }
-            },
-            { threshold: 0.1 }
-        );
-
-        if (observerTarget.current) {
-            observer.observe(observerTarget.current);
-        }
-
-        return () => observer.disconnect();
-    }, [hasMore, loadingMore, loading]);
-
-    const loadLeaderboard = async (showLoading = true, currentOffset = offset) => {
+    const loadLeaderboard = useCallback(async (showLoading = true, currentOffset = 0) => {
         try {
             if (showLoading) setLoading(true);
 
@@ -80,9 +41,9 @@ export default function LeaderboardTable({ groupId, period }: LeaderboardTablePr
         } finally {
             if (showLoading) setLoading(false);
         }
-    };
+    }, [groupId, period]);
 
-    const loadMore = async () => {
+    const loadMore = useCallback(async () => {
         if (!hasMore || loadingMore) return;
 
         try {
@@ -101,7 +62,46 @@ export default function LeaderboardTable({ groupId, period }: LeaderboardTablePr
         } finally {
             setLoadingMore(false);
         }
-    };
+    }, [groupId, hasMore, loadingMore, offset, period]);
+
+    useEffect(() => {
+        // Reset state when groupId or period changes
+        setLeaderboard([]);
+        setOffset(0);
+        setHasMore(true);
+            void loadLeaderboard(true, 0);
+
+        // Subscribe to real-time updates
+        const channel = subscribeToLeaderboardChanges(groupId || null, () => {
+            // On real-time update, reload from beginning
+            setLeaderboard([]);
+            setOffset(0);
+            setHasMore(true);
+            void loadLeaderboard(false, 0);
+        });
+
+        return () => {
+            channel.unsubscribe();
+        };
+    }, [groupId, period, loadLeaderboard]);
+
+    // Infinite scroll observer
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting && hasMore && !loadingMore && !loading) {
+                    void loadMore();
+                }
+            },
+            { threshold: 0.1 }
+        );
+
+        if (observerTarget.current) {
+            observer.observe(observerTarget.current);
+        }
+
+        return () => observer.disconnect();
+    }, [hasMore, loadingMore, loading, loadMore]);
 
     // Get medal icon for top 3
     const getMedalElement = (rank: number) => {

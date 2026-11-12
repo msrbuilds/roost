@@ -1,0 +1,41 @@
+---
+import Base from '../layouts/Base.astro';
+import Icon from '../components/Icon.astro';
+import CommunityPreview from '../components/CommunityPreview.astro';
+import ProductTour from '../components/ProductTour.astro';
+import { features, repository } from '../data/site';
+const faqs = [
+  ['Is Roost really free?', 'Yes. Roost is free, open-source software under the MIT license. There is no Roost license fee or per-member charge. You pay your own infrastructure providers for hosting, storage, email, and any other services you choose.'],
+  ['Do I need to know how to code?', 'You do not need to write application code to install Roost. You should be comfortable with a terminal, DNS, environment variables, and maintaining a server. The interactive installer and deployment guides walk through the setup.'],
+  ['Can I use managed Supabase?', 'Yes. Use Supabase Cloud for managed database and authentication, or run the full self-hosted stack. The frontend and API still need hosting, and file uploads require S3-compatible storage.'],
+  ['Can I customize the branding and code?', 'Yes. Configure your community name and branding, choose the features you need, and modify the source under the MIT license. Third-party components retain their own licenses.'],
+  ['Does Roost include a hosted service?', 'This release is a self-hosted product. There is no hosted Roost subscription or managed community service. The docs help you install and operate your own community.'],
+];
+---
+<Base>
+  <main id="main">
+    <section class="hero container">
+      <div class="hero-copy"><a class="release-pill" href={repository}><span class="status-dot"></span> OPEN SOURCE. OPEN POSSIBILITIES. <Icon name="external" size={14} /></a>
+        <h1>A home for<br />your people.<br /><em>A platform you own.</em></h1>
+        <p class="hero-description">Bring your conversations, classrooms, and community together. Roost is free, open source, and ready to make your own.</p>
+        <div class="button-row"><a class="button" href="/docs/self-hosted-setup/">Self-host Roost <Icon name="arrow" size={19} /></a><a class="text-link" href={repository}>Explore the code <Icon name="external" size={17} /></a></div>
+        <div class="hero-proof"><span><Icon name="check" size={15} /> MIT licensed</span><span><Icon name="check" size={15} /> Your infrastructure</span><span><Icon name="check" size={15} /> No per-member fees</span></div>
+      </div><CommunityPreview />
+    </section>
+    <section class="belief-strip"><div class="container"><span>FOR PEOPLE WHO BRING PEOPLE TOGETHER</span><div><span>Creator communities</span> <i>✳</i> <span>Learning groups</span> <i>✳</i> <span>Builder collectives</span> <i>✳</i> <span>Member spaces</span></div></div></section>
+    <section class="section container" id="features"><div class="section-heading"><div><span class="small-label">MORE TOGETHER. LESS SCATTERED.</span><h2>Everything your community<br />needs to <em>take root.</em></h2></div><p>Keep the conversations close to the learning,<br class="desktop-break" /> and the people close to each other.</p></div>
+      <div class="feature-grid">{features.slice(0, 3).map((feature, index) => <a class={`feature-card feature-${index}`} href="/features/"><span class="feature-icon"><Icon name={feature.icon} size={25} /></span><span class="small-label">{feature.eyebrow}</span><h3>{feature.title}</h3><p>{feature.text}</p><span class="card-link">Explore features <Icon name="arrow" size={17} /></span></a>)}</div>
+      <div class="feature-footnote"><span>Plus messaging, events, showcases, moderation, and more.</span><a class="text-link" href="/features/">See the full picture <Icon name="arrow" size={17} /></a></div>
+    </section>
+    <ProductTour />
+    <section class="ownership-section"><div class="container ownership-grid"><div><span class="small-label">YOUR COMMUNITY SHOULDN’T FEEL RENTED.</span><h2>Build something<br />you can <em>keep.</em></h2><p>You put the care into your community. You should have control over where it lives, how it looks, and what happens next.</p><ul class="check-list"><li><Icon name="check" size={18} /> Run it on infrastructure you choose.</li><li><Icon name="check" size={18} /> Keep direct access to your database and files.</li><li><Icon name="check" size={18} /> Read, adapt, and contribute to the source.</li></ul><a class="text-link" href="/docs/">Find your setup <Icon name="arrow" size={18} /></a></div>
+      <div class="stack-diagram"><div class="stack-caption">YOUR STACK. YOUR CALL.</div><div class="stack-card stack-main"><img src="/brand.png" alt="" width="36" height="36" /><div><strong>Your Roost community</strong><span>React · TypeScript · Express</span></div><span class="stack-badge">OPEN SOURCE</span></div><div class="stack-connector"></div><div class="stack-split"><div class="stack-card"><Icon name="server" /><strong>Supabase</strong><span>Cloud or self-hosted</span></div><div class="stack-card"><Icon name="shield" /><strong>Your files</strong><span>S3-compatible storage</span></div></div><div class="stack-foundation"><span class="status-dot"></span> Running on your infrastructure</div><p>You manage the hosting, updates, and backups.<br />We give you the platform and the guidebook.</p></div>
+    </div></section>
+    <section class="section container getting-started"><div class="section-heading"><div><span class="small-label">FROM REPOSITORY TO COMMUNITY</span><h2>Make yourself <em>at home.</em></h2></div><a class="text-link" href="/docs/self-hosted-setup/">Open the getting started guide <Icon name="arrow" size={18} /></a></div>
+      <div class="steps-grid"><div><span class="step-number">01</span><h3>Pick your setup.</h3><p>A full self-hosted stack or managed Supabase. Choose what fits your infrastructure.</p></div><div><span class="step-number">02</span><h3>Make it yours.</h3><p>Configure your domain, storage, email, and community branding with the installer.</p></div><div><span class="step-number">03</span><h3>Bring your people.</h3><p>Create your admin account, set up your first space, and start the conversation.</p></div></div>
+      <div class="install-strip"><div><span class="small-label">START WITH THE SOURCE</span><pre class="install-command"><code>git clone https://github.com/msrbuilds/roost.git</code></pre></div><a href="/docs/install-script/">Then run the installer <Icon name="arrow" size={18} /></a></div>
+    </section>
+    <section class="faq-section container"><div><span class="small-label">A FEW GOOD QUESTIONS</span><h2>Before you<br /> <em>settle in.</em></h2><p>Have another question?<br /><a href={`${repository}/issues`}>Ask on GitHub ↗</a></p></div><div class="faq-list">{faqs.map(([question, answer]) => <details><summary>{question}<span aria-hidden="true">+</span></summary><p>{answer}</p></details>)}</div></section>
+    <section class="container final-cta"><div><span class="small-label">GOOD THINGS START WITH GOOD PEOPLE.</span><h2>Give yours a place<br />to <em>come together.</em></h2></div><div><a class="button button-light" href="/docs/self-hosted-setup/">Start your community <Icon name="arrow" size={19} /></a><span>Free software. Built to be yours.</span></div></section>
+  </main>
+</Base>

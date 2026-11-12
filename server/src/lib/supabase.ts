@@ -23,3 +23,24 @@ export const supabaseAdmin = createClient(supabaseUrl, supabaseSecretKey, {
     },
   },
 });
+
+// Password verification must never run on the privileged singleton because
+// signInWithPassword installs the user's access token on that client.
+export function createUserAuthClient() {
+  return createClient(supabaseUrl!, supabaseSecretKey!, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+      detectSessionInUrl: false,
+    },
+  });
+}
+
+// Executes PostgREST/RPC calls with the verified user's JWT so auth.uid(), RLS,
+// and caller-bound SECURITY DEFINER checks see the real actor.
+export function createUserScopedClient(accessToken: string) {
+  return createClient(supabaseUrl!, supabaseSecretKey!, {
+    auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false },
+    global: { headers: { Authorization: `Bearer ${accessToken}` } },
+  });
+}

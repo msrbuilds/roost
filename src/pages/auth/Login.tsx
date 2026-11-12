@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/services/supabase';
-import { Mail, Loader2, Eye, EyeOff, Shield, Key, CheckCircle, RefreshCw } from 'lucide-react';
+import { Mail, Loader2, Eye, EyeOff, Shield, CheckCircle, RefreshCw } from 'lucide-react';
+import { APP_CONFIG } from '@/config/app';
 
 type LoginStep = 'credentials' | '2fa' | 'email-not-confirmed';
 
@@ -13,8 +14,7 @@ export default function Login() {
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [twoFactorCode, setTwoFactorCode] = useState('');
-    const [useBackupCode, setUseBackupCode] = useState(false);
-    const [backupCode, setBackupCode] = useState('');
+    const [mfaFactorId, setMfaFactorId] = useState('');
 
     // UI state
     const [step, setStep] = useState<LoginStep>('credentials');
@@ -29,39 +29,30 @@ export default function Login() {
         setIsLoading(true);
 
         try {
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-            const response = await fetch(`${apiUrl}/api/2fa/check-required`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ email, password }),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                // Check if email is not confirmed
-                if (data.code === 'EMAIL_NOT_CONFIRMED') {
-                    setUnconfirmedEmail(data.email || email);
+            const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+            if (signInError) {
+                if (signInError.message.toLowerCase().includes('email not confirmed')) {
+                    setUnconfirmedEmail(email);
                     setStep('email-not-confirmed');
                     return;
                 }
-                throw new Error(data.error || 'Invalid email or password');
+                throw signInError;
             }
 
-            if (data.requires2FA) {
-                // User has 2FA enabled, show 2FA step
+            const [{ data: assurance, error: assuranceError }, { data: factors, error: factorsError }] = await Promise.all([
+                supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
+                supabase.auth.mfa.listFactors(),
+            ]);
+            if (assuranceError) throw assuranceError;
+            if (factorsError) throw factorsError;
+
+            if (assurance.nextLevel === 'aal2' && assurance.currentLevel !== 'aal2') {
+                const verifiedFactor = factors.totp.find((factor) => factor.status === 'verified');
+                if (!verifiedFactor) throw new Error('Your two-factor configuration is incomplete. Contact support.');
+                setMfaFactorId(verifiedFactor.id);
                 setStep('2fa');
             } else {
-                // No 2FA, set the session and navigate
-                if (data.session) {
-                    await supabase.auth.setSession({
-                        access_token: data.session.access_token,
-                        refresh_token: data.session.refresh_token,
-                    });
-                    navigate('/');
-                }
+                navigate('/');
             }
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to sign in');
@@ -76,32 +67,13 @@ export default function Login() {
         setIsLoading(true);
 
         try {
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-            const endpoint = useBackupCode ? '/api/2fa/verify-login-backup' : '/api/2fa/verify-login';
-            const code = useBackupCode ? backupCode : twoFactorCode;
-
-            const response = await fetch(`${apiUrl}${endpoint}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ email, password, code }),
+            if (!mfaFactorId) throw new Error('No verified authenticator was found. Sign in again.');
+            const { error: verifyError } = await supabase.auth.mfa.challengeAndVerify({
+                factorId: mfaFactorId,
+                code: twoFactorCode,
             });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.error || 'Invalid verification code');
-            }
-
-            // Set the session and navigate
-            if (data.session) {
-                await supabase.auth.setSession({
-                    access_token: data.session.access_token,
-                    refresh_token: data.session.refresh_token,
-                });
-                navigate('/');
-            }
+            if (verifyError) throw verifyError;
+            navigate('/');
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to verify code');
         } finally {
@@ -112,8 +84,7 @@ export default function Login() {
     const handleBackToCredentials = () => {
         setStep('credentials');
         setTwoFactorCode('');
-        setBackupCode('');
-        setUseBackupCode(false);
+        setMfaFactorId('');
         setError(null);
         setResendStatus('idle');
     };
@@ -155,16 +126,18 @@ export default function Login() {
             >
                 Login
             </Link>
-            <Link
-                to="/signup"
-                className={`flex-1 py-2.5 text-center text-sm font-medium rounded-lg transition-all duration-200 ${
-                    active === 'signup'
-                        ? 'bg-white dark:bg-surface-700 text-surface-900 dark:text-surface-100 shadow-sm'
-                        : 'text-surface-500 dark:text-surface-400 hover:text-surface-700 dark:hover:text-surface-300'
-                }`}
-            >
-                Sign Up
-            </Link>
+            {APP_CONFIG.features.signup && (
+                <Link
+                    to="/signup"
+                    className={`flex-1 py-2.5 text-center text-sm font-medium rounded-lg transition-all duration-200 ${
+                        active === 'signup'
+                            ? 'bg-white dark:bg-surface-700 text-surface-900 dark:text-surface-100 shadow-sm'
+                            : 'text-surface-500 dark:text-surface-400 hover:text-surface-700 dark:hover:text-surface-300'
+                    }`}
+                >
+                    Sign Up
+                </Link>
+            )}
         </div>
     );
 
@@ -370,10 +343,7 @@ export default function Login() {
                     Two-Factor Authentication
                 </h1>
                 <p className="text-surface-500 dark:text-surface-400 mt-2 text-sm">
-                    {useBackupCode
-                        ? 'Enter one of your backup codes'
-                        : 'Enter the 6-digit code from your authenticator app'
-                    }
+                    Enter the 6-digit code from your authenticator app
                 </p>
             </div>
 
@@ -386,28 +356,7 @@ export default function Login() {
 
             {/* 2FA form */}
             <form onSubmit={handle2FASubmit} className="space-y-5">
-                {useBackupCode ? (
-                    <div>
-                        <label htmlFor="backupCode" className="block text-sm font-medium text-surface-900 dark:text-surface-200 mb-1.5">
-                            Backup Code
-                        </label>
-                        <div className="relative">
-                            <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400" />
-                            <input
-                                id="backupCode"
-                                type="text"
-                                value={backupCode}
-                                onChange={(e) => setBackupCode(e.target.value.toUpperCase())}
-                                placeholder="XXXX-XXXX"
-                                required
-                                className="input w-full pl-10 font-mono tracking-wider"
-                                disabled={isLoading}
-                                autoFocus
-                            />
-                        </div>
-                    </div>
-                ) : (
-                    <div>
+                <div>
                         <label htmlFor="twoFactorCode" className="block text-sm font-medium text-surface-900 dark:text-surface-200 mb-1.5">
                             Verification Code
                         </label>
@@ -426,13 +375,12 @@ export default function Login() {
                             disabled={isLoading}
                             autoFocus
                         />
-                    </div>
-                )}
+                </div>
 
                 {/* Submit button */}
                 <button
                     type="submit"
-                    disabled={isLoading || (useBackupCode ? !backupCode : twoFactorCode.length !== 6)}
+                    disabled={isLoading || twoFactorCode.length !== 6}
                     className="btn-primary w-full py-2.5"
                 >
                     {isLoading ? (
@@ -445,25 +393,6 @@ export default function Login() {
                     )}
                 </button>
             </form>
-
-            {/* Toggle backup code / authenticator */}
-            <div className="mt-4 text-center">
-                <button
-                    type="button"
-                    onClick={() => {
-                        setUseBackupCode(!useBackupCode);
-                        setError(null);
-                        setTwoFactorCode('');
-                        setBackupCode('');
-                    }}
-                    className="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
-                >
-                    {useBackupCode
-                        ? 'Use authenticator app instead'
-                        : 'Use a backup code instead'
-                    }
-                </button>
-            </div>
 
             {/* Back to login */}
             <div className="mt-6 text-center">

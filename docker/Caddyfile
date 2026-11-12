@@ -1,0 +1,3 @@
+{$ROOST_DOMAIN} {
+    reverse_proxy nginx:80
+}

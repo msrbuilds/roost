@@ -53,13 +53,27 @@ describe('Message Service', () => {
         },
       ];
 
-      const mockChain = {
+      const sentChain = {
         select: vi.fn().mockReturnThis(),
-        or: vi.fn().mockReturnThis(),
-        order: vi.fn().mockResolvedValue({ data: mockMessages, error: null }),
+        eq: vi.fn().mockReturnThis(),
+        order: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockResolvedValue({ data: [mockMessages[0]], error: null }),
+      };
+      const receivedChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        order: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockResolvedValue({ data: [mockMessages[1]], error: null }),
+      };
+      const unreadChain = {
+        data: [{ sender_id: otherUserId }], error: null,
+        select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(),
       };
 
-      vi.mocked(supabase.from).mockReturnValue(mockChain as any);
+      vi.mocked(supabase.from)
+        .mockReturnValueOnce(sentChain as any)
+        .mockReturnValueOnce(receivedChain as any)
+        .mockReturnValueOnce(unreadChain as any);
 
       const result = await getConversations(currentUserId);
 
@@ -70,13 +84,18 @@ describe('Message Service', () => {
     });
 
     it('should return empty array when no messages exist', async () => {
-      const mockChain = {
+      const emptyChain = {
         select: vi.fn().mockReturnThis(),
-        or: vi.fn().mockReturnThis(),
-        order: vi.fn().mockResolvedValue({ data: [], error: null }),
+        eq: vi.fn().mockReturnThis(),
+        order: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockResolvedValue({ data: [], error: null }),
       };
+      const unreadChain = { data: [], error: null, select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis() };
 
-      vi.mocked(supabase.from).mockReturnValue(mockChain as any);
+      vi.mocked(supabase.from)
+        .mockReturnValueOnce(emptyChain as any)
+        .mockReturnValueOnce(emptyChain as any)
+        .mockReturnValueOnce(unreadChain as any);
 
       const result = await getConversations('user-1');
 
@@ -86,13 +105,18 @@ describe('Message Service', () => {
     it('should throw error on database failure', async () => {
       const mockError = { message: 'Database error' };
 
-      const mockChain = {
+      const failedChain = {
         select: vi.fn().mockReturnThis(),
-        or: vi.fn().mockReturnThis(),
-        order: vi.fn().mockResolvedValue({ data: null, error: mockError }),
+        eq: vi.fn().mockReturnThis(),
+        order: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockResolvedValue({ data: null, error: mockError }),
       };
+      const unreadChain = { data: [], error: null, select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis() };
 
-      vi.mocked(supabase.from).mockReturnValue(mockChain as any);
+      vi.mocked(supabase.from)
+        .mockReturnValueOnce(failedChain as any)
+        .mockReturnValueOnce(failedChain as any)
+        .mockReturnValueOnce(unreadChain as any);
 
       await expect(getConversations('user-1')).rejects.toEqual(mockError);
     });

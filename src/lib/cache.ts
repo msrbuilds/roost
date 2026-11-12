@@ -46,6 +46,10 @@ export function cacheInvalidate(prefix: string): void {
     }
 }
 
+export function cacheClear(): void {
+    store.clear();
+}
+
 /**
  * Wrap an async function with caching.
  * Returns cached data if fresh, otherwise calls fn and caches result.

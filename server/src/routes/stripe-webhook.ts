@@ -6,6 +6,12 @@ import { invalidateWebhookRelatedCaches } from '../services/cache.js';
 
 export const stripeWebhookRouter = Router();
 
+const ALLOWED_PRICE_IDS = new Set(
+  [process.env.STRIPE_PRICE_ID || '', ...(process.env.STRIPE_ALLOWED_PRICE_IDS || '').split(',')]
+    .map((value) => value.trim())
+    .filter(Boolean)
+);
+
 // Map Stripe subscription status to our local status
 function mapStripeStatus(stripeStatus: string): string {
   switch (stripeStatus) {
@@ -31,7 +37,7 @@ async function logWebhook(
   stripeEventId: string,
   payload: Record<string, unknown>,
   ipAddress: string | null
-): Promise<string | null> {
+): Promise<string> {
   const { data, error } = await supabaseAdmin
     .from('stripe_webhook_logs')
     .insert({
@@ -44,15 +50,15 @@ async function logWebhook(
     .single();
 
   if (error) {
-    console.error('[Stripe Webhook] Failed to log event:', error);
-    return null;
+    throw new Error(`Failed to persist Stripe event: ${error.message}`);
   }
-  return data?.id || null;
+  if (!data?.id) throw new Error('Stripe event log did not return an id');
+  return data.id;
 }
 
 // Mark webhook as processed
 async function markWebhookProcessed(logId: string, errorMessage?: string) {
-  await supabaseAdmin
+  const { error } = await supabaseAdmin
     .from('stripe_webhook_logs')
     .update({
       processed: !errorMessage,
@@ -60,43 +66,44 @@ async function markWebhookProcessed(logId: string, errorMessage?: string) {
       processed_at: new Date().toISOString(),
     })
     .eq('id', logId);
+  if (error) throw new Error(`Failed to update Stripe event log: ${error.message}`);
 }
 
 // Find user ID from Stripe customer ID via local DB
 async function findUserByStripeCustomer(stripeCustomerId: string): Promise<string | null> {
-  const { data } = await supabaseAdmin
+  const { data, error } = await supabaseAdmin
     .from('stripe_customers')
     .select('user_id')
     .eq('stripe_customer_id', stripeCustomerId)
     .single();
 
+  if (error && error.code !== 'PGRST116') throw new Error(`Stripe customer lookup failed: ${error.message}`);
   return data?.user_id || null;
 }
 
 // Update user membership type
 async function updateMembershipType(userId: string, type: 'premium' | 'free') {
-  await supabaseAdmin
+  const { error } = await supabaseAdmin
     .from('profiles')
     .update({
       membership_type: type,
       updated_at: new Date().toISOString(),
     })
     .eq('id', userId);
+  if (error) throw new Error(`Membership update failed: ${error.message}`);
 }
 
 // Handle checkout.session.completed
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promise<void> {
   const userId = session.client_reference_id;
   const stripeCustomerId = session.customer as string;
-  const subscriptionId = session.subscription as string;
 
   if (!userId || !stripeCustomerId) {
-    console.error('[Stripe Webhook] Missing userId or customerId in checkout session');
-    return;
+    throw new Error('Checkout session is missing its user or customer mapping');
   }
 
   // Ensure customer mapping exists
-  await supabaseAdmin
+  const { error: customerError } = await supabaseAdmin
     .from('stripe_customers')
     .upsert({
       stripe_customer_id: stripeCustomerId,
@@ -105,12 +112,9 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
     }, {
       onConflict: 'stripe_customer_id',
     });
+  if (customerError) throw new Error(`Customer mapping failed: ${customerError.message}`);
 
-  // If this is a subscription checkout, the subscription events will handle the rest
-  // But we can set premium immediately for responsiveness
-  if (subscriptionId) {
-    await updateMembershipType(userId, 'premium');
-  }
+  // Membership changes only after a subscription event verifies an allowed price.
 }
 
 // Handle subscription created or updated
@@ -119,12 +123,15 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription): Prom
   const userId = await findUserByStripeCustomer(stripeCustomerId);
 
   if (!userId) {
-    console.warn(`[Stripe Webhook] No user found for Stripe customer ${stripeCustomerId}`);
-    return;
+    throw new Error(`No user mapping exists for Stripe customer ${stripeCustomerId}`);
   }
 
   const status = mapStripeStatus(subscription.status);
   const priceItem = subscription.items.data[0];
+  const priceId = priceItem?.price?.id;
+  if (!priceId || !ALLOWED_PRICE_IDS.has(priceId)) {
+    throw new Error(`Subscription ${subscription.id} uses an unapproved Stripe price`);
+  }
 
   // Period dates are on subscription items in newer Stripe API versions
   const periodStart = priceItem?.current_period_start
@@ -135,13 +142,13 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription): Prom
     : null;
 
   // Upsert subscription record
-  await supabaseAdmin
+  const { error: subscriptionError } = await supabaseAdmin
     .from('stripe_subscriptions')
     .upsert({
       stripe_subscription_id: subscription.id,
       stripe_customer_id: stripeCustomerId,
       user_id: userId,
-      stripe_price_id: priceItem?.price?.id || '',
+      stripe_price_id: priceId,
       status,
       current_period_start: periodStart,
       current_period_end: periodEnd,
@@ -155,19 +162,21 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription): Prom
     }, {
       onConflict: 'stripe_subscription_id',
     });
+  if (subscriptionError) throw new Error(`Subscription upsert failed: ${subscriptionError.message}`);
 
   // Update membership type based on status
   if (status === 'active') {
     await updateMembershipType(userId, 'premium');
-  } else if (status === 'cancelled' || status === 'expired') {
+  } else if (status === 'cancelled' || status === 'expired' || status === 'failed_payment') {
     // Check if user has any other active subscriptions
-    const { data: activeSubs } = await supabaseAdmin
+    const { data: activeSubs, error: activeError } = await supabaseAdmin
       .from('stripe_subscriptions')
       .select('id')
       .eq('user_id', userId)
       .eq('status', 'active')
       .neq('stripe_subscription_id', subscription.id)
       .limit(1);
+    if (activeError) throw new Error(`Active subscription lookup failed: ${activeError.message}`);
 
     if (!activeSubs || activeSubs.length === 0) {
       await updateMembershipType(userId, 'free');
@@ -184,32 +193,33 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Pro
   const userId = await findUserByStripeCustomer(stripeCustomerId);
 
   if (!userId) {
-    console.warn(`[Stripe Webhook] No user found for Stripe customer ${stripeCustomerId}`);
-    return;
+    throw new Error(`No user mapping exists for Stripe customer ${stripeCustomerId}`);
   }
 
   // Update subscription status
-  await supabaseAdmin
+  const { error: cancelError } = await supabaseAdmin
     .from('stripe_subscriptions')
     .update({
       status: 'cancelled',
       ended_at: new Date().toISOString(),
     })
     .eq('stripe_subscription_id', subscription.id);
+  if (cancelError) throw new Error(`Subscription cancellation update failed: ${cancelError.message}`);
 
   // Check if user has other active subscriptions
-  const { data: activeSubs } = await supabaseAdmin
+  const { data: activeSubs, error: activeError } = await supabaseAdmin
     .from('stripe_subscriptions')
     .select('id')
     .eq('user_id', userId)
     .eq('status', 'active')
     .limit(1);
+  if (activeError) throw new Error(`Active subscription lookup failed: ${activeError.message}`);
 
   if (!activeSubs || activeSubs.length === 0) {
     await updateMembershipType(userId, 'free');
 
     // Notify user
-    await supabaseAdmin
+    const { error: notificationError } = await supabaseAdmin
       .from('notifications')
       .insert({
         user_id: userId,
@@ -217,6 +227,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Pro
         title: 'Subscription Cancelled',
         message: 'Your subscription has been cancelled. You can resubscribe at any time to regain premium access.',
       });
+    if (notificationError) throw new Error(`Cancellation notification failed: ${notificationError.message}`);
   }
 
   await invalidateWebhookRelatedCaches(userId);
@@ -234,18 +245,28 @@ async function handlePaymentFailed(invoice: Stripe.Invoice): Promise<void> {
   const stripeCustomerId = invoice.customer as string;
   const userId = await findUserByStripeCustomer(stripeCustomerId);
 
-  if (!userId) return;
+  if (!userId) throw new Error(`No user mapping exists for Stripe customer ${stripeCustomerId}`);
 
   const subscriptionId = getSubscriptionIdFromInvoice(invoice);
   if (subscriptionId) {
-    await supabaseAdmin
+    const { error: paymentUpdateError } = await supabaseAdmin
       .from('stripe_subscriptions')
       .update({ status: 'failed_payment' })
       .eq('stripe_subscription_id', subscriptionId);
+    if (paymentUpdateError) throw new Error(`Payment status update failed: ${paymentUpdateError.message}`);
   }
 
+  const { data: activeSubs, error: activeLookupError } = await supabaseAdmin
+    .from('stripe_subscriptions')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('status', 'active')
+    .limit(1);
+  if (activeLookupError) throw new Error(`Active subscription lookup failed: ${activeLookupError.message}`);
+  if (!activeSubs || activeSubs.length === 0) await updateMembershipType(userId, 'free');
+
   // Notify user
-  await supabaseAdmin
+  const { error: notificationError } = await supabaseAdmin
     .from('notifications')
     .insert({
       user_id: userId,
@@ -253,6 +274,7 @@ async function handlePaymentFailed(invoice: Stripe.Invoice): Promise<void> {
       title: 'Payment Failed',
       message: 'Your subscription payment failed. Please update your payment method to keep your premium access.',
     });
+  if (notificationError) throw new Error(`Payment failure notification failed: ${notificationError.message}`);
 
   await invalidateWebhookRelatedCaches(userId);
 }
@@ -277,24 +299,40 @@ stripeWebhookRouter.post('/', async (req: Request, res: Response) => {
   }
 
   // Idempotency check
-  const { data: existingLog } = await supabaseAdmin
+  const { data: existingLog, error: existingError } = await supabaseAdmin
     .from('stripe_webhook_logs')
-    .select('id')
+    .select('id, processed')
     .eq('stripe_event_id', event.id)
-    .single();
+    .maybeSingle();
 
-  if (existingLog) {
+  if (existingError) {
+    console.error('[Stripe Webhook] Idempotency lookup failed:', existingError);
+    return res.status(500).json({ error: 'Could not verify webhook idempotency' });
+  }
+
+  if (existingLog?.processed) {
     console.log(`[Stripe Webhook] Duplicate event ${event.id}, skipping`);
     return res.status(200).json({ received: true, duplicate: true });
   }
 
   // Log the event
-  const logId = await logWebhook(
-    event.type,
-    event.id,
-    event.data.object as unknown as Record<string, unknown>,
-    ipAddress
-  );
+  let logId = existingLog?.id;
+  try {
+    if (logId) {
+      const { error: retryError } = await supabaseAdmin.from('stripe_webhook_logs').update({
+        processed: false,
+        error_message: null,
+        processed_at: null,
+        payload: event.data.object as unknown as Record<string, unknown>,
+      }).eq('id', logId);
+      if (retryError) throw retryError;
+    } else {
+      logId = await logWebhook(event.type, event.id, event.data.object as unknown as Record<string, unknown>, ipAddress);
+    }
+  } catch (error) {
+    console.error('[Stripe Webhook] Event persistence failed:', error);
+    return res.status(500).json({ error: 'Could not persist webhook event' });
+  }
 
   try {
     switch (event.type) {
@@ -316,14 +354,19 @@ stripeWebhookRouter.post('/', async (req: Request, res: Response) => {
         break;
 
       case 'invoice.payment_succeeded': {
-        // Ensure user stays premium on renewal
         const invoice = event.data.object as Stripe.Invoice;
-        const customerId = invoice.customer as string;
-        const userId = await findUserByStripeCustomer(customerId);
-        if (userId) {
-          await updateMembershipType(userId, 'premium');
-          await invalidateWebhookRelatedCaches(userId);
-        }
+        const subscriptionId = getSubscriptionIdFromInvoice(invoice);
+        if (!subscriptionId) break; // One-time invoices do not grant membership.
+        const { data: localSubscription, error: subscriptionLookupError } = await supabaseAdmin
+          .from('stripe_subscriptions')
+          .select('user_id, stripe_price_id, status')
+          .eq('stripe_subscription_id', subscriptionId)
+          .single();
+        if (subscriptionLookupError || !localSubscription) throw new Error('Renewal subscription is not registered');
+        if (!ALLOWED_PRICE_IDS.has(localSubscription.stripe_price_id)) throw new Error('Renewal uses an unapproved Stripe price');
+        if (localSubscription.status !== 'active') throw new Error('Renewal subscription is not active');
+        await updateMembershipType(localSubscription.user_id, 'premium');
+        await invalidateWebhookRelatedCaches(localSubscription.user_id);
         break;
       }
 
@@ -331,19 +374,15 @@ stripeWebhookRouter.post('/', async (req: Request, res: Response) => {
         console.log(`[Stripe Webhook] Unhandled event type: ${event.type}`);
     }
 
-    if (logId) {
-      await markWebhookProcessed(logId);
-    }
+    await markWebhookProcessed(logId);
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
     console.error(`[Stripe Webhook] Error processing ${event.type}:`, err);
-    if (logId) {
-      await markWebhookProcessed(logId, message);
-    }
+    try { await markWebhookProcessed(logId, message); } catch (logError) { console.error('[Stripe Webhook] Failed to record processing failure:', logError); }
+    return res.status(500).json({ error: 'Webhook processing failed' });
   }
 
-  // Always return 200 to acknowledge receipt
-  res.status(200).json({ received: true });
+  return res.status(200).json({ received: true });
 });
 
 // Health check

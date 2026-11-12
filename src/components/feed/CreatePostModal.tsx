@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { X, Image as ImageIcon, Link as LinkIcon, Loader2, Trash2, Upload } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import { Category } from '@/types';
-import { createPost, updatePost, getCategories, uploadImage, createAsset, linkAssetsToPost, getPostAssets, deleteAssetRecord, deleteFile } from '@/services';
+import { createPost, updatePost, getCategories, uploadFile, createAsset, linkAssetsToPost, getPostAssets, deleteAssetRecord, deleteFile } from '@/services';
 import { useAuth } from '@/contexts/AuthContext';
 
 const RichTextEditor = lazy(() => import('./RichTextEditor'));
@@ -109,12 +109,13 @@ export default function CreatePostModal({
                 }
 
                 // 1. Upload to S3
-                const uploadResult = await uploadImage(file);
+                const uploadResult = await uploadFile(file, groupId ? `groups/${groupId}/posts` : 'images');
 
                 // 2. Save to database
                 const assetData = await createAsset({
                     filename: uploadResult.fileName,
                     file_url: uploadResult.url,
+                    storage_key: uploadResult.key,
                     file_size: uploadResult.fileSize,
                     mime_type: uploadResult.mimeType,
                     asset_type: 'image',
@@ -133,7 +134,7 @@ export default function CreatePostModal({
             setIsUploading(false);
             setUploadProgress(0);
         }
-    }, [user]);
+    }, [user, groupId]);
 
     // Dropzone configuration
     const onDrop = useCallback((acceptedFiles: File[]) => {
@@ -154,11 +155,7 @@ export default function CreatePostModal({
         try {
             setAssets((prev) => prev.filter((a) => a.id !== asset.id));
 
-            // Extract key from URL
-            const urlParts = asset.file_url.split('/');
-            const key = urlParts.slice(3).join('/');
-
-            await deleteFile(key);
+            if (asset.storage_key) await deleteFile(asset.storage_key);
             await deleteAssetRecord(asset.id);
         } catch (err) {
             console.error('Failed to remove asset:', err);

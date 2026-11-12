@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 import type { Message, Profile, Asset } from '../types/database';
-import { uploadImage } from './s3';
+import { deleteFile, uploadFile, type UploadResult } from './s3';
 
 // Extended types for messages with author information
 export interface MessageWithSender extends Message {
@@ -56,6 +56,9 @@ export async function getConversations(userId: string): Promise<Conversation[]> 
         .eq('recipient_id', userId)
         .eq('is_read', false),
     ]) as any[];
+
+    const queryError = sentResult.error || receivedResult.error || unreadResult.error;
+    if (queryError) throw queryError;
 
     const sentMessages = sentResult.data || [];
     const receivedMessages = receivedResult.data || [];
@@ -126,7 +129,7 @@ export async function getConversationMessages(
         assets(*)
       `)
       .or(`and(sender_id.eq.${currentUserId},recipient_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},recipient_id.eq.${currentUserId})`)
-      .order('created_at', { ascending: true })
+      .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1)) as any;
 
     if (error) {
@@ -138,7 +141,7 @@ export async function getConversationMessages(
       ...msg,
       sender: msg.sender as Pick<Profile, 'id' | 'username' | 'display_name' | 'avatar_url' | 'is_online'>,
       assets: msg.assets as Asset[] | undefined
-    }));
+    })).reverse();
   } catch (error) {
     console.error('Error in getConversationMessages:', error);
     throw error;
@@ -155,8 +158,8 @@ export async function sendMessage(
 ): Promise<MessageWithSender> {
   try {
     // Validate content
-    if (!content.trim()) {
-      throw new Error('Message content cannot be empty');
+    if (!content.trim() && (!files || files.length === 0)) {
+      throw new Error('A message or attachment is required');
     }
 
     if (content.length > 5000) {
@@ -169,13 +172,18 @@ export async function sendMessage(
       throw new Error('User not authenticated');
     }
 
-    // Step 1: Create the message
+    const uploadedFiles: Array<{ file: File; upload: UploadResult }> = [];
+    for (const file of files || []) {
+      uploadedFiles.push({ file, upload: await uploadFile(file, 'messages') });
+    }
+
+    // Step 1: Create the message after uploads succeed.
     const { data: message, error: messageError } = (await supabase
       .from('messages')
       .insert({
         sender_id: user.id,
         recipient_id: recipientId,
-        content: content.trim()
+        content: content.trim() || 'Attachment'
       } as any)
       .select(`
         *,
@@ -185,39 +193,39 @@ export async function sendMessage(
 
     if (messageError) {
       console.error('Error sending message:', messageError);
+      await Promise.allSettled(uploadedFiles.map(({ upload }) => deleteFile(upload.key)));
       throw messageError;
     }
 
     // Step 2: Upload files if provided
     let uploadedAssets: Asset[] | undefined;
-    if (files && files.length > 0) {
+    if (uploadedFiles.length > 0) {
       uploadedAssets = [];
 
-      for (const file of files) {
+      for (const { file, upload } of uploadedFiles) {
         try {
-          const url = await uploadImage(file);
-
           // Create asset record
           const { data: asset, error: assetError } = (await supabase
             .from('assets')
             .insert({
               message_id: message.id,
               asset_type: file.type.startsWith('image/') ? 'image' : 'document',
-              file_url: url,
+              file_url: upload.url,
+              storage_key: upload.key,
               filename: file.name,
-              file_size: file.size
+              file_size: file.size,
+              mime_type: file.type,
+              uploaded_by: user.id,
             } as any)
             .select()
             .single()) as any;
 
-          if (assetError) {
-            console.error('Error creating asset record:', assetError);
-          } else {
-            uploadedAssets.push(asset);
-          }
+          if (assetError) throw assetError;
+          uploadedAssets.push(asset);
         } catch (uploadError) {
-          console.error('Error uploading file:', uploadError);
-          // Continue with other files
+          await supabase.from('messages').delete().eq('id', message.id);
+          await Promise.allSettled(uploadedFiles.map((item) => deleteFile(item.upload.key)));
+          throw uploadError;
         }
       }
     }

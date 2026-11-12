@@ -7,7 +7,7 @@ Step-by-step guide to set up Roost with Supabase Cloud (recommended for most use
 ## Prerequisites
 
 - A [Supabase](https://supabase.com) account (free tier works)
-- Node.js 18+ installed
+- Node.js 22+ installed
 - npm or yarn
 
 ---
@@ -36,41 +36,11 @@ Step-by-step guide to set up Roost with Supabase Cloud (recommended for most use
 
 ---
 
-## Step 3: Run Database Migrations
+## Step 3: Install the Database Schema
 
-You need to run the SQL migration files to create all tables, functions, and policies.
+For a fresh project, open **SQL Editor**, paste the repository's `schema.sql`, and run it once. The consolidated schema creates the tables, functions, triggers, grants, and row-level security policies Roost requires.
 
-### Option A: Using Supabase CLI (Recommended)
-
-```bash
-# Install Supabase CLI
-npm install -g supabase
-
-# Login
-supabase login
-
-# Link to your project
-supabase link --project-ref your-project-ref
-
-# Push all migrations
-supabase db push
-```
-
-### Option B: Using SQL Editor (Manual)
-
-1. Go to your Supabase dashboard > **SQL Editor**
-2. Run each migration file **in order** (001, 002, 003, etc.):
-   - Open each file from the `migrations/` folder
-   - Paste the SQL into the editor
-   - Click **Run**
-3. Start with these critical ones:
-   ```
-   001_initial_schema.sql        — Core tables (profiles, groups, posts, etc.)
-   002_rls_policies.sql          — Row-Level Security policies
-   003_functions_triggers.sql    — Database functions and triggers
-   004_gumroad_integration.sql   — Gumroad tables (optional)
-   ```
-4. Continue with all remaining migration files in numerical order
+`schema.sql` is a fresh-install schema rather than an in-place upgrade migration. Back up and migrate an existing Roost database separately instead of rerunning the entire file over it.
 
 ---
 
@@ -94,7 +64,7 @@ VITE_SUPABASE_PUBLISHABLE_KEY=eyJhbGciOiJIUzI1NiIs...your-anon-key
 
 # App
 VITE_APP_NAME="Your Community Name"
-VITE_APP_URL=http://localhost:5173
+VITE_APP_URL=http://localhost:5000
 VITE_API_URL=http://localhost:3000
 ```
 
@@ -114,8 +84,8 @@ DB_PROVIDER=supabase-cloud
 SUPABASE_URL=https://your-project-ref.supabase.co
 SUPABASE_SECRET_KEY=eyJhbGciOiJIUzI1NiIs...your-service-role-key
 
-ALLOWED_ORIGINS=http://localhost:5173
-FRONTEND_URL=http://localhost:5173
+ALLOWED_ORIGINS=http://localhost:5000
+FRONTEND_URL=http://localhost:5000
 ```
 
 ---
@@ -148,17 +118,23 @@ Or run both at once:
 npm run dev:all
 ```
 
-Visit `http://localhost:5173` — you should see the login page.
+Visit `http://localhost:5000` — you should see the login page.
 
 ---
 
 ## Step 7: Create Your First Admin User
 
 1. Click **Sign Up** and create an account
-2. Go to Supabase dashboard > **Table Editor** > **profiles**
-3. Find your user row
-4. Change the `role` column from `user` to `superadmin`
-5. Refresh the app — you now have full admin access
+2. Confirm the account email, then open the Supabase **SQL Editor** as the database operator.
+3. Run the one-time bootstrap helper with that account's email:
+
+   ```sql
+   SELECT setup_first_admin('your-email@example.com');
+   ```
+
+4. Refresh the app — you now have full admin access. The bootstrap helper removes itself after use.
+
+Do not change roles through the Table Editor. Roost protects those fields against direct client updates; manage subsequent roles through the authenticated superadmin tools.
 
 ---
 
@@ -190,7 +166,7 @@ If you want image/file uploads:
      {
        "AllowedHeaders": ["*"],
        "AllowedMethods": ["GET", "PUT", "POST"],
-       "AllowedOrigins": ["http://localhost:5173"],
+       "AllowedOrigins": ["http://localhost:5000"],
        "ExposeHeaders": ["ETag"]
      }
    ]
@@ -203,14 +179,6 @@ If you want image/file uploads:
    AWS_ACCESS_KEY_ID=AKIA...
    AWS_SECRET_ACCESS_KEY=your-secret
    ```
-5. Add to `.env.local`:
-   ```env
-   VITE_AWS_REGION=us-east-1
-   VITE_AWS_S3_BUCKET=your-bucket-name
-   ```
-
----
-
 ## Troubleshooting
 
 ### "Permission denied" errors

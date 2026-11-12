@@ -3,15 +3,20 @@
     "private": true,
     "version": "0.0.2",
     "type": "module",
+    "engines": {
+        "node": ">=22.0.0"
+    },
     "scripts": {
         "dev": "vite",
         "dev:server": "cd server && npm run dev",
         "dev:all": "concurrently \"npm run dev\" \"npm run dev:server\"",
-        "build": "vite build",
+        "build": "npm run check && vite build",
+        "build:e2e": "cross-env VITE_SUPABASE_URL=http://127.0.0.1:54321 VITE_SUPABASE_PUBLISHABLE_KEY=test-anon-key VITE_API_URL=http://127.0.0.1:3001 vite build",
+        "check": "npm run typecheck && npm run lint && npm run test:run",
         "typecheck": "tsc --noEmit",
         "build:server": "cd server && npm run build",
         "build:all": "npm run build && npm run build:server",
-        "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+        "lint": "eslint src server/src e2e *.ts *.js --report-unused-disable-directives",
         "preview": "vite preview",
         "install:all": "npm install && cd server && npm install",
         "test": "vitest",
@@ -19,26 +24,24 @@
         "test:coverage": "vitest --coverage",
         "test:run": "vitest run",
         "test:e2e": "playwright test",
+        "test:website": "playwright test --config website/playwright.config.ts",
         "test:e2e:ui": "playwright test --ui",
         "test:e2e:headed": "playwright test --headed"
     },
     "dependencies": {
-        "@aws-sdk/client-s3": "^3.893.0",
-        "@aws-sdk/s3-request-presigner": "^3.893.0",
-        "@supabase/supabase-js": "^2.47.0",
+        "@supabase/supabase-js": "^2.119.0",
         "date-fns": "^4.1.0",
-        "dompurify": "^3.3.1",
+        "dompurify": "^3.4.17",
         "emoji-picker-react": "^4.18.0",
-        "lodash": "^4.17.23",
+        "lodash": "^4.18.1",
         "lucide-react": "^0.460.0",
+        "moment": "^2.31.0",
         "react": "^19.2.4",
-        "react-big-calendar": "^1.19.4",
+        "react-big-calendar": "^1.20.0",
         "react-dom": "^19.2.4",
         "react-dropzone": "^14.3.8",
         "react-intersection-observer": "^10.0.2",
-        "react-quill-new": "^3.8.3",
-        "react-router-dom": "^7.0.2",
-        "supabase": "^2.72.8"
+        "react-router-dom": "^7.18.5"
     },
     "devDependencies": {
         "@playwright/test": "^1.58.1",
@@ -57,17 +60,22 @@
         "@vitest/ui": "^4.0.18",
         "autoprefixer": "^10.4.20",
         "concurrently": "^9.1.2",
+        "cross-env": "^10.1.0",
         "eslint": "^9.15.0",
         "eslint-plugin-react-hooks": "^5.0.0",
         "eslint-plugin-react-refresh": "^0.4.15",
         "jsdom": "^27.4.0",
         "postcss": "^8.4.49",
+        "supabase": "^3.1.0",
         "tailwindcss": "^3.4.15",
         "typescript": "~5.6.2",
         "vite": "^6.0.3",
         "vitest": "^4.0.18"
     },
     "overrides": {
+        "@typescript-eslint/typescript-estree": {
+            "minimatch": "^11.0.1"
+        },
         "react-big-calendar": {
             "react": "$react",
             "react-dom": "$react-dom"

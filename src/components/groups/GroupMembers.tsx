@@ -38,25 +38,16 @@ export default function GroupMembers({
     // Use different page size for compact vs full view
     const pageSize = compact ? limit : MEMBERS_PER_PAGE;
 
-    const fetchMembers = useCallback(async (reset = false) => {
-        const currentOffset = reset ? 0 : offset;
-
+    const fetchMembers = useCallback(async () => {
         try {
-            if (reset) {
-                setIsLoading(true);
-                setOffset(0);
-            }
+            setIsLoading(true);
+            setOffset(0);
 
             const { members: data, hasMore: more } = await getGroupMembers(groupId, {
                 limit: pageSize,
-                offset: currentOffset,
+                offset: 0,
             });
-
-            if (reset) {
-                setMembers(data);
-            } else {
-                setMembers(prev => [...prev, ...data]);
-            }
+            setMembers(data);
             setHasMore(more);
         } catch (error) {
             console.error('Error fetching members:', error);
@@ -64,36 +55,9 @@ export default function GroupMembers({
             setIsLoading(false);
             setLoadingMore(false);
         }
-    }, [groupId, pageSize, offset]);
+    }, [groupId, pageSize]);
 
-    useEffect(() => {
-        setMembers([]);
-        setOffset(0);
-        setHasMore(false);
-        fetchMembers(true);
-    }, [groupId, compact]);
-
-    // Infinite scroll observer (only for non-compact view)
-    useEffect(() => {
-        if (compact) return;
-
-        const observer = new IntersectionObserver(
-            (entries) => {
-                if (entries[0].isIntersecting && hasMore && !loadingMore && !isLoading) {
-                    loadMore();
-                }
-            },
-            { threshold: 0.1 }
-        );
-
-        if (observerTarget.current) {
-            observer.observe(observerTarget.current);
-        }
-
-        return () => observer.disconnect();
-    }, [compact, hasMore, loadingMore, isLoading]);
-
-    const loadMore = async () => {
+    const loadMore = useCallback(async () => {
         if (!hasMore || loadingMore) return;
 
         setLoadingMore(true);
@@ -113,13 +77,40 @@ export default function GroupMembers({
         } finally {
             setLoadingMore(false);
         }
-    };
+    }, [groupId, hasMore, loadingMore, offset, pageSize]);
+
+    useEffect(() => {
+        setMembers([]);
+        setOffset(0);
+        setHasMore(false);
+        void fetchMembers();
+    }, [fetchMembers]);
+
+    // Infinite scroll observer (only for non-compact view)
+    useEffect(() => {
+        if (compact) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting && hasMore && !loadingMore && !isLoading) {
+                    void loadMore();
+                }
+            },
+            { threshold: 0.1 }
+        );
+
+        if (observerTarget.current) {
+            observer.observe(observerTarget.current);
+        }
+
+        return () => observer.disconnect();
+    }, [compact, hasMore, loadingMore, isLoading, loadMore]);
 
     const handleRoleChange = async (memberId: string, newRole: GroupRole) => {
         try {
             await updateMemberRole(groupId, memberId, newRole);
             setMenuOpen(null);
-            fetchMembers(true);
+            await fetchMembers();
             onMemberChange?.();
         } catch (error) {
             console.error('Error updating role:', error);
@@ -212,7 +203,7 @@ export default function GroupMembers({
                 </div>
                 {hasMore && (
                     <Link
-                        to={`/classrooms/${groupId}/members`}
+                        to="/members"
                         className="flex items-center justify-center gap-1 mt-4 pt-4 border-t border-surface-100 dark:border-surface-700 text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium"
                     >
                         View all members
