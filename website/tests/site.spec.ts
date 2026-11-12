@@ -192,3 +192,46 @@ test('the homepage install command stays compact with Copy beside it', async ({ 
     expect(button!.x).toBeGreaterThanOrEqual(pre!.x + pre!.width);
   }
 });
+
+test('single-line docs commands stay compact and copy their complete contents', async ({ page, context }) => {
+  test.setTimeout(90000);
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  const examples = [
+    ['self-hosted-setup', "SELECT setup_first_admin('your-email@example.com');"],
+    ['docker-vps', 'docker compose up -d --build'],
+    ['dockploy-vps-troubleshooting', 'docker exec "$KONG" sh -lc "grep -n'],
+    ['dockploy-vps-troubleshooting', 'docker restart ${APP_PREFIX}-rest-1'],
+    ['dockploy-vps', 'psql -U postgres -d postgres -c'],
+    ['install-script', 'bash install.sh'],
+    ['netlify', 'netlify plugins:install netlify-plugin-lighthouse'],
+    ['supabase-selfhosted', 'docker compose up -d'],
+    ['supabase-selfhosted', 'docker compose restart'],
+  ];
+  for (const width of [320, 390, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const [guide, command] of examples) {
+      await page.goto(`/docs/${guide}/`);
+      const box = page.locator('.docs-content .code-block-inline').filter({ hasText: command }).first();
+      await expect(box).toBeVisible();
+      await expect(box.locator('.code-toolbar')).toHaveCount(0);
+      const code = await box.locator('code').textContent();
+      expect(code?.trimEnd()).not.toMatch(/[\r\n]/);
+      expect(await box.evaluate((element) => {
+        const pre = element.querySelector('pre')!;
+        const button = element.querySelector('button')!;
+        return pre.scrollWidth <= pre.clientWidth + 1
+          && pre.scrollHeight <= pre.clientHeight + 1
+          && button.getBoundingClientRect().left >= pre.getBoundingClientRect().right
+          && element.getBoundingClientRect().right <= document.documentElement.clientWidth + 1;
+      }), `${guide} at ${width}px`).toBe(true);
+      await box.locator('button').click();
+      await expect(box.locator('button')).toHaveText('Copied');
+      expect((await page.evaluate(() => navigator.clipboard.readText())).replace(/\r\n/g, '\n')).toBe(code?.replace(/\r\n/g, '\n'));
+    }
+    // The installer example has three actual commands and keeps its toolbar.
+    await page.goto('/docs/self-hosted-setup/');
+    const multiline = page.locator('.docs-content .code-block').filter({ hasText: 'git clone https://github.com/msrbuilds/roost.git' }).first();
+    await expect(multiline).not.toHaveClass(/code-block-inline/);
+    await expect(multiline.locator('.code-toolbar')).toBeVisible();
+  }
+});

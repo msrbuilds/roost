@@ -37,8 +37,14 @@ for (const pre of document.querySelectorAll<HTMLElement>(
   if (!code) continue;
   const block = document.createElement("div");
   block.className = "code-block";
-  const inline = pre.classList.contains("install-command");
-  if (inline) block.classList.add("code-block-inline");
+  // Classify the source lines, so a long command stays compact when it wraps
+  // visually on a narrow screen. Ignore a fence's trailing line ending.
+  const inline = !/[\r\n]/.test((code.textContent || "").trimEnd());
+  if (inline) {
+    block.classList.add("code-block-inline");
+    // Keep syntax-highlighted snippets and their surrounding row one color.
+    block.style.backgroundColor = pre.style.backgroundColor;
+  }
   const toolbar = document.createElement("div");
   toolbar.className = "code-toolbar";
   const label = document.createElement("span");

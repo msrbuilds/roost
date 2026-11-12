@@ -767,7 +767,7 @@ input {
   border-radius: 8px;
   margin-top: 12px;
 }
-.install-strip .code-block-inline pre {
+.code-block.code-block-inline pre {
   min-width: 0;
   flex: 1;
   padding: 0;
