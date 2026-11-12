@@ -2,7 +2,7 @@
 # Multi-stage build for optimized production image
 
 # Stage 1: Build the application
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
@@ -18,8 +18,11 @@ COPY . .
 # Build TypeScript
 RUN npm run build
 
+# Matching dump client for the bundled PostgreSQL 15 deployment.
+FROM postgres:15-alpine AS postgres15
+
 # Stage 2: Production image
-FROM node:20-alpine AS production
+FROM node:22-alpine AS production
 
 WORKDIR /app
 
@@ -28,12 +31,13 @@ WORKDIR /app
 # Configure to prefer IPv4 over IPv6 (fixes Supabase connection issues in Docker)
 RUN apk add --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main postgresql17-client && \
     echo 'precedence ::ffff:0:0/96 100' >> /etc/gai.conf
+COPY --from=postgres15 /usr/local/bin/pg_dump /usr/local/bin/pg_dump15
 
 # Copy package files
 COPY package*.json ./
 
 # Install production dependencies only
-RUN npm ci --only=production
+RUN npm ci --omit=dev
 
 # Copy built files from builder
 COPY --from=builder /app/dist ./dist

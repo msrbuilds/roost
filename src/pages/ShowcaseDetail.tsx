@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import {
     ArrowLeft,
     ExternalLink,
@@ -13,7 +13,6 @@ import {
     Share2,
     Globe,
     Rocket,
-    Edit,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { ShowcaseVoteButton } from '@/components/showcase';
@@ -25,8 +24,7 @@ import DOMPurify from 'dompurify';
 
 export default function ShowcaseDetail() {
     const { id } = useParams<{ id: string }>();
-    const navigate = useNavigate();
-    const { user, profile } = useAuth();
+    const { user } = useAuth();
 
     const [showcase, setShowcase] = useState<ShowcaseWithDetails | null>(null);
     const [reviews, setReviews] = useState<ShowcaseReviewWithAuthor[]>([]);
@@ -85,7 +83,7 @@ export default function ShowcaseDetail() {
         if (showcase) {
             setShowcase({
                 ...showcase,
-                review_count: showcase.review_count + 1,
+                review_count: (showcase.review_count ?? 0) + 1,
             });
         }
     };
@@ -103,7 +101,7 @@ export default function ShowcaseDetail() {
         if (showcase) {
             setShowcase({
                 ...showcase,
-                review_count: Math.max(0, showcase.review_count - 1),
+                review_count: Math.max(0, (showcase.review_count ?? 0) - 1),
             });
         }
     };
@@ -120,13 +118,13 @@ export default function ShowcaseDetail() {
         setLightboxOpen(false);
     };
 
-    const nextImage = () => {
+    const nextImage = useCallback(() => {
         setCurrentImageIndex((prev) => (prev + 1) % allImages.length);
-    };
+    }, [allImages.length]);
 
-    const prevImage = () => {
+    const prevImage = useCallback(() => {
         setCurrentImageIndex((prev) => (prev - 1 + allImages.length) % allImages.length);
-    };
+    }, [allImages.length]);
 
     // Share functionality
     const handleShare = async () => {
@@ -156,7 +154,7 @@ export default function ShowcaseDetail() {
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [lightboxOpen]);
+    }, [lightboxOpen, nextImage, prevImage]);
 
     if (isLoading) {
         return (
@@ -183,9 +181,6 @@ export default function ShowcaseDetail() {
     }
 
     const categoryInfo = SHOWCASE_CATEGORY_INFO[showcase.category];
-    const isMaker = user?.id === showcase.author_id;
-    const isAdmin = profile?.role && ['admin', 'superadmin', 'moderator'].includes(profile.role);
-
     return (
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             {/* Back button */}
@@ -284,7 +279,7 @@ export default function ShowcaseDetail() {
                                 }`}
                             >
                                 Reviews
-                                {showcase.review_count > 0 && (
+                                {(showcase.review_count ?? 0) > 0 && (
                                     <span className="px-1.5 py-0.5 bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400 text-xs rounded">
                                         {showcase.review_count}
                                     </span>
@@ -437,7 +432,7 @@ export default function ShowcaseDetail() {
                         {/* Vote Button - Prominent at top */}
                         <ShowcaseVoteButton
                             showcaseId={showcase.id}
-                            voteCount={showcase.vote_count}
+                            voteCount={showcase.vote_count ?? 0}
                             hasVoted={showcase.user_has_voted || false}
                             onVoteChange={handleVoteChange}
                             size="lg"
@@ -460,15 +455,6 @@ export default function ShowcaseDetail() {
                             <Share2 className="w-4 h-4" />
                             Share
                         </button>
-                        {(isMaker || isAdmin) && showcase.status === 'pending' && (
-                            <button
-                                onClick={() => navigate(`/showcase/edit/${showcase.id}`)}
-                                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 border border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-300 rounded-lg font-medium hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
-                            >
-                                <Edit className="w-4 h-4" />
-                                Edit Submission
-                            </button>
-                        )}
 
                         {/* Project Info Card */}
                         <div className="bg-surface-50 dark:bg-surface-800/50 rounded-xl p-4 space-y-4">
@@ -495,11 +481,11 @@ export default function ShowcaseDetail() {
                                         </span>
                                     </div>
                                 )}
-                                {showcase.average_rating > 0 && (
+                                {(showcase.average_rating ?? 0) > 0 && (
                                     <div className="flex items-center gap-3 text-sm">
                                         <Star className="w-4 h-4 text-amber-500 fill-current flex-shrink-0" />
                                         <span className="text-surface-600 dark:text-surface-400">
-                                            {showcase.average_rating.toFixed(1)} ({showcase.review_count} reviews)
+                                            {(showcase.average_rating ?? 0).toFixed(1)} ({showcase.review_count ?? 0} reviews)
                                         </span>
                                     </div>
                                 )}
@@ -523,7 +509,7 @@ export default function ShowcaseDetail() {
                                         <span
                                             key={tag.id}
                                             className="px-2.5 py-1 rounded-md text-xs font-medium"
-                                            style={{ backgroundColor: `${tag.color}15`, color: tag.color }}
+                                            style={{ backgroundColor: `${tag.color ?? '#64748b'}15`, color: tag.color ?? '#64748b' }}
                                         >
                                             {tag.name}
                                         </span>

@@ -1,0 +1,30 @@
+const assert = require('node:assert/strict');
+const crypto = require('node:crypto');
+const { createClient } = require(require.resolve('@supabase/supabase-js', { paths: [process.cwd(), `${__dirname}/../server`] }));
+if (process.env.ROOST_STAGING_TESTS !== 'true') throw new Error('Staging opt-in required');
+const client=createClient(process.env.SUPABASE_URL,process.env.SUPABASE_SECRET_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
+async function main(){
+  const email=process.env.SMTP_FROM_EMAIL;
+  const password=`Roost-${crypto.randomBytes(16).toString('hex')}!`;
+  const signup=await client.auth.signUp({email,password,options:{data:{username:`email_check_${Date.now()}`,display_name:'Email delivery check'}}});
+  assert.equal(signup.error,null,signup.error?.message);
+  assert.ok(signup.data.user);
+  assert.equal(signup.data.session,null,'email confirmation must be required');
+  console.log('PASS Supabase signup sent confirmation through authenticated Brevo relay');
+  const messages=await fetch('http://mailpit:8025/api/v1/messages').then(r=>r.json());
+  const latest=messages.messages.find(m=>m.To.some(t=>t.Address===email));
+  assert.ok(latest,'confirmation copy captured privately');
+  const mail=await fetch(`http://mailpit:8025/api/v1/message/${latest.ID}`).then(r=>r.json());
+  const link=(mail.HTML||mail.Text).match(/https:\/\/staging\.letsvibeit\.com\/auth\/v1\/verify[^\s"<>]+/)?.[0].replace(/&amp;/g,'&');
+  assert.ok(link,'public confirmation link');
+  const verify=await fetch(link,{redirect:'manual'});
+  assert.equal(verify.status,303);
+  assert.ok(!verify.headers.get('location').includes('error='), 'confirmation must succeed');
+  const auth=await client.auth.signInWithPassword({email,password});
+  assert.equal(auth.error,null,auth.error?.message);
+  console.log('PASS confirmation link, public gateway redirect and confirmed password sign-in');
+  const reset=await fetch(`${process.env.FRONTEND_URL}/api/auth/request-reset`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});
+  assert.equal(reset.status,200);
+  console.log('PASS app password-reset delivery through Brevo');
+}
+main().catch(e=>{console.error(e.message);process.exitCode=1;});

@@ -21,9 +21,13 @@ export interface ProductWithUsage extends ActivationProduct {
     has_active_request: boolean;
 }
 
+export interface AdminActivationProduct extends ActivationProduct {
+    license_key: string | null;
+}
+
 export interface ActivationRequestWithDetails extends ActivationRequest {
     user?: Profile;
-    product?: ActivationProduct;
+    product?: AdminActivationProduct;
     processor?: Profile;
 }
 
@@ -44,6 +48,27 @@ export const PRODUCT_TYPES = [
 ] as const;
 
 export type ProductType = (typeof PRODUCT_TYPES)[number]['value'];
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+async function adminProductRequest<T>(path = '', init?: RequestInit): Promise<T> {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error('Authentication required');
+    const response = await fetch(`${API_URL}/api/activations/products${path}`, {
+        ...init,
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+            ...init?.headers,
+        },
+    });
+    if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || 'Activation product request failed');
+    }
+    if (response.status === 204) return undefined as T;
+    return response.json() as Promise<T>;
+}
 
 // =============================================================================
 // USER FUNCTIONS
@@ -146,14 +171,8 @@ export async function requestActivation(
 /**
  * Get all products (admin view - includes inactive)
  */
-export async function getAdminProducts(): Promise<ActivationProduct[]> {
-    const { data, error } = await supabase
-        .from('activation_products')
-        .select('*')
-        .order('name');
-
-    if (error) throw error;
-    return data || [];
+export async function getAdminProducts(): Promise<AdminActivationProduct[]> {
+    return adminProductRequest<AdminActivationProduct[]>();
 }
 
 /**
@@ -169,32 +188,11 @@ export async function createProduct(product: {
     license_key?: string;
     file_url?: string;
     file_name?: string;
-}): Promise<ActivationProduct> {
-    const slug = product.name
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-|-$/g, '');
-
-    const { data, error } = await supabase
-        .from('activation_products')
-        .insert({
-            name: product.name,
-            slug,
-            description: product.description || null,
-            product_type: product.product_type,
-            monthly_limit: product.monthly_limit,
-            instructions: product.instructions || null,
-            icon_url: product.icon_url || null,
-            license_key: product.license_key || null,
-            file_url: product.file_url || null,
-            file_name: product.file_name || null,
-            is_active: true,
-        })
-        .select()
-        .single();
-
-    if (error) throw error;
-    return data;
+}): Promise<AdminActivationProduct> {
+    return adminProductRequest<AdminActivationProduct>('', {
+        method: 'POST',
+        body: JSON.stringify({ ...product, is_active: true }),
+    });
 }
 
 /**
@@ -214,37 +212,18 @@ export async function updateProduct(
         file_url: string | null;
         file_name: string | null;
     }>
-): Promise<ActivationProduct> {
-    // Generate new slug if name changed
-    let updateData: Record<string, unknown> = { ...updates };
-    if (updates.name) {
-        updateData.slug = updates.name
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/^-|-$/g, '');
-    }
-
-    const { data, error } = await supabase
-        .from('activation_products')
-        .update(updateData)
-        .eq('id', productId)
-        .select()
-        .single();
-
-    if (error) throw error;
-    return data;
+): Promise<AdminActivationProduct> {
+    return adminProductRequest<AdminActivationProduct>(`/${productId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(updates),
+    });
 }
 
 /**
  * Delete a product
  */
 export async function deleteProduct(productId: string): Promise<void> {
-    const { error } = await supabase
-        .from('activation_products')
-        .delete()
-        .eq('id', productId);
-
-    if (error) throw error;
+    await adminProductRequest<void>(`/${productId}`, { method: 'DELETE' });
 }
 
 /**
@@ -286,8 +265,14 @@ export async function getActivationRequests(options?: {
     const { data, error, count } = await query;
 
     if (error) throw error;
+    const products = await getAdminProducts();
+    const productMap = new Map(products.map((product) => [product.id, product]));
+    const requests = (data || []).map((request: any) => ({
+        ...request,
+        product: request.product ? productMap.get(request.product.id) || request.product : undefined,
+    })) as ActivationRequestWithDetails[];
     return {
-        requests: (data || []) as ActivationRequestWithDetails[],
+        requests,
         total: count || 0,
     };
 }
@@ -329,31 +314,6 @@ export async function processActivationRequest(
         p_status: status,
         p_admin_notes: adminNotes ?? undefined,
     });
-
-    if (error) throw error;
-    return data;
-}
-
-/**
- * Update request status directly (for simple status changes)
- */
-export async function updateRequestStatus(
-    requestId: string,
-    processorId: string,
-    status: ActivationRequestStatus,
-    adminNotes?: string
-): Promise<ActivationRequest> {
-    const { data, error } = await supabase
-        .from('activation_requests')
-        .update({
-            status,
-            admin_notes: adminNotes,
-            processed_by: processorId,
-            processed_at: new Date().toISOString(),
-        })
-        .eq('id', requestId)
-        .select()
-        .single();
 
     if (error) throw error;
     return data;

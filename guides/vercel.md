@@ -20,7 +20,7 @@ Step-by-step guide to deploy Roost's frontend on Vercel. The backend must be dep
                 |
                 +--> [Backend Server (Express.js)]
                 |        |
-                |        +--> [Database (Supabase/MongoDB)]
+                |        +--> [Database (Supabase)]
                 |        +--> [S3 Storage]
                 |        +--> [Redis (optional)]
                 |
@@ -71,10 +71,7 @@ In Vercel project settings > **Environment Variables**, add:
 | `VITE_APP_NAME` | `Your Community` | Production, Preview |
 | `VITE_APP_URL` | `https://your-vercel-domain.vercel.app` | Production |
 | `VITE_API_URL` | `https://your-backend-url.com` | Production, Preview |
-| `VITE_AWS_REGION` | `us-east-1` | Production, Preview |
-| `VITE_AWS_S3_BUCKET` | `your-bucket` | Production, Preview |
 | `VITE_ENABLE_SIGNUP` | `true` | Production |
-| `VITE_GUMROAD_ENABLED` | `false` | Production |
 
 ---
 
@@ -216,4 +213,3 @@ The rewrite rule ensures client-side routing works (all paths serve `index.html`
 ## Next Steps
 
 - [Backend on Docker VPS](./docker-vps.md)
-- [MongoDB Setup](./mongodb-prisma.md) (if using MongoDB)

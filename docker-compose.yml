@@ -25,19 +25,6 @@ services:
       - traefik-letsencrypt:/letsencrypt
     networks:
       - roost-network
-
-  # Optional MongoDB service (enabled with COMPOSE_PROFILES=mongodb)
-  mongo:
-    image: mongo:7
-    container_name: roost-mongo
-    restart: unless-stopped
-    profiles:
-      - mongodb
-    volumes:
-      - mongo-data:/data/db
-    networks:
-      - roost-network
-
   # Optional Redis service (enabled with COMPOSE_PROFILES=redis)
   redis:
     image: redis:7-alpine
@@ -56,15 +43,15 @@ services:
 
   # Optional MinIO service (enabled with COMPOSE_PROFILES=minio)
   minio:
-    image: minio/minio:latest
+    build: ./docker/minio
     container_name: roost-minio
     restart: unless-stopped
     profiles:
       - minio
     command: server /data --console-address ":9001"
     environment:
-      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-}
-      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-}
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER:?MINIO_ROOT_USER is required when the minio profile is enabled}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD is required when the minio profile is enabled}
     volumes:
       - minio-data:/data
     networks:
@@ -81,7 +68,7 @@ services:
 
   # Optional MinIO bucket bootstrap (enabled with COMPOSE_PROFILES=minio)
   minio-init:
-    image: minio/mc:latest
+    build: ./docker/mc
     container_name: roost-minio-init
     restart: "no"
     profiles:
@@ -90,12 +77,12 @@ services:
       - minio
     entrypoint: >
       /bin/sh -c "
-      until mc alias set roost http://minio:9000 ${MINIO_ROOT_USER:-} ${MINIO_ROOT_PASSWORD:-}; do
+      until mc alias set roost http://minio:9000 ${MINIO_ROOT_USER:?MINIO_ROOT_USER is required} ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD is required}; do
         echo 'Waiting for MinIO...'; sleep 2;
       done;
       mc mb --ignore-existing roost/${AWS_S3_BUCKET};
       if [ -n \"${AWS_BACKUP_BUCKET}\" ]; then mc mb --ignore-existing roost/${AWS_BACKUP_BUCKET}; fi;
-      mc anonymous set download roost/${AWS_S3_BUCKET};
+      mc anonymous set none roost/${AWS_S3_BUCKET};
       "
     networks:
       - roost-network
@@ -105,20 +92,12 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      secrets:
-        - backup_token
       args:
-        # Pre-build backup configuration
-        - BACKUP_API_URL=${BACKUP_API_URL:-https://${ROOST_DOMAIN:-your-domain.com}}
         # Database provider
         - VITE_DB_PROVIDER=${VITE_DB_PROVIDER:-supabase-cloud}
-        - VITE_DATABASE_URL=${VITE_DATABASE_URL:-}
         # Vite environment variables
         - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
         - VITE_SUPABASE_PUBLISHABLE_KEY=${VITE_SUPABASE_PUBLISHABLE_KEY}
-        - VITE_AWS_REGION=${VITE_AWS_REGION}
-        - VITE_AWS_S3_BUCKET=${VITE_AWS_S3_BUCKET}
-        - VITE_S3_ENDPOINT=${VITE_S3_ENDPOINT:-}
         - VITE_APP_NAME=${VITE_APP_NAME:-Roost}
         - VITE_APP_URL=${VITE_APP_URL:-https://${ROOST_DOMAIN:-your-domain.com}}
         - VITE_API_URL=${VITE_API_URL:-https://${ROOST_DOMAIN:-your-domain.com}}
@@ -154,13 +133,12 @@ services:
       - NODE_ENV=production
       - PORT=3000
       - DB_PROVIDER=${DB_PROVIDER:-supabase-cloud}
-      - DATABASE_URL=${DATABASE_URL:-}
-      - JWT_SECRET=${JWT_SECRET:-}
       - SUPABASE_URL=${SUPABASE_URL}
       - SUPABASE_SECRET_KEY=${SUPABASE_SECRET_KEY}
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
       - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
       - STRIPE_PRICE_ID=${STRIPE_PRICE_ID}
+      - STRIPE_ALLOWED_PRICE_IDS=${STRIPE_ALLOWED_PRICE_IDS:-}
       - SMTP_HOST=${SMTP_HOST}
       - SMTP_PORT=${SMTP_PORT}
       - SMTP_SECURE=${SMTP_SECURE:-false}
@@ -169,6 +147,7 @@ services:
       - SMTP_FROM_EMAIL=${SMTP_FROM_EMAIL}
       - SMTP_FROM_NAME=${SMTP_FROM_NAME:-Roost}
       - FRONTEND_URL=${FRONTEND_URL:-https://${ROOST_DOMAIN:-your-domain.com}}
+      - PUBLIC_API_URL=${PUBLIC_API_URL:-https://${ROOST_DOMAIN:-your-domain.com}}
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-https://${ROOST_DOMAIN:-your-domain.com}}
       # AWS S3 upload credentials (server-side only - never exposed to frontend)
       - AWS_REGION=${AWS_REGION:-us-east-1}
@@ -184,7 +163,7 @@ services:
       - AWS_BACKUP_SECRET_ACCESS_KEY=${AWS_BACKUP_SECRET_ACCESS_KEY:-${AWS_SECRET_ACCESS_KEY}}
       - AWS_BACKUP_ENDPOINT=${AWS_BACKUP_ENDPOINT:-${S3_ENDPOINT}}
       - SUPABASE_DB_PASSWORD=${SUPABASE_DB_PASSWORD}
-      - SUPABASE_DB_HOST=${SUPABASE_DB_HOST:-db}
+      - SUPABASE_DB_HOST=${SUPABASE_DB_HOST:-}
       - SUPABASE_DB_PORT=${SUPABASE_DB_PORT:-5432}
       - SUPABASE_DB_USER=${SUPABASE_DB_USER:-postgres}
       - BACKUP_SECRET_TOKEN=${BACKUP_SECRET_TOKEN}
@@ -208,14 +187,9 @@ services:
 
 volumes:
   traefik-letsencrypt:
-  mongo-data:
   redis-data:
   minio-data:
 
 networks:
   roost-network:
     driver: bridge
-
-secrets:
-  backup_token:
-    environment: BACKUP_SECRET_TOKEN

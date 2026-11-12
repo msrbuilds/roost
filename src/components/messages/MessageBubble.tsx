@@ -2,6 +2,27 @@ import { format, isToday, isYesterday } from 'date-fns';
 import type { MessageWithSender } from '../../services/message';
 import { Image as ImageIcon } from 'lucide-react';
 import { useState } from 'react';
+import { useAssetUrl } from '@/hooks/useAssetUrl';
+import type { Asset } from '@/types/database';
+
+function MessageAttachment({ asset, isSent, onOpen }: { asset: Asset; isSent: boolean; onOpen: (url: string) => void }) {
+  const { url, error, isLoading } = useAssetUrl(asset.file_url);
+  if (isLoading) return <div className="h-20 rounded-lg animate-pulse bg-black/10" />;
+  if (error || !url) return <p className="text-xs opacity-80">Attachment unavailable</p>;
+  if (asset.asset_type === 'image') {
+    return (
+      <button onClick={() => onOpen(url)} className="block rounded-lg overflow-hidden hover:opacity-90 transition-opacity">
+        <img src={url} alt={asset.filename || 'Attachment'} className="max-w-full h-auto max-h-64 object-cover" />
+      </button>
+    );
+  }
+  return (
+    <a href={url} download={asset.filename || undefined} className={`flex items-center gap-2 p-2 rounded-lg ${isSent ? 'bg-primary-700' : 'bg-surface-50 dark:bg-surface-700'} hover:opacity-80 transition-opacity`}>
+      <ImageIcon className="w-4 h-4" />
+      <span className="text-xs truncate">{asset.filename ?? 'File'}</span>
+    </a>
+  );
+}
 
 interface MessageBubbleProps {
   message: MessageWithSender;
@@ -42,33 +63,7 @@ export default function MessageBubble({ message, isSent, showTimestamp = true }:
           {/* Attachments */}
           {hasAttachments && (
             <div className="mt-2 space-y-2">
-              {message.assets!.map((asset) => (
-                <div key={asset.id}>
-                  {asset.asset_type === 'image' ? (
-                    <button
-                      onClick={() => setSelectedImage(asset.file_url)}
-                      className="block rounded-lg overflow-hidden hover:opacity-90 transition-opacity"
-                    >
-                      <img
-                        src={asset.file_url}
-                        alt={asset.filename || 'Attachment'}
-                        className="max-w-full h-auto max-h-64 object-cover"
-                      />
-                    </button>
-                  ) : (
-                    <a
-                      href={asset.file_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`flex items-center gap-2 p-2 rounded-lg ${isSent ? 'bg-primary-700' : 'bg-surface-50 dark:bg-surface-700'
-                        } hover:opacity-80 transition-opacity`}
-                    >
-                      <ImageIcon className="w-4 h-4" />
-                      <span className="text-xs truncate">{asset.filename ?? 'File'}</span>
-                    </a>
-                  )}
-                </div>
-              ))}
+              {message.assets!.map((asset) => <MessageAttachment key={asset.id} asset={asset} isSent={isSent} onOpen={setSelectedImage} />)}
             </div>
           )}
         </div>

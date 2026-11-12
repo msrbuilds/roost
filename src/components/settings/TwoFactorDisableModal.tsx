@@ -31,25 +31,27 @@ export default function TwoFactorDisableModal({ isOpen, onClose, onSuccess }: Tw
         setError(null);
 
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) {
-                throw new Error('You must be logged in');
-            }
+            const { data: factors, error: factorsError } = await supabase.auth.mfa.listFactors();
+            if (factorsError) throw factorsError;
+            const factor = factors.totp.find((item) => item.status === 'verified');
+            if (!factor) throw new Error('No verified authenticator was found.');
 
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-            const response = await fetch(`${apiUrl}/api/2fa/disable`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session.access_token}`,
-                },
-                body: JSON.stringify({ code: verificationCode }),
+            const { error: verifyError } = await supabase.auth.mfa.challengeAndVerify({
+                factorId: factor.id,
+                code: verificationCode,
             });
+            if (verifyError) throw verifyError;
 
-            const data = await response.json();
+            const { error: unenrollError } = await supabase.auth.mfa.unenroll({ factorId: factor.id });
+            if (unenrollError) throw unenrollError;
 
-            if (!response.ok) {
-                throw new Error(data.error || 'Failed to disable 2FA');
+            const { data: { session } } = await supabase.auth.getSession();
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+            if (session) {
+                const response = await fetch(`${apiUrl}/api/auth/mfa/status`, {
+                    headers: { Authorization: `Bearer ${session.access_token}` },
+                });
+                if (!response.ok) throw new Error('2FA was disabled but the account status could not be synchronized.');
             }
 
             onSuccess();
@@ -72,20 +74,26 @@ export default function TwoFactorDisableModal({ isOpen, onClose, onSuccess }: Tw
             />
 
             {/* Modal */}
-            <div className="relative w-full max-w-md mx-4 bg-white dark:bg-surface-900 rounded-xl shadow-xl">
+            <div
+                className="relative w-full max-w-md mx-4 bg-white dark:bg-surface-900 rounded-xl shadow-xl"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="two-factor-disable-title"
+            >
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-surface-200 dark:border-surface-700">
                     <div className="flex items-center gap-3">
                         <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
                             <ShieldOff className="w-5 h-5 text-red-600 dark:text-red-400" />
                         </div>
-                        <h2 className="text-lg font-semibold text-surface-900 dark:text-surface-100">
+                        <h2 id="two-factor-disable-title" className="text-lg font-semibold text-surface-900 dark:text-surface-100">
                             Disable Two-Factor Authentication
                         </h2>
                     </div>
                     <button
                         onClick={handleClose}
                         disabled={isLoading}
+                        aria-label="Close two-factor authentication dialog"
                         className="p-2 text-surface-500 hover:text-surface-700 dark:text-surface-400 dark:hover:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-800 rounded-lg transition-colors"
                     >
                         <X className="w-5 h-5" />
@@ -112,11 +120,14 @@ export default function TwoFactorDisableModal({ isOpen, onClose, onSuccess }: Tw
 
                     {/* Verification code */}
                     <div>
-                        <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
+                        <label htmlFor="disable-two-factor-code" className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
                             Enter your 2FA code to confirm
                         </label>
                         <input
+                            id="disable-two-factor-code"
                             type="text"
+                            inputMode="numeric"
+                            autoComplete="one-time-code"
                             value={verificationCode}
                             onChange={(e) => {
                                 const value = e.target.value.replace(/\D/g, '').slice(0, 6);

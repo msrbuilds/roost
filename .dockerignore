@@ -9,9 +9,12 @@ dist
 build
 
 # Environment files (will be injected via Dokploy)
-.env
-.env.local
-.env.*.local
+.env*
+*.env
+*.tar.gz
+test-users.json
+playwright-report
+test-results
 
 # IDE and editor files
 .idea
@@ -39,6 +42,7 @@ __tests__
 
 # Server (built separately)
 server
+website
 
 # Docker files (don't need to copy these into the image)
 Dockerfile

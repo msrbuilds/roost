@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Upload, Download, Trash2, FileText, File, Image, Video, Loader2, Eye } from 'lucide-react';
 import { getGroupAssets, deleteGroupAsset } from '@/services/group';
 import type { GroupRole } from '@/types';
 import UploadAssetsModal from './UploadAssetsModal';
 import MarkdownPreviewModal from './MarkdownPreviewModal';
+import { getSignedDownloadUrl } from '@/services/s3';
 
 interface GroupAssetsProps {
     groupId: string;
@@ -19,11 +20,17 @@ export default function GroupAssets({ groupId, userRole }: GroupAssetsProps) {
 
     const canUpload = userRole && (userRole === 'admin' || userRole === 'moderator');
 
-    useEffect(() => {
-        loadAssets();
-    }, [groupId]);
+    const openAsset = async (url: string, name: string, preview: boolean) => {
+        try {
+            const resolved = await getSignedDownloadUrl(url);
+            if (preview) setPreviewFile({ url: resolved, name });
+            else window.open(resolved, '_blank', 'noopener,noreferrer');
+        } catch {
+            window.alert('This file is unavailable or you no longer have access.');
+        }
+    };
 
-    const loadAssets = async () => {
+    const loadAssets = useCallback(async () => {
         try {
             setIsLoading(true);
             const data = await getGroupAssets(groupId);
@@ -34,7 +41,11 @@ export default function GroupAssets({ groupId, userRole }: GroupAssetsProps) {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [groupId]);
+
+    useEffect(() => {
+        void loadAssets();
+    }, [loadAssets]);
 
     const handleDelete = async (assetId: string) => {
         if (!confirm('Are you sure you want to delete this asset?')) return;
@@ -185,23 +196,20 @@ export default function GroupAssets({ groupId, userRole }: GroupAssetsProps) {
                                             <div className="flex items-center justify-end gap-2">
                                                 {isMarkdownFile(item.asset.mime_type, item.asset.filename) && (
                                                     <button
-                                                        onClick={() => setPreviewFile({ url: item.asset.file_url, name: item.asset.filename })}
+                                                        onClick={() => openAsset(item.asset.file_url, item.asset.filename, true)}
                                                         className="p-2 text-surface-500 dark:text-surface-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
                                                         title="Preview"
                                                     >
                                                         <Eye className="w-4 h-4" />
                                                     </button>
                                                 )}
-                                                <a
-                                                    href={item.asset.file_url}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    download
+                                                <button
+                                                    onClick={() => openAsset(item.asset.file_url, item.asset.filename, false)}
                                                     className="p-2 text-surface-500 dark:text-surface-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
                                                     title="Download"
                                                 >
                                                     <Download className="w-4 h-4" />
-                                                </a>
+                                                </button>
                                                 {canUpload && (
                                                     <button
                                                         onClick={() => handleDelete(item.id)}

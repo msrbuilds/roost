@@ -1,6 +1,9 @@
-# Roost - Dokploy Template
+# Roost - Dokploy Deployment Bundle
 
-One-click deployment template for [Dokploy](https://dokploy.com).
+Repository-backed deployment files for [Dokploy](https://dokploy.com). Use the
+root `docker-compose.dokploy.yml` as described below; this is not a standalone
+catalog/import template because the database schema and Docker build contexts
+come from the Roost repository.
 
 ## What's Included
 
@@ -42,7 +45,7 @@ POSTGRES_PASSWORD=<generate-32-char-random>
 JWT_SECRET=<generate-64-char-random>
 SECRET_KEY_BASE=<generate-64-char-random>
 
-# Supabase Keys (generate from JWT_SECRET)
+# Supabase Keys (generate both from JWT_SECRET with the environment generator)
 ANON_KEY=<generated-jwt-with-anon-role>
 SERVICE_ROLE_KEY=<generated-jwt-with-service_role>
 

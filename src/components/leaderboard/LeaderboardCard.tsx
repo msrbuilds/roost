@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Trophy, Medal, Award } from 'lucide-react';
 import { getTopUsers } from '../../services';
 import type { LeaderboardRank } from '../../types';
@@ -20,11 +20,7 @@ export default function LeaderboardCard({
     const [leaderboard, setLeaderboard] = useState<LeaderboardRank[]>([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        loadLeaderboard();
-    }, [groupId, period, limit]);
-
-    const loadLeaderboard = async () => {
+    const loadLeaderboard = useCallback(async () => {
         try {
             setLoading(true);
             const data = await getTopUsers(limit, groupId, period);
@@ -34,7 +30,11 @@ export default function LeaderboardCard({
         } finally {
             setLoading(false);
         }
-    };
+    }, [groupId, period, limit]);
+
+    useEffect(() => {
+        void loadLeaderboard();
+    }, [loadLeaderboard]);
 
     // Get medal icon for top 3
     const getMedalIcon = (rank: number) => {

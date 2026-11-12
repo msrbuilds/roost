@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, useCallback, useMemo, u
 import type { User, Session } from '@supabase/supabase-js';
 import { supabase, auth } from '@/services/supabase';
 import type { Profile, MembershipType } from '@/types/database';
+import { cacheClear } from '@/lib/cache';
 
 // Ban info type
 interface BanInfo {
@@ -88,12 +89,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // Initialize auth state
     useEffect(() => {
         let isMounted = true;
+        let authEventHandled = false;
 
         // Set up auth state change listener FIRST
         // This handles both initial session load and subsequent changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
-            async (_event, session) => {
+            async (event, session) => {
                 if (!isMounted) return;
+                authEventHandled = true;
+
+                if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') {
+                    cacheClear();
+                }
 
                 setSession(session);
                 // Preserve user object reference on token refresh to avoid cascading re-renders
@@ -128,7 +135,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
                 if (!isMounted) return;
 
                 // Only update if we haven't received an auth state change yet
-                if (isLoading) {
+                if (!authEventHandled) {
                     setSession(session);
                     setUser(session?.user ?? null);
 
@@ -214,8 +221,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
         await auth.resetPassword(email);
     };
 
+    // Refresh profile
+    const refreshProfile = useCallback(async () => {
+        if (!user) return;
+        const userProfile = await fetchProfile(user.id);
+        setProfile(userProfile);
+    }, [user]);
+
     // Update profile
-    const updateProfile = async (updates: Partial<Profile>) => {
+    const updateProfile = useCallback(async (updates: Partial<Profile>) => {
         if (!user) throw new Error('No user logged in');
 
         const { error } = await supabase
@@ -227,14 +241,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         // Refresh profile after update
         await refreshProfile();
-    };
-
-    // Refresh profile
-    const refreshProfile = async () => {
-        if (!user) return;
-        const userProfile = await fetchProfile(user.id);
-        setProfile(userProfile);
-    };
+    }, [user, refreshProfile]);
 
     // Check premium status via database function
     const premiumCheckedRef = useRef<boolean>(false);
@@ -261,10 +268,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }, []);
 
     // Refresh premium status
-    const refreshPremiumStatus = async () => {
+    const refreshPremiumStatus = useCallback(async () => {
         if (!user) return;
         await checkPremiumStatus(user.id);
-    };
+    }, [user, checkPremiumStatus]);
 
     // Check premium status when user changes
     useEffect(() => {
@@ -325,9 +332,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const signInCb = useCallback(signIn, []);
     const signOutCb = useCallback(signOut, []);
     const resetPasswordCb = useCallback(resetPassword, []);
-    const updateProfileCb = useCallback(updateProfile, [user]);
-    const refreshProfileCb = useCallback(refreshProfile, [user]);
-    const refreshPremiumStatusCb = useCallback(refreshPremiumStatus, [user]);
+    const updateProfileCb = updateProfile;
+    const refreshProfileCb = refreshProfile;
+    const refreshPremiumStatusCb = refreshPremiumStatus;
 
     // Memoize context value to prevent all consumers from re-rendering on every parent render
     const value = useMemo<AuthContextType>(() => ({

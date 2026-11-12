@@ -51,6 +51,7 @@ export default function AuthLayout() {
                     </div>
 
                     {/* Premium Card */}
+                    {APP_CONFIG.features.stripe ? (
                     <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border border-amber-200/80 dark:border-amber-800/50 rounded-2xl p-6 xl:p-8">
                         {/* Crown Icon */}
                         <div className="text-center mb-5">
@@ -91,6 +92,13 @@ export default function AuthLayout() {
                             </p>
                         </div>
                     </div>
+                    ) : (
+                        <div className="rounded-2xl border border-amber-200/80 dark:border-amber-800/50 p-6 xl:p-8 text-center">
+                            <h3 className="text-2xl font-bold text-surface-900 dark:text-surface-100">Learn, build, and grow together</h3>
+                            <p className="mt-4 text-surface-600 dark:text-surface-300">{APP_CONFIG.description}</p>
+                            <p className="mt-4 text-sm text-surface-500 dark:text-surface-400">Share your work, exchange ideas, and connect with the community.</p>
+                        </div>
+                    )}
                 </div>
             </div>
 

@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Navigate, Routes, Route } from 'react-router-dom';
+import { APP_CONFIG } from './config/app';
 
 // Loading component for suspense fallback
 const PageLoader = () => (
@@ -31,6 +32,7 @@ const FeatureRequestDetail = lazy(() => import('./pages/FeatureRequestDetail'));
 const Activations = lazy(() => import('./pages/Activations'));
 const LiveRoom = lazy(() => import('./pages/LiveRoom'));
 const Upgrade = lazy(() => import('./pages/Upgrade'));
+const NotFound = lazy(() => import('./pages/NotFound'));
 
 // Lazy-loaded Auth Pages
 const Login = lazy(() => import('./pages/auth/Login'));
@@ -62,6 +64,7 @@ import AdminLayout from './layouts/AdminLayout';
 // Components
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import AdminRoute from './components/auth/AdminRoute';
+import FeatureRoute from './components/auth/FeatureRoute';
 
 function App() {
     return (
@@ -70,7 +73,7 @@ function App() {
                 {/* Auth routes */}
                 <Route element={<AuthLayout />}>
                     <Route path="/login" element={<Login />} />
-                    <Route path="/signup" element={<Signup />} />
+                    <Route path="/signup" element={APP_CONFIG.features.signup ? <Signup /> : <Navigate to="/login" replace />} />
                     <Route path="/forgot-password" element={<ForgotPassword />} />
                     <Route path="/reset-password" element={<ResetPassword />} />
                 </Route>
@@ -117,20 +120,20 @@ function App() {
                         <Route path="/classrooms" element={<Classrooms />} />
                         <Route path="/classrooms/:slug" element={<ClassroomDetail />} />
                         <Route path="/classrooms/:slug/settings" element={<ClassroomSettings />} />
-                        <Route path="/leaderboard" element={<Leaderboard />} />
-                        <Route path="/classrooms/:slug/leaderboard" element={<Leaderboard />} />
+                        {APP_CONFIG.features.leaderboard && <Route path="/leaderboard" element={<Leaderboard />} />}
+                        {APP_CONFIG.features.leaderboard && <Route path="/classrooms/:slug/leaderboard" element={<Leaderboard />} />}
                         <Route path="/members" element={<Members />} />
                         <Route path="/profile" element={<Profile />} />
                         <Route path="/profile/:username" element={<Profile />} />
                         <Route path="/settings" element={<Settings />} />
                         <Route path="/guide" element={<Guide />} />
-                        <Route path="/showcase" element={<Showcase />} />
-                        <Route path="/showcase/submit" element={<ShowcaseSubmit />} />
-                        <Route path="/showcase/:id" element={<ShowcaseDetail />} />
+                        <Route path="/showcase" element={<FeatureRoute feature="showcase"><Showcase /></FeatureRoute>} />
+                        <Route path="/showcase/submit" element={<FeatureRoute feature="showcase"><ShowcaseSubmit /></FeatureRoute>} />
+                        <Route path="/showcase/:id" element={<FeatureRoute feature="showcase"><ShowcaseDetail /></FeatureRoute>} />
                         <Route path="/post/:postId" element={<PostDetail />} />
-                        <Route path="/roadmap" element={<FeatureRequests />} />
-                        <Route path="/roadmap/all" element={<FeatureRequestList />} />
-                        <Route path="/roadmap/:id" element={<FeatureRequestDetail />} />
+                        <Route path="/roadmap" element={<FeatureRoute feature="roadmap"><FeatureRequests /></FeatureRoute>} />
+                        <Route path="/roadmap/all" element={<FeatureRoute feature="roadmap"><FeatureRequestList /></FeatureRoute>} />
+                        <Route path="/roadmap/:id" element={<FeatureRoute feature="roadmap"><FeatureRequestDetail /></FeatureRoute>} />
                     </Route>
                 </Route>
 
@@ -140,10 +143,11 @@ function App() {
                         <Route path="/messages" element={<Messages />} />
                         <Route path="/messages/:userId" element={<Messages />} />
                         <Route path="/calendar" element={<Calendar />} />
-                        <Route path="/activations" element={<Activations />} />
-                        <Route path="/live" element={<LiveRoom />} />
+                        <Route path="/activations" element={<FeatureRoute feature="activations"><Activations /></FeatureRoute>} />
+                        <Route path="/live" element={<FeatureRoute feature="live_room"><LiveRoom /></FeatureRoute>} />
                     </Route>
                 </Route>
+                <Route path="*" element={<NotFound />} />
             </Routes>
         </Suspense>
     );

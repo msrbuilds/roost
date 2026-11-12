@@ -31,7 +31,6 @@
     @apply bg-primary-100 dark:bg-primary-900 text-primary-900 dark:text-primary-100;
   }
 }
-
 /* =============================================================================
    COMPONENT STYLES
    ============================================================================= */
@@ -252,76 +251,4 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
-}
-
-/* =============================================================================
-   QUILL EDITOR DARK MODE
-   ============================================================================= */
-
-.dark .ql-toolbar.ql-snow {
-  border-color: #404040;
-  background-color: #262626;
-}
-
-.dark .ql-container.ql-snow {
-  border-color: #404040;
-  background-color: #171717;
-}
-
-.dark .ql-editor {
-  color: #fafafa;
-}
-
-.dark .ql-editor.ql-blank::before {
-  color: #525252;
-}
-
-.dark .ql-toolbar .ql-stroke {
-  stroke: #a3a3a3;
-}
-
-.dark .ql-toolbar .ql-fill {
-  fill: #a3a3a3;
-}
-
-.dark .ql-toolbar .ql-picker-label {
-  color: #a3a3a3;
-}
-
-.dark .ql-toolbar .ql-picker-options {
-  background-color: #262626;
-  border-color: #404040;
-}
-
-.dark .ql-toolbar .ql-picker-item {
-  color: #e5e5e5;
-}
-
-.dark .ql-toolbar .ql-picker-item:hover {
-  color: #fafafa;
-}
-
-.dark .ql-toolbar button:hover .ql-stroke,
-.dark .ql-toolbar button:focus .ql-stroke,
-.dark .ql-toolbar button.ql-active .ql-stroke {
-  stroke: #0ea5e9;
-}
-
-.dark .ql-toolbar button:hover .ql-fill,
-.dark .ql-toolbar button:focus .ql-fill,
-.dark .ql-toolbar button.ql-active .ql-fill {
-  fill: #0ea5e9;
-}
-
-.dark .ql-snow .ql-tooltip {
-  background-color: #262626;
-  border-color: #404040;
-  color: #fafafa;
-  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5);
-}
-
-.dark .ql-snow .ql-tooltip input[type="text"] {
-  background-color: #171717;
-  border-color: #404040;
-  color: #fafafa;
 }

@@ -9,7 +9,7 @@ import { createClient } from 'redis';
 
 // Redis connection configuration
 // Support both URL format and separate credentials
-const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
+const REDIS_URL = process.env.REDIS_URL?.trim();
 const REDIS_PASSWORD = process.env.REDIS_PASSWORD;
 const REDIS_USERNAME = process.env.REDIS_USERNAME || 'default';
 const CACHE_ENABLED = process.env.CACHE_ENABLED !== 'false';
@@ -45,6 +45,11 @@ const MAX_RECONNECT_ATTEMPTS = 5;
 export async function initRedis(): Promise<void> {
   if (!CACHE_ENABLED) {
     console.log('[Redis] Caching disabled via CACHE_ENABLED=false');
+    return;
+  }
+
+  if (!REDIS_URL) {
+    console.log('[Redis] Not configured; continuing without distributed cache');
     return;
   }
 
@@ -126,6 +131,13 @@ export function getRedisClient(): RedisClient | null {
  */
 export function isRedisAvailable(): boolean {
   return CACHE_ENABLED && isConnected && redisClient !== null;
+}
+
+/**
+ * Check whether this deployment has opted into Redis.
+ */
+export function isRedisConfigured(): boolean {
+  return CACHE_ENABLED && Boolean(REDIS_URL);
 }
 
 /**

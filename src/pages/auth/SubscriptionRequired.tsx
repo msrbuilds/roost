@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { subscriptionService, SubscriptionStatus } from '@/services/subscription';
@@ -15,7 +15,7 @@ export default function SubscriptionRequired() {
     const [error, setError] = useState<string | null>(null);
 
     // Fetch subscription status
-    const fetchSubscription = async () => {
+    const fetchSubscription = useCallback(async () => {
         try {
             const status = await subscriptionService.getStatus();
             setSubscription(status);
@@ -30,17 +30,17 @@ export default function SubscriptionRequired() {
             setIsLoading(false);
             setIsRefreshing(false);
         }
-    };
+    }, [navigate]);
 
     useEffect(() => {
         if (!authLoading) {
             if (!isAuthenticated) {
                 navigate('/login', { replace: true });
             } else {
-                fetchSubscription();
+                void fetchSubscription();
             }
         }
-    }, [isAuthenticated, authLoading, navigate]);
+    }, [isAuthenticated, authLoading, navigate, fetchSubscription]);
 
     const handleSignOut = async () => {
         await signOut();

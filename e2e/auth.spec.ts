@@ -5,9 +5,9 @@ test.describe('Authentication Flow', () => {
     await page.goto('/login');
 
     // Check for login form elements
-    await expect(page.getByRole('heading', { name: /sign in|login/i })).toBeVisible();
-    await expect(page.getByPlaceholder(/email/i)).toBeVisible();
-    await expect(page.getByPlaceholder(/password/i)).toBeVisible();
+    await expect(page.getByRole('heading', { name: /welcome back/i })).toBeVisible();
+    await expect(page.getByLabel(/^email$/i)).toBeVisible();
+    await expect(page.getByLabel(/^password$/i)).toBeVisible();
     await expect(page.getByRole('button', { name: /sign in|log in/i })).toBeVisible();
   });
 
@@ -18,7 +18,7 @@ test.describe('Authentication Flow', () => {
     await page.getByRole('button', { name: /sign in|log in/i }).click();
 
     // Check for validation feedback (either HTML5 validation or custom)
-    const emailInput = page.getByPlaceholder(/email/i);
+    const emailInput = page.getByLabel(/^email$/i);
     await expect(emailInput).toBeFocused();
   });
 
@@ -37,8 +37,8 @@ test.describe('Authentication Flow', () => {
     await page.goto('/signup');
 
     // Check for signup form elements
-    await expect(page.getByPlaceholder(/email/i)).toBeVisible();
-    await expect(page.getByPlaceholder(/password/i).first()).toBeVisible();
+    await expect(page.getByLabel(/^email$/i)).toBeVisible();
+    await expect(page.getByLabel(/^password$/i)).toBeVisible();
     await expect(page.getByRole('button', { name: /sign up|create|register/i })).toBeVisible();
   });
 
@@ -67,20 +67,20 @@ test.describe('Login Validation', () => {
   test('should show error for invalid email format', async ({ page }) => {
     await page.goto('/login');
 
-    await page.getByPlaceholder(/email/i).fill('invalid-email');
-    await page.getByPlaceholder(/password/i).fill('password123');
+    await page.getByLabel(/^email$/i).fill('invalid-email');
+    await page.getByLabel(/^password$/i).fill('password123');
     await page.getByRole('button', { name: /sign in|log in/i }).click();
 
     // Email input should be invalid
-    const emailInput = page.getByPlaceholder(/email/i);
+    const emailInput = page.getByLabel(/^email$/i);
     await expect(emailInput).toHaveAttribute('type', 'email');
   });
 
   test('should show error for incorrect credentials', async ({ page }) => {
     await page.goto('/login');
 
-    await page.getByPlaceholder(/email/i).fill('nonexistent@example.com');
-    await page.getByPlaceholder(/password/i).fill('wrongpassword');
+    await page.getByLabel(/^email$/i).fill('nonexistent@example.com');
+    await page.getByLabel(/^password$/i).fill('wrongpassword');
     await page.getByRole('button', { name: /sign in|log in/i }).click();
 
     // Wait for error message

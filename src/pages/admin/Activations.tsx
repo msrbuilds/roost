@@ -32,8 +32,9 @@ import {
     PRODUCT_TYPES,
     type ActivationRequestWithDetails,
     type ActivationStats,
+    type AdminActivationProduct,
 } from '@/services/activation';
-import type { ActivationProduct, ActivationRequestStatus } from '@/types/database';
+import type { ActivationRequestStatus } from '@/types/database';
 
 // Status badge helper
 function StatusBadge({ status }: { status: ActivationRequestStatus }) {
@@ -58,9 +59,9 @@ export default function AdminActivations() {
     const [activeTab, setActiveTab] = useState<'products' | 'requests'>('requests');
 
     // Products state
-    const [products, setProducts] = useState<ActivationProduct[]>([]);
+    const [products, setProducts] = useState<AdminActivationProduct[]>([]);
     const [showProductForm, setShowProductForm] = useState(false);
-    const [editingProduct, setEditingProduct] = useState<ActivationProduct | null>(null);
+    const [editingProduct, setEditingProduct] = useState<AdminActivationProduct | null>(null);
     const [productForm, setProductForm] = useState({
         name: '',
         description: '',
@@ -231,7 +232,7 @@ export default function AdminActivations() {
         }
     };
 
-    const handleToggleProductActive = async (product: ActivationProduct) => {
+    const handleToggleProductActive = async (product: AdminActivationProduct) => {
         try {
             await updateProduct(product.id, { is_active: !product.is_active });
             await fetchProducts();
@@ -240,7 +241,7 @@ export default function AdminActivations() {
         }
     };
 
-    const startEditProduct = (product: ActivationProduct) => {
+    const startEditProduct = (product: AdminActivationProduct) => {
         setEditingProduct(product);
         setProductForm({
             name: product.name,

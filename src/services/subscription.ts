@@ -11,6 +11,11 @@ export interface SubscriptionStatus {
   currentPeriodEnd?: string;
   currentPeriodStart?: string;
   cancelAtPeriodEnd?: boolean;
+  productName?: string;
+  variantName?: string;
+  billingCycle?: string;
+  startedAt?: string;
+  endsAt?: string;
 }
 
 export interface WebhookLog {
@@ -70,7 +75,6 @@ export const subscriptionService = {
       return response.json();
     } catch (error) {
       console.error('Error fetching subscription status:', error);
-      // Fall back to database query
       return this.getStatusFromDatabase();
     }
   },
@@ -78,43 +82,14 @@ export const subscriptionService = {
   // Fallback: Get status directly from database
   async getStatusFromDatabase(): Promise<SubscriptionStatus> {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return {
-        hasSubscription: false,
-        status: null,
-        isActive: false,
-      };
-    }
+    if (!user) return { hasSubscription: false, status: null, isActive: false };
 
-    const { data: subscription, error } = await supabase
-      .from('stripe_subscriptions')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
-
-    if (error || !subscription) {
-      return {
-        hasSubscription: false,
-        status: null,
-        isActive: false,
-      };
-    }
-
-    const isActive = subscription.status === 'active';
-    const inGracePeriod = subscription.status === 'cancelled' &&
-      !!subscription.current_period_end &&
-      new Date(subscription.current_period_end) > new Date();
-
+    const { data, error } = await supabase.rpc('has_active_subscription', { p_user_id: user.id });
+    const isActive = !error && data === true;
     return {
-      hasSubscription: true,
-      status: subscription.status,
-      isActive: isActive || inGracePeriod,
-      inGracePeriod: inGracePeriod || undefined,
-      currentPeriodEnd: subscription.current_period_end ?? undefined,
-      currentPeriodStart: subscription.current_period_start ?? undefined,
-      cancelAtPeriodEnd: subscription.cancel_at_period_end ?? undefined,
+      hasSubscription: isActive,
+      status: isActive ? 'active' : null,
+      isActive,
     };
   },
 

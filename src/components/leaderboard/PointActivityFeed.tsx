@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import { MessageCircle, ThumbsUp, Calendar, Award, FileText, Loader2 } from 'lucide-react';
 import { getUserPointActivities } from '../../services';
 import type { PointActivity } from '../../types/database';
@@ -31,20 +31,53 @@ export default function PointActivityFeed({ userId, limit = ITEMS_PER_PAGE }: Po
     const [error, setError] = useState<string | null>(null);
     const observerTarget = useRef<HTMLDivElement>(null);
 
+    const loadActivities = useCallback(async () => {
+        try {
+            setLoading(true);
+            setOffset(0);
+            setError(null);
+            const data = await getUserPointActivities(userId, limit, 0);
+            setActivities(data);
+            setHasMore(data.length >= limit);
+        } catch (err) {
+            console.error('Error loading point activities:', err);
+            setError('Failed to load point activities');
+        } finally {
+            setLoading(false);
+            setLoadingMore(false);
+        }
+    }, [userId, limit]);
+
+    const loadMore = useCallback(async () => {
+        if (!hasMore || loadingMore) return;
+        setLoadingMore(true);
+        const newOffset = offset + limit;
+        setOffset(newOffset);
+        try {
+            const data = await getUserPointActivities(userId, limit, newOffset);
+            setActivities(prev => [...prev, ...data]);
+            setHasMore(data.length >= limit);
+        } catch (err) {
+            console.error('Error loading more activities:', err);
+        } finally {
+            setLoadingMore(false);
+        }
+    }, [hasMore, limit, loadingMore, offset, userId]);
+
     useEffect(() => {
         // Reset when userId changes
         setActivities([]);
         setOffset(0);
         setHasMore(true);
-        loadActivities(true);
-    }, [userId]);
+        void loadActivities();
+    }, [loadActivities]);
 
     // Infinite scroll observer
     useEffect(() => {
         const observer = new IntersectionObserver(
             (entries) => {
                 if (entries[0].isIntersecting && hasMore && !loadingMore && !loading) {
-                    loadMore();
+                    void loadMore();
                 }
             },
             { threshold: 0.1 }
@@ -55,52 +88,7 @@ export default function PointActivityFeed({ userId, limit = ITEMS_PER_PAGE }: Po
         }
 
         return () => observer.disconnect();
-    }, [hasMore, loadingMore, loading]);
-
-    const loadActivities = async (reset = false) => {
-        const currentOffset = reset ? 0 : offset;
-
-        try {
-            if (reset) {
-                setLoading(true);
-                setOffset(0);
-            }
-            setError(null);
-
-            const data = await getUserPointActivities(userId, limit, currentOffset);
-
-            if (reset) {
-                setActivities(data);
-            } else {
-                setActivities(prev => [...prev, ...data]);
-            }
-            setHasMore(data.length >= limit);
-        } catch (err) {
-            console.error('Error loading point activities:', err);
-            setError('Failed to load point activities');
-        } finally {
-            setLoading(false);
-            setLoadingMore(false);
-        }
-    };
-
-    const loadMore = async () => {
-        if (!hasMore || loadingMore) return;
-
-        setLoadingMore(true);
-        const newOffset = offset + limit;
-        setOffset(newOffset);
-
-        try {
-            const data = await getUserPointActivities(userId, limit, newOffset);
-            setActivities(prev => [...prev, ...data]);
-            setHasMore(data.length >= limit);
-        } catch (err) {
-            console.error('Error loading more activities:', err);
-        } finally {
-            setLoadingMore(false);
-        }
-    };
+    }, [hasMore, loadingMore, loading, loadMore]);
 
     const formatTimestamp = (timestamp: string) => {
         const date = new Date(timestamp);

@@ -14,6 +14,7 @@ import {
     Shield,
     Download,
 } from 'lucide-react';
+import { getSignedDownloadUrl } from '@/services/s3';
 import { useAuth } from '@/contexts/AuthContext';
 import {
     getAvailableProducts,
@@ -402,16 +403,16 @@ export default function Activations() {
                                                             {activation.product.file_name || 'File'}
                                                         </p>
                                                     </div>
-                                                    <a
-                                                        href={activation.product.file_url}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        download
+                                                    <button
+                                                        onClick={async () => {
+                                                            try { window.open(await getSignedDownloadUrl(activation.product!.file_url!), '_blank', 'noopener,noreferrer'); }
+                                                            catch { window.alert('This download is unavailable or you no longer have access.'); }
+                                                        }}
                                                         className="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium transition-colors flex-shrink-0"
                                                     >
                                                         <Download className="w-4 h-4" />
                                                         Download
-                                                    </a>
+                                                    </button>
                                                 </div>
                                             </div>
                                         )}

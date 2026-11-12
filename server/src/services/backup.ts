@@ -1,4 +1,4 @@
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { S3Client, PutObjectCommand, ListObjectsV2Command, DeleteObjectsCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
@@ -9,7 +9,7 @@ import { createWriteStream } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 // S3 Configuration for Backups
 // Uses a SEPARATE private bucket for security (database backups should never be public)
@@ -107,10 +107,11 @@ async function createDatabaseDump(): Promise<{ filepath: string; filename: strin
   // Run pg_dump with explicit parameters to avoid IPv6 issues
   // PGPASSWORD env var is used to pass password securely (not visible in process list)
   // Using separate flags instead of connection string for better compatibility
-  const command = `pg_dump -h "${host}" -p ${port} -U ${user} -d ${database} --no-owner --no-acl --clean --if-exists -f "${filepath}"`;
+  const dumpBinary = process.env.PG_DUMP_BINARY === 'pg_dump15' ? 'pg_dump15' : 'pg_dump';
+  const args = ['-h', host, '-p', port, '-U', user, '-d', database, '--no-owner', '--no-acl', '--clean', '--if-exists', '-f', filepath];
 
   try {
-    await execAsync(command, {
+    await execFileAsync(dumpBinary, args, {
       timeout: 300000, // 5 minute timeout
       maxBuffer: 50 * 1024 * 1024, // 50MB buffer
       env: {

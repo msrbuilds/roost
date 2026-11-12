@@ -153,7 +153,7 @@ function ReviewItem({
                         </Link>
                         <StarRating rating={isEditing ? editRating : review.rating} onChange={isEditing ? setEditRating : undefined} readonly={!isEditing} size="sm" />
                         <span className="text-xs text-surface-500 dark:text-surface-400">
-                            {new Date(review.created_at).toLocaleDateString()}
+                            {new Date(review.created_at ?? Date.now()).toLocaleDateString()}
                         </span>
                         {review.is_edited && (
                             <span className="text-xs text-surface-400">(edited)</span>

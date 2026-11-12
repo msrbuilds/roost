@@ -19,7 +19,7 @@ The script runs 7 steps.
 You can choose:
 
 - **Auto-install mode (Ubuntu/Debian VPS)**:
-  - Node.js 20+
+  - Node.js 22+
   - Git
   - Docker + Docker Compose plugin
   - Core system packages
@@ -48,12 +48,10 @@ For Docker VPS target, `localhost` is not allowed because SSL is enforced.
 ```text
 1) Supabase Cloud
 2) Supabase Self-hosted
-3) MongoDB (Prisma)
 ```
 
 Provider-specific credentials are collected.
 
-For MongoDB, JWT secret is generated automatically.
 For Supabase Self-hosted, installer can auto-generate JWT/anon/service keys (recommended), with manual key entry optional.
 
 ---
@@ -81,14 +79,13 @@ Important:
 
 Prompts include:
 
-- Storage (AWS S3 / S3-compatible / local)
+- Storage (AWS S3 or S3-compatible storage, including optional bundled MinIO)
 - SMTP
 - Redis
 - Stripe
 
 For Docker target:
 
-- MongoDB default URL is switched to `mongodb://mongo:27017/roost`.
 - Redis default URL is `redis://redis:6379`.
 - Traefik reverse proxy + Let's Encrypt TLS are configured automatically.
 - If Docker daemon minimum API is `1.40+` (Docker Engine 29+), installer adds a systemd override:
@@ -118,14 +115,7 @@ Deployment-specific:
 
 ## Step 7: Dependency Installation
 
-If you choose yes, script installs frontend and backend npm dependencies.
-
-For MongoDB mode, it also installs:
-
-- `prisma`
-- `@prisma/client`
-- `jsonwebtoken`
-- `bcryptjs`
+If you choose yes, the script installs frontend and backend npm dependencies.
 
 ---
 
@@ -178,7 +168,7 @@ cp .env.dokploy .env.dokploy.backup 2>/dev/null || true
 ## What Installer Does Not Do Automatically
 
 - DNS record setup
-- Database schema execution (`schema.sql` / `prisma db push`)
+- Database schema execution (`schema.sql`)
 - First admin creation
 
 Use deployment/database guides for those operational steps.

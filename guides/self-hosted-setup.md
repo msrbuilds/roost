@@ -4,10 +4,10 @@ Complete guide for deploying Roost on your own infrastructure.
 
 ## Prerequisites
 
-- Node.js 20+ and npm
-- A Supabase project (Cloud or Self-hosted) OR MongoDB
+- Node.js 22+ and npm
+- A Supabase project (Cloud or self-hosted)
 - S3-compatible storage (AWS S3, MinIO, or Cloudflare R2)
-- (Optional) SMTP server for email notifications
+- SMTP or a configured transactional email adapter for account confirmation and password resets
 - (Optional) Redis for caching and rate limiting
 - (Optional) Stripe account for paid memberships
 
@@ -25,9 +25,9 @@ bash install.sh
 
 The interactive installer will guide you through configuring:
 - Community name and branding
-- Database provider (Supabase Cloud, Supabase Self-hosted, or MongoDB)
+- Database provider (Supabase Cloud or Supabase Self-hosted)
 - Deployment target (Docker VPS, Dockploy VPS, Vercel, Netlify, or Local)
-- Optional services (S3 storage, email, Redis, Stripe)
+- Required file storage and account email, plus optional Redis and Stripe
 
 ### 2. Set Up the Database
 
@@ -36,19 +36,12 @@ The interactive installer will guide you through configuring:
 1. Create a project at [supabase.com](https://supabase.com) (or use self-hosted Supabase)
 2. Go to **SQL Editor** in your Supabase dashboard
 3. Copy the entire contents of `schema.sql` and paste it into the SQL Editor
-4. Click **Run** — this creates all 41 tables, functions, triggers, and security policies
-
-#### MongoDB
-
-```bash
-npx prisma generate
-npx prisma db push
-```
+4. Click **Run** — this creates the application tables, functions, triggers, and security policies
 
 ### 3. Create First Admin User
 
 1. Start the app: `npm run dev:all`
-2. Sign up via the app at `http://localhost:5173/signup`
+2. Sign up via the app at `http://localhost:5000/signup`
 3. Go to your Supabase dashboard → **SQL Editor**
 4. Run:
    ```sql
@@ -78,7 +71,8 @@ docker compose up --build -d
 ### Docker (Recommended for Self-Hosting)
 
 ```bash
-# Configure environment variables in .env.local and server/.env
+# Run the installer to generate .env.local, server/.env, and Compose's .env.
+# Compose loads .env; the two development files alone are not sufficient.
 # Then build and run:
 docker compose up --build -d
 
@@ -94,7 +88,7 @@ The Docker setup includes:
 - Frontend served by nginx with gzip, caching, and security headers
 - Backend with health checks and graceful shutdown
 - Built-in Traefik reverse proxy with automatic Let's Encrypt SSL
-- Optional MongoDB/Redis/MinIO profiles (when configured by installer)
+- Optional Redis and MinIO profiles (when configured by installer)
 
 Detailed VPS guides:
 - [Docker (VPS)](./docker-vps.md)
@@ -212,9 +206,6 @@ Use R2 with S3-compatible API. Set `S3_ENDPOINT` to your R2 endpoint.
 | `VITE_SUPABASE_URL` | Yes* | — | Supabase project URL |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | Yes* | — | Supabase anon key |
 | `VITE_API_URL` | Yes | http://localhost:3000 | Backend API URL |
-| `VITE_AWS_REGION` | No | us-east-1 | S3 region |
-| `VITE_AWS_S3_BUCKET` | No | — | S3 bucket name |
-| `VITE_S3_ENDPOINT` | No | — | Public S3-compatible endpoint (MinIO/R2) |
 | `VITE_STRIPE_ENABLED` | No | false | Enable Stripe payments |
 | `VITE_ENABLE_SIGNUP` | No | true | Allow new signups |
 | `VITE_ENABLE_SHOWCASE` | No | true | Enable project showcase |
@@ -241,8 +232,8 @@ Use R2 with S3-compatible API. Set `S3_ENDPOINT` to your R2 endpoint.
 | `STRIPE_SECRET_KEY` | No | — | Stripe secret key |
 | `STRIPE_WEBHOOK_SECRET` | No | — | Stripe webhook secret |
 | `STRIPE_PRICE_ID` | No | — | Default subscription price |
-| `ALLOWED_ORIGINS` | Yes | http://localhost:5173 | CORS origins |
-| `FRONTEND_URL` | Yes | http://localhost:5173 | Frontend URL |
+| `ALLOWED_ORIGINS` | Yes | http://localhost:5000 | CORS origins |
+| `FRONTEND_URL` | Yes | http://localhost:5000 | Frontend URL |
 
 ---
 
@@ -273,7 +264,6 @@ npm run build:all
 # Docker
 docker compose up --build -d
 
-# Check for new migrations
-ls migrations/
-# Run any new migrations in Supabase SQL Editor
+# Review schema changes before upgrading an existing database.
+# schema.sql is the consolidated fresh-install schema, not an in-place migration.
 ```

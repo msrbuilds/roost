@@ -106,17 +106,7 @@ export default function LearnGroupLayout({
         }
     }, [activeModuleId, modules]);
 
-    // Load active recording when URL changes
-    useEffect(() => {
-        if (activeRecordingId && activeModuleId && user) {
-            loadActiveRecording(activeRecordingId, activeModuleId);
-        } else {
-            setActiveRecording(null);
-            setAdjacentRecordings({ prev: null, next: null });
-        }
-    }, [activeRecordingId, activeModuleId, user]);
-
-    const loadActiveRecording = async (recordingId: string, moduleId: string) => {
+    const loadActiveRecording = useCallback(async (recordingId: string, moduleId: string) => {
         try {
             const [recording, adjacent] = await Promise.all([
                 getRecordingById(recordingId),
@@ -124,7 +114,6 @@ export default function LearnGroupLayout({
             ]);
 
             if (recording) {
-                // Check completion status from sidebar data
                 const modRecs = moduleRecordings[moduleId] || [];
                 const recWithCompletion = modRecs.find((r) => r.id === recordingId);
                 setActiveRecording({
@@ -136,7 +125,17 @@ export default function LearnGroupLayout({
         } catch (error) {
             console.error('Error loading recording:', error);
         }
-    };
+    }, [moduleRecordings]);
+
+    // Load active recording when URL changes
+    useEffect(() => {
+        if (activeRecordingId && activeModuleId && user) {
+            void loadActiveRecording(activeRecordingId, activeModuleId);
+        } else {
+            setActiveRecording(null);
+            setAdjacentRecordings({ prev: null, next: null });
+        }
+    }, [activeRecordingId, activeModuleId, user, loadActiveRecording]);
 
     // Navigation handlers
     const navigateToModule = (moduleId: string) => {

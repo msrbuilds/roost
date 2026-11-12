@@ -73,8 +73,6 @@ export interface Profile extends BaseEntity {
   banned_at: string | null;
   membership_type: MembershipType;
   two_factor_enabled: boolean;
-  two_factor_secret: string | null;
-  two_factor_verified_at: string | null;
   updated_at: string;
 }
 
@@ -416,7 +414,7 @@ export interface ActivationRequest extends BaseEntity {
   status: ActivationRequestStatus;
   website_url: string;
   wp_username: string;
-  wp_password: string;
+  wp_password: string | null;
   notes: string | null;
   admin_notes: string | null;
   processed_by: string | null;

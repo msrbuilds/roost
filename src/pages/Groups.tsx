@@ -20,33 +20,25 @@ export default function Groups() {
     const [activeTab, setActiveTab] = useState<'discover' | 'my-groups'>('discover');
     const observerTarget = useRef<HTMLDivElement>(null);
 
-    const fetchGroups = useCallback(async (reset = false) => {
+    const fetchGroups = useCallback(async () => {
         if (!user) return;
 
-        const currentOffset = reset ? 0 : offset;
-
         try {
-            if (reset) {
-                setIsLoading(true);
-                setOffset(0);
-            }
+            setIsLoading(true);
+            setOffset(0);
 
             const [{ groups, hasMore: more }, userGroups] = await Promise.all([
                 getGroups({
                     userId: user.id,
                     search: searchQuery || undefined,
                     limit: GROUPS_PER_PAGE,
-                    offset: currentOffset,
+                    offset: 0,
                 }),
-                reset ? getUserGroups(user.id) : Promise.resolve(myGroups),
+                getUserGroups(user.id),
             ]);
 
-            if (reset) {
-                setAllGroups(groups);
-                setMyGroups(userGroups);
-            } else {
-                setAllGroups(prev => [...prev, ...groups]);
-            }
+            setAllGroups(groups);
+            setMyGroups(userGroups);
             setHasMore(more);
         } catch (error) {
             console.error('Error fetching groups:', error);
@@ -54,37 +46,9 @@ export default function Groups() {
             setIsLoading(false);
             setLoadingMore(false);
         }
-    }, [user, searchQuery, offset, myGroups]);
-
-    // Initial load and search changes
-    useEffect(() => {
-        setAllGroups([]);
-        setOffset(0);
-        setHasMore(true);
-        fetchGroups(true);
     }, [user, searchQuery]);
 
-    // Infinite scroll observer
-    useEffect(() => {
-        if (activeTab !== 'discover') return;
-
-        const observer = new IntersectionObserver(
-            (entries) => {
-                if (entries[0].isIntersecting && hasMore && !loadingMore && !isLoading) {
-                    loadMore();
-                }
-            },
-            { threshold: 0.1 }
-        );
-
-        if (observerTarget.current) {
-            observer.observe(observerTarget.current);
-        }
-
-        return () => observer.disconnect();
-    }, [hasMore, loadingMore, isLoading, activeTab]);
-
-    const loadMore = async () => {
+    const loadMore = useCallback(async () => {
         if (!hasMore || loadingMore || !user) return;
 
         setLoadingMore(true);
@@ -106,14 +70,42 @@ export default function Groups() {
         } finally {
             setLoadingMore(false);
         }
-    };
+    }, [hasMore, loadingMore, offset, searchQuery, user]);
+
+    // Initial load and search changes
+    useEffect(() => {
+        setAllGroups([]);
+        setOffset(0);
+        setHasMore(true);
+        void fetchGroups();
+    }, [fetchGroups]);
+
+    // Infinite scroll observer
+    useEffect(() => {
+        if (activeTab !== 'discover') return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting && hasMore && !loadingMore && !isLoading) {
+                    void loadMore();
+                }
+            },
+            { threshold: 0.1 }
+        );
+
+        if (observerTarget.current) {
+            observer.observe(observerTarget.current);
+        }
+
+        return () => observer.disconnect();
+    }, [hasMore, loadingMore, isLoading, activeTab, loadMore]);
 
     const handleJoin = async (groupId: string) => {
         if (!user) return;
 
         try {
             await joinGroup(groupId, user.id);
-            fetchGroups(true);
+            void fetchGroups();
         } catch (error) {
             console.error('Error joining group:', error);
             alert('Failed to join classroom');
@@ -127,7 +119,7 @@ export default function Groups() {
 
         try {
             await leaveGroup(groupId, user.id);
-            fetchGroups(true);
+            void fetchGroups();
         } catch (error) {
             console.error('Error leaving group:', error);
             alert(error instanceof Error ? error.message : 'Failed to leave classroom');
@@ -261,7 +253,7 @@ export default function Groups() {
                 onClose={() => setShowCreateModal(false)}
                 onSuccess={() => {
                     setShowCreateModal(false);
-                    fetchGroups(true);
+                    void fetchGroups();
                 }}
             />
         </div>

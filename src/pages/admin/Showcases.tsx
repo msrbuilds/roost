@@ -61,7 +61,7 @@ export default function AdminShowcases() {
         } finally {
             setIsLoading(false);
         }
-    }, [activeTab, search, user?.id]);
+    }, [activeTab, search]);
 
     useEffect(() => {
         fetchData();
@@ -75,7 +75,7 @@ export default function AdminShowcases() {
             }
         }, 300);
         return () => clearTimeout(timeout);
-    }, [search]);
+    }, [search, fetchData]);
 
     // Action handlers
     const handleApprove = async (showcaseId: string) => {
@@ -257,7 +257,7 @@ export default function AdminShowcases() {
                             <tbody className="divide-y divide-surface-100 dark:divide-surface-800">
                                 {showcases.map((showcase) => {
                                     const categoryInfo = SHOWCASE_CATEGORY_INFO[showcase.category];
-                                    const statusInfo = SHOWCASE_STATUS_INFO[showcase.status];
+                                    const statusInfo = SHOWCASE_STATUS_INFO[showcase.status ?? 'pending'];
                                     const isActionLoading = actionLoading === showcase.id;
 
                                     return (
@@ -319,16 +319,16 @@ export default function AdminShowcases() {
                                                         <MessageSquare className="w-4 h-4" />
                                                         {showcase.review_count}
                                                     </span>
-                                                    {showcase.average_rating > 0 && (
+                                                    {(showcase.average_rating ?? 0) > 0 && (
                                                         <span className="flex items-center gap-1 text-amber-500">
                                                             <Star className="w-4 h-4 fill-current" />
-                                                            {showcase.average_rating.toFixed(1)}
+                                                            {(showcase.average_rating ?? 0).toFixed(1)}
                                                         </span>
                                                     )}
                                                 </div>
                                             </td>
                                             <td className="px-4 py-4 text-sm text-surface-500">
-                                                {new Date(showcase.created_at).toLocaleDateString()}
+                                                {new Date(showcase.created_at ?? Date.now()).toLocaleDateString()}
                                             </td>
                                             <td className="px-4 py-4">
                                                 <div className="flex items-center justify-end gap-2">

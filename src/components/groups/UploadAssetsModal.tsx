@@ -97,6 +97,7 @@ export default function UploadAssetsModal({
                 const asset = await createAsset({
                     filename: uploadResult.fileName,
                     file_url: uploadResult.url,
+                    storage_key: uploadResult.key,
                     file_size: uploadResult.fileSize,
                     mime_type: uploadResult.mimeType,
                     asset_type: getAssetType(uploadResult.mimeType),

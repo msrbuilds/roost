@@ -72,9 +72,9 @@ ask() {
 
   read -r input
   if [ -z "$input" ] && [ -n "$default" ]; then
-    eval "$var_name='$default'"
+    printf -v "$var_name" '%s' "$default"
   else
-    eval "$var_name='$input'"
+    printf -v "$var_name" '%s' "$input"
   fi
 }
 
@@ -85,7 +85,7 @@ ask_secret() {
   echo -ne "${CYAN}?${NC} ${prompt}: "
   read -rs input
   echo ""
-  eval "$var_name='$input'"
+  printf -v "$var_name" '%s' "$input"
 }
 
 ask_choice() {
@@ -113,7 +113,25 @@ ask_choice() {
 }
 
 generate_secret() {
-  openssl rand -base64 32 2>/dev/null || head -c 32 /dev/urandom | base64 2>/dev/null || echo "change-me-$(date +%s)-$(shuf -i 1000-9999 -n 1)"
+  if command -v openssl >/dev/null 2>&1; then
+    openssl rand -base64 32
+  elif [ -r /dev/urandom ]; then
+    head -c 32 /dev/urandom | base64
+  else
+    print_error "A cryptographically secure random source is required." >&2
+    return 1
+  fi
+}
+
+generate_hex_secret() {
+  if command -v openssl >/dev/null 2>&1; then
+    openssl rand -hex 16
+  elif [ -r /dev/urandom ]; then
+    head -c 16 /dev/urandom | od -An -tx1 | tr -d ' \n'
+  else
+    print_error "A cryptographically secure random source is required." >&2
+    return 1
+  fi
 }
 
 b64url_encode() {
@@ -173,23 +191,23 @@ install_vps_base_packages() {
   run_with_sudo apt-get install -y ca-certificates curl gnupg lsb-release git openssl
 }
 
-install_nodejs_20() {
+install_nodejs_22() {
   local node_major=""
   if command -v node >/dev/null 2>&1; then
     node_major=$(node -v | cut -d'v' -f2 | cut -d'.' -f1)
-    if [ "$node_major" -ge 20 ]; then
+    if [ "$node_major" -ge 22 ]; then
       print_success "Node.js $(node -v) already installed"
       return
     fi
   fi
 
   if ! is_apt_based; then
-    print_error "Node.js 20+ is required. Install it manually on this OS."
+    print_error "Node.js 22+ is required. Install it manually on this OS."
     exit 1
   fi
 
-  print_success "Installing Node.js 20.x..."
-  curl -fsSL https://deb.nodesource.com/setup_20.x | run_with_sudo bash -
+  print_success "Installing Node.js 22.x..."
+  curl -fsSL https://deb.nodesource.com/setup_22.x | run_with_sudo bash -
   run_with_sudo apt-get install -y nodejs
 }
 
@@ -316,8 +334,8 @@ check_dependencies() {
   fi
 
   node_major=$(node -v | cut -d'v' -f2 | cut -d'.' -f1)
-  if [ "$node_major" -lt 20 ]; then
-    print_error "Node.js 20+ required (found $(node -v))"
+  if [ "$node_major" -lt 22 ]; then
+    print_error "Node.js 22+ required (found $(node -v))"
     exit 1
   fi
 
@@ -448,10 +466,6 @@ generate_compose_env() {
     fi
   fi
 
-  if [ "$DB_PROVIDER" = "mongodb" ]; then
-    compose_profiles="mongodb"
-  fi
-
   if [ -n "${REDIS_URL:-}" ] && [ "${REDIS_URL}" = "redis://redis:6379" ]; then
     if [ -n "$compose_profiles" ]; then
       compose_profiles="${compose_profiles},redis"
@@ -476,18 +490,13 @@ generate_compose_env() {
 
 # Domain / Routing
 ROOST_DOMAIN=${APP_DOMAIN}
-BACKUP_API_URL=${APP_URL}
 LETSENCRYPT_EMAIL=${LETSENCRYPT_EMAIL}
 COMPOSE_PROFILES=${compose_profiles}
 
 # Frontend build args
 VITE_DB_PROVIDER=${DB_PROVIDER}
-VITE_DATABASE_URL=${MONGODB_URL:-}
 VITE_SUPABASE_URL=${SUPABASE_URL:-}
 VITE_SUPABASE_PUBLISHABLE_KEY=${SUPABASE_ANON_KEY:-}
-VITE_AWS_REGION=${AWS_REGION}
-VITE_AWS_S3_BUCKET=${AWS_S3_BUCKET}
-VITE_S3_ENDPOINT=${VITE_S3_ENDPOINT:-${S3_ENDPOINT:-}}
 VITE_APP_NAME="${COMMUNITY_NAME}"
 VITE_APP_URL=${APP_URL}
 VITE_API_URL=${APP_URL}
@@ -495,8 +504,6 @@ VITE_STRIPE_ENABLED=${STRIPE_ENABLED}
 
 # Backend runtime
 DB_PROVIDER=${DB_PROVIDER}
-DATABASE_URL=${MONGODB_URL:-}
-JWT_SECRET=${JWT_SECRET:-$(generate_secret)}
 SUPABASE_URL=${SUPABASE_URL:-}
 SUPABASE_SECRET_KEY=${SUPABASE_SERVICE_KEY:-}
 FRONTEND_URL=${APP_URL}
@@ -556,12 +563,12 @@ generate_dokploy_env() {
   secret_key_base="${DOKPLOY_SECRET_KEY_BASE:-$(generate_secret | tr -d '\n')}"
 
   # MinIO credentials — always generated for Dokploy (MinIO is baked into the stack)
-  minio_user="${MINIO_ROOT_USER:-minioadmin}"
+  minio_user="${MINIO_ROOT_USER:-roost$(generate_hex_secret)}"
   minio_pass="${MINIO_ROOT_PASSWORD:-$(generate_secret | tr -dc 'A-Za-z0-9' | head -c 32)}"
   minio_bucket="${AWS_S3_BUCKET:-roost-uploads}"
-  # Fallback if generate_secret fails
   if [ -z "$minio_pass" ]; then
-    minio_pass="minioadmin$(date +%s)"
+    print_error "Unable to generate a secure MinIO password."
+    exit 1
   fi
 
   JWT_SECRET="$jwt_secret"
@@ -616,7 +623,11 @@ STRIPE_ENABLED=${STRIPE_ENABLED}
 STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
 STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
 STRIPE_PRICE_ID=${STRIPE_PRICE_ID:-}
+AWS_BACKUP_BUCKET=${AWS_BACKUP_BUCKET:-roost-backups}
+BACKUP_SECRET_TOKEN=${backup_token}
 ENVEOF
+
+  chmod 600 .env.dokploy
 
   print_success "Created .env.dokploy for docker-compose.dokploy.yml / Dokploy"
 }
@@ -642,7 +653,7 @@ ask_choice "Is this a fresh Ubuntu/Debian VPS where the installer should auto-in
 if [ "$CHOICE_RESULT" = "0" ]; then
   VPS_BOOTSTRAP=true
   install_vps_base_packages
-  install_nodejs_20
+  install_nodejs_22
 fi
 
 check_dependencies
@@ -672,14 +683,12 @@ print_step 3 "Database provider"
 
 ask_choice "Select your database provider:" \
   "Supabase Cloud (Recommended - easiest setup)" \
-  "Supabase Self-hosted (Community Edition)" \
-  "MongoDB (Local/Atlas with Prisma)"
+  "Supabase Self-hosted (Community Edition)"
 
 DB_PROVIDER_IDX=$CHOICE_RESULT
 case $DB_PROVIDER_IDX in
   0) DB_PROVIDER="supabase-cloud" ;;
   1) DB_PROVIDER="supabase-selfhosted" ;;
-  2) DB_PROVIDER="mongodb" ;;
   *) DB_PROVIDER="supabase-cloud" ;;
 esac
 
@@ -718,14 +727,6 @@ case $DB_PROVIDER in
       ask_secret "Supabase Anon/Public Key" SUPABASE_ANON_KEY
       ask_secret "Supabase Service Role Key" SUPABASE_SERVICE_KEY
     fi
-    ;;
-  mongodb)
-    echo ""
-    echo -e "${YELLOW}  MongoDB can be local, Docker, or MongoDB Atlas${NC}"
-    echo ""
-    ask "MongoDB Connection URL" "mongodb://localhost:27017/roost" MONGODB_URL
-    JWT_SECRET=$(generate_secret)
-    print_success "JWT secret generated automatically"
     ;;
 esac
 
@@ -814,8 +815,7 @@ print_step 5 "Optional services"
 echo ""
 ask_choice "File storage provider:" \
   "AWS S3" \
-  "S3-Compatible (MinIO, Cloudflare R2, etc.)" \
-  "Local filesystem (dev only)"
+  "S3-Compatible (MinIO, Cloudflare R2, etc.)"
 
 STORAGE_IDX=$CHOICE_RESULT
 case $STORAGE_IDX in
@@ -826,7 +826,6 @@ case $STORAGE_IDX in
     ask_secret "AWS Access Key ID" AWS_ACCESS_KEY_ID
     ask_secret "AWS Secret Access Key" AWS_SECRET_ACCESS_KEY
     S3_ENDPOINT=""
-    VITE_S3_ENDPOINT=""
     ;;
   1)
     if [ "$DEPLOY_TARGET" = "docker" ]; then
@@ -860,7 +859,6 @@ case $STORAGE_IDX in
         AWS_ACCESS_KEY_ID="$MINIO_ROOT_USER"
         AWS_SECRET_ACCESS_KEY="$MINIO_ROOT_PASSWORD"
         S3_ENDPOINT="https://${APP_DOMAIN}"
-        VITE_S3_ENDPOINT="$S3_ENDPOINT"
         print_success "MinIO enabled with endpoint ${S3_ENDPOINT} and bucket ${AWS_S3_BUCKET}"
       else
         MINIO_ENABLED=false
@@ -877,7 +875,6 @@ case $STORAGE_IDX in
           fi
           print_warning "S3 endpoint is required for S3-compatible providers."
         done
-        VITE_S3_ENDPOINT="$S3_ENDPOINT"
       fi
     else
       MINIO_ENABLED=false
@@ -894,20 +891,7 @@ case $STORAGE_IDX in
         fi
         print_warning "S3 endpoint is required for S3-compatible providers."
       done
-      VITE_S3_ENDPOINT="$S3_ENDPOINT"
     fi
-    ;;
-  2)
-    MINIO_ENABLED=false
-    MINIO_ROOT_USER=""
-    MINIO_ROOT_PASSWORD=""
-    AWS_REGION="local"
-    AWS_S3_BUCKET="local"
-    AWS_ACCESS_KEY_ID=""
-    AWS_SECRET_ACCESS_KEY=""
-    S3_ENDPOINT=""
-    VITE_S3_ENDPOINT=""
-    print_warning "Local storage selected: uploads saved to ./uploads/"
     ;;
 esac
 
@@ -964,12 +948,6 @@ else
   STRIPE_PRICE_ID=""
 fi
 
-# Docker-target defaults for local MongoDB profile
-if [ "$DEPLOY_TARGET" = "docker" ] && [ "$DB_PROVIDER" = "mongodb" ] && [ "${MONGODB_URL:-}" = "mongodb://localhost:27017/roost" ]; then
-  MONGODB_URL="mongodb://mongo:27017/roost"
-  print_success "Using Docker MongoDB profile URL: ${MONGODB_URL}"
-fi
-
 # --- Step 6: Generate Configuration Files ---
 print_step 6 "Generating configuration files"
 
@@ -986,20 +964,12 @@ VITE_APP_TAGLINE="${COMMUNITY_TAGLINE}"
 VITE_APP_URL=${APP_URL}
 VITE_API_URL=${API_URL}
 
-# Database Provider: supabase-cloud | supabase-selfhosted | mongodb
+# Database Provider: supabase-cloud | supabase-selfhosted
 VITE_DB_PROVIDER=${DB_PROVIDER}
 
 # Supabase (if using supabase-cloud or supabase-selfhosted)
 VITE_SUPABASE_URL=${SUPABASE_URL:-}
 VITE_SUPABASE_PUBLISHABLE_KEY=${SUPABASE_ANON_KEY:-}
-
-# MongoDB (if using mongodb)
-VITE_DATABASE_URL=${MONGODB_URL:-}
-
-# AWS S3 / Storage
-VITE_AWS_REGION=${AWS_REGION}
-VITE_AWS_S3_BUCKET=${AWS_S3_BUCKET}
-VITE_S3_ENDPOINT=${VITE_S3_ENDPOINT:-}
 
 # Features
 VITE_ENABLE_SIGNUP=true
@@ -1031,10 +1001,6 @@ DB_PROVIDER=${DB_PROVIDER}
 # Supabase (if using supabase-cloud or supabase-selfhosted)
 SUPABASE_URL=${SUPABASE_URL:-}
 SUPABASE_SECRET_KEY=${SUPABASE_SERVICE_KEY:-}
-
-# MongoDB (if using mongodb)
-DATABASE_URL=${MONGODB_URL:-}
-JWT_SECRET=${JWT_SECRET:-$(generate_secret)}
 
 # AWS S3 / Storage
 AWS_REGION=${AWS_REGION}
@@ -1131,32 +1097,15 @@ if [ "$CHOICE_RESULT" = "0" ]; then
   echo "Installing frontend dependencies..."
   npm install
 
-  # Add Prisma deps if MongoDB selected
-  if [ "$DB_PROVIDER" = "mongodb" ]; then
-    echo "Installing Prisma..."
-    npm install prisma @prisma/client
-    npx prisma generate
-  fi
-
   echo "Installing backend dependencies..."
   cd server && npm install && cd ..
-
-  # Add MongoDB auth deps if MongoDB
-  if [ "$DB_PROVIDER" = "mongodb" ]; then
-    cd server
-    npm install @prisma/client jsonwebtoken bcryptjs
-    npm install -D @types/jsonwebtoken @types/bcryptjs
-    cd ..
-  fi
 
   print_success "All dependencies installed"
 else
   echo ""
   echo -e "${YELLOW}Run these commands when ready:${NC}"
   echo "  npm install"
-  [ "$DB_PROVIDER" = "mongodb" ] && echo "  npm install prisma @prisma/client && npx prisma generate"
   echo "  cd server && npm install"
-  [ "$DB_PROVIDER" = "mongodb" ] && echo "  cd server && npm install @prisma/client jsonwebtoken bcryptjs"
 fi
 
 # --- Database Setup ---
@@ -1169,12 +1118,7 @@ elif [ "$DB_PROVIDER" = "supabase-cloud" ] || [ "$DB_PROVIDER" = "supabase-selfh
   echo ""
   echo -e "${YELLOW}${BOLD}Database Setup (Supabase):${NC}"
   echo "  Run schema.sql in your Supabase SQL Editor, then create your first admin."
-  echo "  Or use Supabase CLI: supabase db push"
-elif [ "$DB_PROVIDER" = "mongodb" ]; then
-  echo ""
-  echo -e "${YELLOW}${BOLD}Database Setup (MongoDB):${NC}"
-  echo "  Run Prisma migrations:"
-  echo "  npx prisma db push"
+  echo "  Existing databases require a reviewed migration; do not rerun the fresh-install schema."
 fi
 
 run_post_install_checks

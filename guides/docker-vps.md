@@ -12,7 +12,7 @@ Installer also applies Docker Engine 29+ API compatibility for Traefik automatic
 - Frontend + backend deployment on a VPS
 - Built-in Traefik reverse proxy
 - Automatic Let's Encrypt SSL certificates
-- Supabase Cloud / Supabase Self-hosted / MongoDB
+- Supabase Cloud or Supabase Self-hosted
 - Optional Redis container profile
 - Optional self-hosted MinIO profile for S3-compatible storage
 
@@ -69,23 +69,14 @@ Installer generates:
 - Choose `Auto-generate JWT/anon/service keys` (recommended) or enter existing keys manually.
 - Use [Supabase Self-Hosted Guide](./supabase-selfhosted.md) for Supabase stack setup.
 
-### MongoDB
-
-- Choose `MongoDB` in installer.
-- If you keep default URL, installer enables Docker Mongo profile:
-  - `DATABASE_URL=mongodb://mongo:27017/roost`
-  - `COMPOSE_PROFILES=mongodb`
-
-MongoDB will run automatically with `docker compose up`.
-
 ### MinIO (S3-Compatible, Self-hosted on this VPS)
 
 If selected in installer:
 
 - `.env` includes MinIO root credentials, bucket, and `S3_ENDPOINT=https://your-domain`.
 - `COMPOSE_PROFILES=minio` is enabled.
-- Traefik routes `https://your-domain/<bucket>/...` to MinIO.
-- A `minio-init` job auto-creates the bucket and applies anonymous download policy.
+- MinIO remains internal; the authenticated backend proxies authorized downloads.
+- A `minio-init` job auto-creates private upload and backup buckets.
 
 ---
 
@@ -162,21 +153,16 @@ This means Traefik cannot query your Docker socket API.
 - Re-run `bash install.sh` and choose Docker target again.
 - Confirm `.env` exists in project root.
 
-### MongoDB connection errors
-
-- Check `docker compose ps` includes `roost-mongo`.
-- Confirm `.env` has `COMPOSE_PROFILES=mongodb`.
-
 ### Redis connection errors
 
 - Confirm `.env` has `REDIS_URL=redis://redis:6379`.
-- Confirm `.env` has `COMPOSE_PROFILES=redis` (or `mongodb,redis`).
+- Confirm `.env` has `COMPOSE_PROFILES=redis`.
 
-### MinIO upload URL fails or 403 signature mismatch
+### MinIO upload or download fails
 
 - Confirm `.env` has `S3_ENDPOINT=https://your-domain`.
 - Confirm `.env` has `COMPOSE_PROFILES` including `minio`.
-- Confirm bucket in `.env` matches upload URL prefix (`AWS_S3_BUCKET`).
+- Confirm the backend has matching MinIO credentials and `PUBLIC_API_URL`.
 - Check MinIO init logs: `docker compose logs -f minio-init`.
 
 ### CORS errors

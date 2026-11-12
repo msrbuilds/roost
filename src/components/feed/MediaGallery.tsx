@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { X, ChevronLeft, ChevronRight, Play } from 'lucide-react';
 import { Asset } from '@/services/asset';
+import { getSignedDownloadUrl } from '@/services/s3';
 
 interface MediaGalleryProps {
     assets: Asset[];
@@ -8,6 +9,24 @@ interface MediaGalleryProps {
 
 export default function MediaGallery({ assets }: MediaGalleryProps) {
     const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+    const [urls, setUrls] = useState<string[]>(() => assets.map((asset) => asset.file_url.startsWith('private:') ? '' : asset.file_url));
+
+    useEffect(() => {
+        let active = true;
+        const blobs: string[] = [];
+        Promise.all(assets.map((asset) => getSignedDownloadUrl(asset.file_url))).then((resolved) => {
+            if (!active) {
+                resolved.filter((url) => url.startsWith('blob:')).forEach(URL.revokeObjectURL);
+                return;
+            }
+            blobs.push(...resolved.filter((url) => url.startsWith('blob:')));
+            setUrls(resolved);
+        }).catch(() => setUrls(assets.map((asset) => asset.file_url.startsWith('private:') ? '' : asset.file_url)));
+        return () => {
+            active = false;
+            blobs.forEach(URL.revokeObjectURL);
+        };
+    }, [assets]);
 
     // Keyboard navigation
     const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -74,7 +93,7 @@ export default function MediaGallery({ assets }: MediaGalleryProps) {
                     >
                         {asset.asset_type === 'image' ? (
                             <img
-                                src={asset.file_url}
+                                src={urls[index]}
                                 alt={asset.filename}
                                 className="w-full h-full object-cover"
                                 loading="lazy"
@@ -82,7 +101,7 @@ export default function MediaGallery({ assets }: MediaGalleryProps) {
                         ) : asset.asset_type === 'video' ? (
                             <div className="w-full h-full flex items-center justify-center bg-surface-900">
                                 <video
-                                    src={asset.file_url}
+                                    src={urls[index]}
                                     className="w-full h-full object-cover opacity-70"
                                     muted
                                     preload="metadata"
@@ -155,13 +174,13 @@ export default function MediaGallery({ assets }: MediaGalleryProps) {
                     >
                         {assets[selectedIndex].asset_type === 'image' ? (
                             <img
-                                src={assets[selectedIndex].file_url}
+                                src={urls[selectedIndex]}
                                 alt={assets[selectedIndex].filename}
                                 className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl animate-scaleIn"
                             />
                         ) : (
                             <video
-                                src={assets[selectedIndex].file_url}
+                                src={urls[selectedIndex]}
                                 controls
                                 autoPlay
                                 className="max-w-full max-h-[85vh] rounded-lg shadow-2xl"
@@ -197,7 +216,7 @@ export default function MediaGallery({ assets }: MediaGalleryProps) {
                                 >
                                     {asset.asset_type === 'image' ? (
                                         <img
-                                            src={asset.file_url}
+                                            src={urls[idx]}
                                             alt=""
                                             className="w-full h-full object-cover"
                                         />

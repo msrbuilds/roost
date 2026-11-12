@@ -17,6 +17,7 @@ build/
 # =============================================================================
 .env
 .env.local
+.env.dokploy
 .env.*.local
 .env.development
 .env.production

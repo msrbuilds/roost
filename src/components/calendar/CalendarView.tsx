@@ -9,6 +9,7 @@ import EventDetails from '../events/EventDetails';
 import { rsvpToEvent, deleteEvent, updateEvent } from '../../services';
 import type { RSVPStatus } from '../../types/database';
 import EventForm, { type EventFormData } from '../events/EventForm';
+import { useAuth } from '@/contexts/AuthContext';
 
 const localizer = dateFnsLocalizer({
     format,
@@ -25,6 +26,7 @@ interface CalendarViewProps {
 }
 
 export default function CalendarView({ events, onCreateEvent, onRefresh }: CalendarViewProps) {
+    const { user } = useAuth();
     const [selectedEvent, setSelectedEvent] = useState<EventWithDetails | null>(null);
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
@@ -52,8 +54,8 @@ export default function CalendarView({ events, onCreateEvent, onRefresh }: Calen
     };
 
     const handleRSVP = async (status: RSVPStatus) => {
-        if (!selectedEvent) return;
-        await rsvpToEvent(selectedEvent.id, selectedEvent.created_by, status);
+        if (!selectedEvent || !user) return;
+        await rsvpToEvent(selectedEvent.id, user.id, status);
         if (onRefresh) onRefresh();
     };
 

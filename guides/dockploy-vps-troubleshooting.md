@@ -184,8 +184,7 @@ SQL
 Roost schema not fully applied.
 
 ```bash
-docker exec -i -e PGPASSWORD="$PASS" "$DB_CTR" psql -U postgres -d postgres -f /docker-entrypoint-initdb.d/99-roost-schema.sql \
-  || docker exec -i -e PGPASSWORD="$PASS" "$DB_CTR" psql -U postgres -d postgres -f /docker-entrypoint-initdb.d/migrations/99-roost-schema.sql
+docker exec -i -e PGPASSWORD="$PASS" "$DB_CTR" psql -v ON_ERROR_STOP=1 -U supabase_admin -d postgres -f /docker-entrypoint-initdb.d/init-scripts/zz-roost-schema.sql
 
 docker restart ${APP_PREFIX}-backend-1 ${APP_PREFIX}-kong-1 ${APP_PREFIX}-nginx-1
 ```

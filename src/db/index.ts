@@ -23,10 +23,6 @@ async function createAdapter(provider: DatabaseProvider): Promise<DatabaseAdapte
       const { SupabaseAdapter } = await import('./adapters/supabase');
       return new SupabaseAdapter();
     }
-    case 'mongodb': {
-      const { MongoDBAdapter } = await import('./adapters/mongodb');
-      return new MongoDBAdapter();
-    }
     default:
       throw new Error(`Unknown database provider: ${provider}`);
   }

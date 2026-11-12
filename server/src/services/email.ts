@@ -1,4 +1,4 @@
-import nodemailer from 'nodemailer';
+import nodemailer, { type Transporter } from 'nodemailer';
 
 // HTML escape function to prevent XSS in email templates
 function escapeHtml(unsafe: string): string {
@@ -8,6 +8,10 @@ function escapeHtml(unsafe: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+}
+
+function safeHeader(value: string): string {
+  return value.replace(/[\r\n\0]/g, ' ').trim().slice(0, 200);
 }
 
 interface EmailConfig {
@@ -28,7 +32,7 @@ interface SendEmailOptions {
 }
 
 class EmailService {
-  private transporter: nodemailer.Transporter | null = null;
+  private transporter: Transporter | null = null;
   private fromEmail: string;
   private fromName: string;
 
@@ -60,13 +64,9 @@ class EmailService {
     this.transporter = nodemailer.createTransport(config);
 
     // Verify SMTP connection on startup
-    this.transporter.verify((error, success) => {
-      if (error) {
-        console.error('SMTP connection verification failed:', error.message);
-      } else if (success) {
-        console.log('SMTP connection verified successfully');
-      }
-    });
+    void this.transporter.verify()
+      .then(() => console.log('SMTP connection verified successfully'))
+      .catch((error: Error) => console.error('SMTP connection verification failed:', error.message));
   }
 
   async sendEmail(options: SendEmailOptions): Promise<boolean> {
@@ -104,7 +104,7 @@ class EmailService {
     const safeProductName = escapeHtml(productName);
     const safeEmail = escapeHtml(email);
     const planType = escapeHtml(variantName || 'Subscription');
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5000';
 
     const html = `
 <!DOCTYPE html>
@@ -258,7 +258,7 @@ The ${this.fromName} Team
     // Escape user-provided data to prevent XSS
     const safeName = escapeHtml(name || 'there');
     const safeProductName = escapeHtml(productName);
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5000';
 
     const html = `
 <!DOCTYPE html>
@@ -305,7 +305,7 @@ The ${this.fromName} Team
     // Escape user-provided data to prevent XSS
     const safeName = escapeHtml(name || 'there');
     const safeEmail = escapeHtml(email);
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5000';
 
     const html = `
 <!DOCTYPE html>
@@ -387,10 +387,23 @@ The ${this.fromName} Team
     const safeName = escapeHtml(userName || 'there');
     const safeTitle = escapeHtml(title);
     const safeMessage = message ? escapeHtml(message) : '';
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5000';
 
     // Get notification type specific styling
-    const { color, icon, subject } = this.getNotificationTypeStyles(notificationType, title);
+    const styles = this.getNotificationTypeStyles(notificationType, title);
+    const { color, icon } = styles;
+    const subject = safeHeader(styles.subject);
+    const safeSubject = escapeHtml(subject);
+    let safeLink = '';
+    if (link) {
+      try {
+        const candidate = new URL(link, frontendUrl);
+        const allowedOrigin = new URL(frontendUrl).origin;
+        if (candidate.origin === allowedOrigin) safeLink = escapeHtml(candidate.toString());
+      } catch {
+        safeLink = '';
+      }
+    }
 
     const html = `
 <!DOCTYPE html>
@@ -398,7 +411,7 @@ The ${this.fromName} Team
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${subject}</title>
+  <title>${safeSubject}</title>
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
   <div style="background: ${color}; padding: 30px 20px; text-align: center; border-radius: 12px 12px 0 0;">
@@ -415,9 +428,9 @@ The ${this.fromName} Team
     </div>
     ` : ''}
 
-    ${link ? `
+    ${safeLink ? `
     <div style="text-align: center; margin: 24px 0;">
-      <a href="${link}" style="display: inline-block; background: ${color}; color: white; text-decoration: none; padding: 12px 28px; border-radius: 8px; font-weight: 600; font-size: 14px;">View on Platform</a>
+      <a href="${safeLink}" style="display: inline-block; background: ${color}; color: white; text-decoration: none; padding: 12px 28px; border-radius: 8px; font-weight: 600; font-size: 14px;">View on Platform</a>
     </div>
     ` : ''}
 
@@ -472,7 +485,7 @@ ${this.fromName}
     const safeProductName = escapeHtml(productName);
     const safeWebsiteUrl = escapeHtml(websiteUrl);
     const safeAdminNotes = adminNotes ? escapeHtml(adminNotes) : '';
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5000';
 
     // Status-specific configuration
     const statusConfig = {

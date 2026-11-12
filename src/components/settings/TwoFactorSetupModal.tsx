@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Loader2, Check, AlertCircle, Shield, Copy, CheckCircle, Key } from 'lucide-react';
+import { X, Loader2, Check, AlertCircle, Shield, CheckCircle } from 'lucide-react';
 import { supabase } from '@/services/supabase';
 
 interface TwoFactorSetupModalProps {
@@ -8,15 +8,14 @@ interface TwoFactorSetupModalProps {
     onSuccess: () => void;
 }
 
-type SetupStep = 'intro' | 'scan' | 'verify' | 'backup' | 'complete';
+type SetupStep = 'intro' | 'scan' | 'verify' | 'complete';
 
 export default function TwoFactorSetupModal({ isOpen, onClose, onSuccess }: TwoFactorSetupModalProps) {
     const [step, setStep] = useState<SetupStep>('intro');
     const [secret, setSecret] = useState('');
-    const [otpauthUri, setOtpauthUri] = useState('');
+    const [qrCode, setQrCode] = useState('');
+    const [factorId, setFactorId] = useState('');
     const [verificationCode, setVerificationCode] = useState('');
-    const [backupCodes, setBackupCodes] = useState<string[]>([]);
-    const [copiedBackupCodes, setCopiedBackupCodes] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -25,16 +24,18 @@ export default function TwoFactorSetupModal({ isOpen, onClose, onSuccess }: TwoF
         if (isOpen) {
             setStep('intro');
             setSecret('');
-            setOtpauthUri('');
+            setQrCode('');
+            setFactorId('');
             setVerificationCode('');
-            setBackupCodes([]);
-            setCopiedBackupCodes(false);
             setError(null);
         }
     }, [isOpen]);
 
     const handleClose = () => {
-        if (!isLoading && step !== 'backup') {
+        if (!isLoading) {
+            if (factorId && step !== 'complete') {
+                void supabase.auth.mfa.unenroll({ factorId });
+            }
             onClose();
         }
     };
@@ -44,28 +45,14 @@ export default function TwoFactorSetupModal({ isOpen, onClose, onSuccess }: TwoF
         setError(null);
 
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) {
-                throw new Error('You must be logged in');
-            }
-
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-            const response = await fetch(`${apiUrl}/api/2fa/setup`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session.access_token}`,
-                },
+            const { data, error: enrollError } = await supabase.auth.mfa.enroll({
+                factorType: 'totp',
+                friendlyName: 'Roost authenticator',
             });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.error || 'Failed to setup 2FA');
-            }
-
-            setSecret(data.secret);
-            setOtpauthUri(data.otpauthUri);
+            if (enrollError) throw enrollError;
+            setFactorId(data.id);
+            setSecret(data.totp.secret);
+            setQrCode(data.totp.qr_code);
             setStep('scan');
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to setup 2FA');
@@ -84,29 +71,22 @@ export default function TwoFactorSetupModal({ isOpen, onClose, onSuccess }: TwoF
         setError(null);
 
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) {
-                throw new Error('You must be logged in');
-            }
-
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-            const response = await fetch(`${apiUrl}/api/2fa/verify`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session.access_token}`,
-                },
-                body: JSON.stringify({ code: verificationCode }),
+            if (!factorId) throw new Error('The enrollment session expired. Start again.');
+            const { error: verifyError } = await supabase.auth.mfa.challengeAndVerify({
+                factorId,
+                code: verificationCode,
             });
+            if (verifyError) throw verifyError;
 
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.error || 'Invalid verification code');
+            const { data: { session } } = await supabase.auth.getSession();
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+            if (session) {
+                const statusResponse = await fetch(`${apiUrl}/api/auth/mfa/status`, {
+                    headers: { Authorization: `Bearer ${session.access_token}` },
+                });
+                if (!statusResponse.ok) throw new Error('2FA was enrolled but the account status could not be synchronized.');
             }
-
-            setBackupCodes(data.backupCodes);
-            setStep('backup');
+            setStep('complete');
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to verify code');
         } finally {
@@ -114,22 +94,9 @@ export default function TwoFactorSetupModal({ isOpen, onClose, onSuccess }: TwoF
         }
     };
 
-    const copyBackupCodes = () => {
-        const codesText = backupCodes.join('\n');
-        navigator.clipboard.writeText(codesText);
-        setCopiedBackupCodes(true);
-        setTimeout(() => setCopiedBackupCodes(false), 2000);
-    };
-
     const completeSetup = () => {
         onSuccess();
         onClose();
-    };
-
-    // Generate QR code URL using Google Charts API (simple approach)
-    const getQRCodeUrl = (uri: string) => {
-        const encoded = encodeURIComponent(uri);
-        return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encoded}`;
     };
 
     if (!isOpen) return null;
@@ -143,21 +110,27 @@ export default function TwoFactorSetupModal({ isOpen, onClose, onSuccess }: TwoF
             />
 
             {/* Modal */}
-            <div className="relative w-full max-w-lg mx-4 bg-white dark:bg-surface-900 rounded-xl shadow-xl max-h-[90vh] overflow-y-auto">
+            <div
+                className="relative w-full max-w-lg mx-4 bg-white dark:bg-surface-900 rounded-xl shadow-xl max-h-[90vh] overflow-y-auto"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="two-factor-setup-title"
+            >
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-surface-200 dark:border-surface-700">
                     <div className="flex items-center gap-3">
                         <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
                             <Shield className="w-5 h-5 text-green-600 dark:text-green-400" />
                         </div>
-                        <h2 className="text-lg font-semibold text-surface-900 dark:text-surface-100">
+                        <h2 id="two-factor-setup-title" className="text-lg font-semibold text-surface-900 dark:text-surface-100">
                             Setup Two-Factor Authentication
                         </h2>
                     </div>
-                    {step !== 'backup' && (
+                    {step !== 'complete' && (
                         <button
                             onClick={handleClose}
                             disabled={isLoading}
+                            aria-label="Close two-factor authentication setup"
                             className="p-2 text-surface-500 hover:text-surface-700 dark:text-surface-400 dark:hover:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-800 rounded-lg transition-colors"
                         >
                             <X className="w-5 h-5" />
@@ -240,7 +213,7 @@ export default function TwoFactorSetupModal({ isOpen, onClose, onSuccess }: TwoF
                             <div className="flex justify-center">
                                 <div className="p-4 bg-white rounded-lg border border-surface-200 dark:border-surface-700">
                                     <img
-                                        src={getQRCodeUrl(otpauthUri)}
+                                        src={qrCode}
                                         alt="QR Code"
                                         className="w-48 h-48"
                                     />
@@ -281,6 +254,9 @@ export default function TwoFactorSetupModal({ isOpen, onClose, onSuccess }: TwoF
                             <div>
                                 <input
                                     type="text"
+                                    aria-label="Six-digit authenticator code"
+                                    inputMode="numeric"
+                                    autoComplete="one-time-code"
                                     value={verificationCode}
                                     onChange={(e) => {
                                         const value = e.target.value.replace(/\D/g, '').slice(0, 6);
@@ -318,55 +294,18 @@ export default function TwoFactorSetupModal({ isOpen, onClose, onSuccess }: TwoF
                         </div>
                     )}
 
-                    {/* Step: Backup Codes */}
-                    {step === 'backup' && (
+                    {/* Step: Complete */}
+                    {step === 'complete' && (
                         <div className="space-y-6">
                             <div className="text-center">
-                                <div className="w-16 h-16 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <Key className="w-8 h-8 text-yellow-600 dark:text-yellow-400" />
+                                <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
                                 </div>
                                 <h3 className="text-lg font-medium text-surface-900 dark:text-surface-100 mb-2">
-                                    Save Your Backup Codes
+                                    Two-Factor Authentication Enabled
                                 </h3>
                                 <p className="text-surface-500 dark:text-surface-400 text-sm">
-                                    If you lose access to your authenticator app, you can use these backup codes to sign in.
-                                    Each code can only be used once.
-                                </p>
-                            </div>
-
-                            <div className="bg-surface-50 dark:bg-surface-800 rounded-lg p-4">
-                                <div className="grid grid-cols-2 gap-2">
-                                    {backupCodes.map((code, index) => (
-                                        <div
-                                            key={index}
-                                            className="px-3 py-2 bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded font-mono text-sm text-center"
-                                        >
-                                            {code}
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <button
-                                onClick={copyBackupCodes}
-                                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-surface-300 dark:border-surface-600 text-surface-700 dark:text-surface-300 rounded-lg font-medium hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
-                            >
-                                {copiedBackupCodes ? (
-                                    <>
-                                        <CheckCircle className="w-4 h-4 text-green-500" />
-                                        <span>Copied!</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <Copy className="w-4 h-4" />
-                                        <span>Copy Codes</span>
-                                    </>
-                                )}
-                            </button>
-
-                            <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-                                <p className="text-sm text-yellow-700 dark:text-yellow-400">
-                                    <strong>Important:</strong> Store these codes in a safe place. You won't be able to see them again.
+                                    Future sign-ins require a code from your authenticator app. Keep access to the app and contact an administrator if you lose your device.
                                 </p>
                             </div>
 
@@ -375,7 +314,7 @@ export default function TwoFactorSetupModal({ isOpen, onClose, onSuccess }: TwoF
                                 className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors"
                             >
                                 <Check className="w-5 h-5" />
-                                <span>I've Saved My Codes</span>
+                                <span>Done</span>
                             </button>
                         </div>
                     )}

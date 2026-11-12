@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
 import { z } from 'zod';
-import { supabaseAdmin } from '../lib/supabase';
+import { createUserAuthClient, supabaseAdmin } from '../lib/supabase';
 import { emailService } from '../services/email';
 
 const router = Router();
@@ -58,7 +58,7 @@ router.post('/request-reset', async (req: Request, res: Response) => {
     if (!validation.success) {
       return res.status(400).json({
         error: 'Validation failed',
-        details: validation.error.errors,
+        details: validation.error.issues,
       });
     }
 
@@ -205,7 +205,7 @@ router.post('/reset-password', async (req: Request, res: Response) => {
     if (!validation.success) {
       return res.status(400).json({
         error: 'Validation failed',
-        details: validation.error.errors,
+        details: validation.error.issues,
       });
     }
 
@@ -286,7 +286,7 @@ router.post('/verify-password', async (req: Request, res: Response) => {
     if (!validation.success) {
       return res.status(400).json({
         error: 'Validation failed',
-        details: validation.error.errors,
+        details: validation.error.issues,
       });
     }
 
@@ -302,7 +302,7 @@ router.post('/verify-password', async (req: Request, res: Response) => {
     }
 
     // Verify current password by attempting to sign in
-    const { error: signInError } = await supabaseAdmin.auth.signInWithPassword({
+    const { error: signInError } = await createUserAuthClient().auth.signInWithPassword({
       email: user.email!,
       password: currentPassword,
     });
@@ -347,7 +347,7 @@ router.post('/change-password', async (req: Request, res: Response) => {
     if (!validation.success) {
       return res.status(400).json({
         error: 'Validation failed',
-        details: validation.error.errors,
+        details: validation.error.issues,
       });
     }
 
@@ -363,7 +363,7 @@ router.post('/change-password', async (req: Request, res: Response) => {
     }
 
     // Verify current password by attempting to sign in
-    const { error: signInError } = await supabaseAdmin.auth.signInWithPassword({
+    const { error: signInError } = await createUserAuthClient().auth.signInWithPassword({
       email: user.email!,
       password: currentPassword,
     });

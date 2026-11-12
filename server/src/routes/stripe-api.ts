@@ -19,6 +19,11 @@ export const stripeApiRouter = Router();
 
 // Default price ID from environment
 const STRIPE_PRICE_ID = process.env.STRIPE_PRICE_ID || '';
+const ALLOWED_PRICE_IDS = new Set(
+  [STRIPE_PRICE_ID, ...(process.env.STRIPE_ALLOWED_PRICE_IDS || '').split(',')]
+    .map((value) => value.trim())
+    .filter(Boolean)
+);
 
 // Middleware to verify admin authorization (with cached profile lookup)
 async function requireAdmin(req: Request, res: Response, next: () => void) {
@@ -105,20 +110,22 @@ stripeApiRouter.post('/create-checkout-session', async (req: Request, res: Respo
       return res.status(401).json({ error: 'Invalid token' });
     }
 
-    const priceId = req.body.priceId || STRIPE_PRICE_ID;
-
-    if (!priceId) {
+    if (ALLOWED_PRICE_IDS.size === 0) {
       return res.status(400).json({ error: 'No price ID configured. Set STRIPE_PRICE_ID environment variable.' });
     }
+    const requestedPriceId = typeof req.body.priceId === 'string' ? req.body.priceId : STRIPE_PRICE_ID;
+    if (!requestedPriceId || !ALLOWED_PRICE_IDS.has(requestedPriceId)) {
+      return res.status(400).json({ error: 'The requested subscription price is not available' });
+    }
 
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5000';
     const successUrl = `${frontendUrl}/?payment=success`;
     const cancelUrl = `${frontendUrl}/upgrade`;
 
     const url = await createCheckoutSession(
       user.id,
       user.email || '',
-      priceId,
+      requestedPriceId,
       successUrl,
       cancelUrl
     );
@@ -147,7 +154,7 @@ stripeApiRouter.post('/create-portal-session', async (req: Request, res: Respons
       return res.status(401).json({ error: 'Invalid token' });
     }
 
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5000';
     const url = await createPortalSession(user.id, `${frontendUrl}/settings`);
 
     res.json({ url });

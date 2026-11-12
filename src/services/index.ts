@@ -1,6 +1,6 @@
 // Re-export all services for easy importing
 export { supabase, auth, db, realtime, getCurrentUser, getCurrentSession } from './supabase';
-export { default as s3, uploadFile, uploadImage, uploadAvatar, uploadVideo, uploadDocument, deleteFile, getPublicUrl, getSignedDownloadUrl, getAssetType } from './s3';
+export { default as s3, uploadFile, uploadImage, uploadAvatar, uploadVideo, uploadDocument, deleteFile, getSignedDownloadUrl, getAssetType } from './s3';
 export {
     getProfile,
     getProfileByUsername,

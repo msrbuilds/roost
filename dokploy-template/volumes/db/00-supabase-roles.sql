@@ -191,6 +191,16 @@ $$;
 ALTER FUNCTION auth.email() OWNER TO supabase_auth_admin;
 GRANT EXECUTE ON FUNCTION auth.email() TO anon, authenticated, service_role;
 
+CREATE OR REPLACE FUNCTION auth.jwt()
+RETURNS jsonb
+LANGUAGE sql
+STABLE
+AS $$
+  SELECT COALESCE(NULLIF(current_setting('request.jwt.claims', true), '')::jsonb, '{}'::jsonb)
+$$;
+ALTER FUNCTION auth.jwt() OWNER TO supabase_auth_admin;
+GRANT EXECUTE ON FUNCTION auth.jwt() TO anon, authenticated, service_role;
+
 -- =============================================================================
 -- 9. Create auth.users stub table
 -- =============================================================================

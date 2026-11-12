@@ -8,9 +8,8 @@ yarn-error.log
 dist
 
 # Environment files (will be injected via Dokploy)
-.env
-.env.local
-.env.*.local
+.env*
+*.env
 
 # IDE and editor files
 .idea

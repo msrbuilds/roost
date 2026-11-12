@@ -47,7 +47,7 @@ export default function ShowcaseFilterSidebar({
         }, 300);
 
         return () => clearTimeout(timeout);
-    }, [searchInput]);
+    }, [searchInput, filters, onFiltersChange]);
 
     const handleCategoryChange = (category: ShowcaseCategory | undefined) => {
         onFiltersChange({ ...filters, category });
@@ -209,8 +209,8 @@ export default function ShowcaseFilterSidebar({
                                             `}
                                             style={
                                                 isSelected
-                                                    ? { backgroundColor: tag.color }
-                                                    : { borderColor: tag.color, borderWidth: 1 }
+                                                    ? { backgroundColor: tag.color ?? '#64748b' }
+                                                    : { borderColor: tag.color ?? '#64748b', borderWidth: 1 }
                                             }
                                         >
                                             {tag.name}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Users, User } from 'lucide-react';
 import { getEventAttendees } from '../../services';
 import type { RSVPStatus } from '../../types/database';
@@ -28,11 +28,7 @@ export default function AttendeeList({ eventId, filterStatus = 'all' }: Attendee
     const [loading, setLoading] = useState(true);
     const [activeFilter, setActiveFilter] = useState<typeof filterStatus>(filterStatus);
 
-    useEffect(() => {
-        loadAttendees();
-    }, [eventId]);
-
-    const loadAttendees = async () => {
+    const loadAttendees = useCallback(async () => {
         try {
             setLoading(true);
             const data = await getEventAttendees(eventId);
@@ -42,7 +38,11 @@ export default function AttendeeList({ eventId, filterStatus = 'all' }: Attendee
         } finally {
             setLoading(false);
         }
-    };
+    }, [eventId]);
+
+    useEffect(() => {
+        void loadAttendees();
+    }, [loadAttendees]);
 
     const filteredAttendees = activeFilter === 'all'
         ? attendees

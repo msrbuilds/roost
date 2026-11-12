@@ -147,11 +147,12 @@ export async function invalidateActivationStats(): Promise<void> {
  * Get user profile from cache or fetch from database
  */
 export async function getCachedUserProfile(
-  userId: string,
+  _userId: string,
   fetcher: () => Promise<UserProfile | null>
 ): Promise<UserProfile | null> {
-  const key = `${CACHE_KEYS.USER_PROFILE}:${userId}`;
-  return cacheAside(key, CACHE_TTL.USER_PROFILE, fetcher);
+  // Roles and ban state are authorization data. Always read them from the
+  // database so revocation takes effect on the next request.
+  return fetcher();
 }
 
 /**

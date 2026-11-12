@@ -144,10 +144,8 @@ export default function FeatureRequests() {
         loadCounts();
     }, []);
 
-    const fetchRequests = useCallback(async (reset = false) => {
+    const fetchRequests = useCallback(async (reset = false, currentOffset = 0) => {
         try {
-            const currentOffset = reset ? 0 : offset;
-
             if (reset) {
                 setIsLoading(true);
                 setOffset(0);
@@ -182,12 +180,12 @@ export default function FeatureRequests() {
             setIsLoading(false);
             setIsLoadingMore(false);
         }
-    }, [filters, offset, user]);
+    }, [filters, user]);
 
     // Reset and reload when filters change
     useEffect(() => {
-        fetchRequests(true);
-    }, [filters]);
+        void fetchRequests(true);
+    }, [fetchRequests]);
 
     // Debounced search
     useEffect(() => {
@@ -198,7 +196,7 @@ export default function FeatureRequests() {
             }
         }, 300);
         return () => clearTimeout(timeout);
-    }, [searchInput]);
+    }, [searchInput, filters.search]);
 
     // Infinite scroll observer
     useEffect(() => {
@@ -223,9 +221,9 @@ export default function FeatureRequests() {
     // Load more when offset changes (from scroll)
     useEffect(() => {
         if (offset > 0 && isLoadingMore) {
-            fetchRequests(false);
+            void fetchRequests(false, offset);
         }
-    }, [offset, isLoadingMore]);
+    }, [offset, isLoadingMore, fetchRequests]);
 
     const handleStatusTab = (tab: string) => {
         setActiveTab(tab);

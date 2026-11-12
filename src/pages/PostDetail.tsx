@@ -4,7 +4,7 @@ import { ArrowLeft, Calendar, MessageCircle, Users } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { getPostById, PostWithDetails, getUserReactionsForItems } from '@/services';
 import { useAuth } from '@/contexts/AuthContext';
-import { PostCard } from '@/components/feed';
+import PostCard from '@/components/feed/PostCard';
 import { LeaderboardCard } from '@/components/leaderboard';
 import { CommunityMembersWidget } from '@/components/members/CommunityMembersWidget';
 import { ReactionType } from '@/types';

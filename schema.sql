@@ -125,8 +125,6 @@ CREATE TABLE IF NOT EXISTS profiles (
 
     -- Two-factor auth (migration 024)
     two_factor_enabled BOOLEAN DEFAULT FALSE,
-    two_factor_secret TEXT,
-    two_factor_verified_at TIMESTAMPTZ,
 
     -- Timestamps
     created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -305,6 +303,7 @@ CREATE TABLE IF NOT EXISTS assets (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     filename TEXT NOT NULL,
     file_url TEXT NOT NULL,
+    storage_key TEXT UNIQUE,
     file_size BIGINT,
     mime_type TEXT,
     asset_type asset_type NOT NULL,
@@ -538,20 +537,6 @@ CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_user ON password_reset_toke
 CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_expires ON password_reset_tokens(expires_at);
 
 -- =============================================================================
--- 4.4 TWO_FACTOR_BACKUP_CODES
--- =============================================================================
-CREATE TABLE IF NOT EXISTS two_factor_backup_codes (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-    code_hash TEXT NOT NULL,
-    used_at TIMESTAMPTZ,
-    created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE INDEX IF NOT EXISTS idx_two_factor_backup_codes_user_id ON two_factor_backup_codes(user_id);
-CREATE INDEX IF NOT EXISTS idx_two_factor_backup_codes_code_hash ON two_factor_backup_codes(code_hash);
-
--- =============================================================================
 -- 4.5 NOTIFICATION_PREFERENCES
 -- =============================================================================
 CREATE TABLE IF NOT EXISTS notification_preferences (
@@ -692,13 +677,20 @@ CREATE TABLE IF NOT EXISTS activation_products (
     is_active BOOLEAN DEFAULT true,
     icon_url TEXT,
     instructions TEXT,
-    license_key TEXT DEFAULT NULL,                        -- migration 044
     file_url TEXT DEFAULT NULL,                           -- migration 045
     file_name TEXT DEFAULT NULL,                          -- migration 045
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
 
     CONSTRAINT monthly_limit_positive CHECK (monthly_limit > 0)
+);
+
+-- Secrets are deliberately kept out of the API-readable product row.  Only
+-- trusted server code using the service role may access this table.
+CREATE TABLE IF NOT EXISTS activation_product_secrets (
+    product_id UUID PRIMARY KEY REFERENCES activation_products(id) ON DELETE CASCADE,
+    license_key TEXT,
+    updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_activation_products_slug ON activation_products(slug);
@@ -715,7 +707,7 @@ CREATE TABLE IF NOT EXISTS activation_requests (
     status activation_request_status DEFAULT 'pending',
     website_url TEXT NOT NULL,
     wp_username TEXT NOT NULL,
-    wp_password TEXT NOT NULL,
+    wp_password TEXT,
     notes TEXT,
     admin_notes TEXT,
     processed_by UUID REFERENCES profiles(id),
@@ -2488,9 +2480,8 @@ BEGIN
     IF OLD.membership_type IS DISTINCT FROM NEW.membership_type THEN
         RAISE EXCEPTION 'Membership type cannot be changed directly';
     END IF;
-    IF OLD.two_factor_secret IS DISTINCT FROM NEW.two_factor_secret
-       OR OLD.two_factor_verified_at IS DISTINCT FROM NEW.two_factor_verified_at THEN
-        RAISE EXCEPTION '2FA secrets can only be modified through the verification flow';
+    IF OLD.two_factor_enabled IS DISTINCT FROM NEW.two_factor_enabled THEN
+        RAISE EXCEPTION '2FA status can only be synchronized by the trusted server';
     END IF;
 
     RETURN NEW;
@@ -2666,7 +2657,6 @@ ALTER TABLE announcements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE announcement_dismissals ENABLE ROW LEVEL SECURITY;
 ALTER TABLE password_reset_tokens ENABLE ROW LEVEL SECURITY;
 ALTER TABLE password_reset_tokens FORCE ROW LEVEL SECURITY;
-ALTER TABLE two_factor_backup_codes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notification_preferences ENABLE ROW LEVEL SECURITY;
 ALTER TABLE showcases ENABLE ROW LEVEL SECURITY;
 ALTER TABLE showcase_images ENABLE ROW LEVEL SECURITY;
@@ -3113,22 +3103,6 @@ CREATE POLICY "Service role full access"
     ON password_reset_tokens FOR ALL TO service_role USING (true) WITH CHECK (true);
 
 -- =============================================================================
--- 9.19 TWO_FACTOR_BACKUP_CODES POLICIES
--- =============================================================================
-DROP POLICY IF EXISTS "Users can view own backup codes" ON two_factor_backup_codes;
-CREATE POLICY "Users can view own backup codes"
-    ON two_factor_backup_codes FOR SELECT USING (auth.uid() = user_id);
-DROP POLICY IF EXISTS "Users can insert own backup codes" ON two_factor_backup_codes;
-CREATE POLICY "Users can insert own backup codes"
-    ON two_factor_backup_codes FOR INSERT WITH CHECK (auth.uid() = user_id);
-DROP POLICY IF EXISTS "Users can update own backup codes" ON two_factor_backup_codes;
-CREATE POLICY "Users can update own backup codes"
-    ON two_factor_backup_codes FOR UPDATE USING (auth.uid() = user_id);
-DROP POLICY IF EXISTS "Users can delete own backup codes" ON two_factor_backup_codes;
-CREATE POLICY "Users can delete own backup codes"
-    ON two_factor_backup_codes FOR DELETE USING (auth.uid() = user_id);
-
--- =============================================================================
 -- 9.20 NOTIFICATION_PREFERENCES POLICIES
 -- =============================================================================
 DROP POLICY IF EXISTS "Users can view own notification preferences" ON notification_preferences;
@@ -3545,10 +3519,116 @@ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
+-- Shared account-state guard is defined before any hardened SECURITY DEFINER
+-- routine so those routines can enforce bans and native Supabase MFA too.
+CREATE OR REPLACE FUNCTION public.is_session_allowed()
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+    SELECT CASE
+        WHEN auth.uid() IS NULL THEN TRUE
+        ELSE EXISTS (
+            SELECT 1 FROM profiles p
+            WHERE p.id = auth.uid()
+              AND NOT (p.is_banned AND (p.ban_expires_at IS NULL OR p.ban_expires_at > NOW()))
+              AND (NOT COALESCE(p.two_factor_enabled, FALSE)
+                   OR COALESCE(auth.jwt() ->> 'aal', 'aal1') = 'aal2')
+        )
+    END
+$$;
+
+CREATE OR REPLACE FUNCTION public.get_remaining_activations(p_user_id UUID,p_product_id UUID)
+RETURNS INTEGER LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=public,pg_temp AS $$
+DECLARE monthly_limit INTEGER; used_count INTEGER;
+BEGIN
+  IF auth.uid() IS NOT NULL AND NOT public.is_session_allowed() THEN RAISE EXCEPTION 'Account access is restricted'; END IF;
+  IF auth.uid() IS NOT NULL AND p_user_id IS DISTINCT FROM auth.uid() AND NOT public.is_platform_admin(auth.uid()) THEN
+    RAISE EXCEPTION 'Invalid user identity';
+  END IF;
+  SELECT ap.monthly_limit INTO monthly_limit FROM activation_products ap WHERE ap.id=p_product_id AND ap.is_active;
+  IF monthly_limit IS NULL THEN RETURN 0; END IF;
+  SELECT COALESCE(au.usage_count,0) INTO used_count FROM activation_usage au
+    WHERE au.user_id=p_user_id AND au.product_id=p_product_id AND au.month_year=date_trunc('month',NOW())::DATE;
+  RETURN GREATEST(monthly_limit-COALESCE(used_count,0),0);
+END $$;
+
+CREATE OR REPLACE FUNCTION public.has_active_request(p_user_id UUID,p_product_id UUID)
+RETURNS BOOLEAN LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public,pg_temp AS $$
+  SELECT (auth.uid() IS NULL OR public.is_session_allowed())
+     AND (auth.uid() IS NULL OR p_user_id=auth.uid() OR public.is_platform_admin(auth.uid()))
+     AND EXISTS(SELECT 1 FROM activation_requests ar WHERE ar.user_id=p_user_id AND ar.product_id=p_product_id AND ar.status IN ('pending','in_progress'))
+$$;
+
+CREATE OR REPLACE FUNCTION public.process_activation_request(
+  p_request_id UUID,p_processor_id UUID,p_status activation_request_status,p_admin_notes TEXT DEFAULT NULL
+)
+RETURNS BOOLEAN LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,pg_temp AS $$
+DECLARE actor UUID:=auth.uid(); request_row RECORD; month_start DATE;
+BEGIN
+  IF NOT public.is_session_allowed() THEN RAISE EXCEPTION 'Account access is restricted'; END IF;
+  IF actor IS NULL OR p_processor_id IS DISTINCT FROM actor OR NOT (public.is_platform_admin(actor) OR public.is_platform_moderator(actor)) THEN
+    RAISE EXCEPTION 'Only the authenticated administrator or moderator can process activation requests';
+  END IF;
+  SELECT ar.*,ap.name AS product_name INTO request_row FROM activation_requests ar JOIN activation_products ap ON ap.id=ar.product_id WHERE ar.id=p_request_id FOR UPDATE;
+  IF request_row IS NULL THEN RAISE EXCEPTION 'Request not found'; END IF;
+  IF request_row.status IN ('completed','rejected') AND p_status IS DISTINCT FROM request_row.status THEN
+    RAISE EXCEPTION 'Completed or rejected requests are terminal';
+  END IF;
+  IF request_row.status='in_progress' AND p_status='pending' THEN
+    RAISE EXCEPTION 'An in-progress request cannot return to pending';
+  END IF;
+  UPDATE activation_requests SET status=p_status,admin_notes=p_admin_notes,processed_by=actor,processed_at=NOW(),updated_at=NOW(),
+    wp_password=CASE WHEN p_status IN ('completed','rejected') THEN NULL ELSE wp_password END
+  WHERE id=p_request_id;
+  IF p_status='completed' AND request_row.status IS DISTINCT FROM 'completed' THEN
+    month_start:=date_trunc('month',request_row.created_at)::DATE;
+    INSERT INTO activation_usage(user_id,product_id,month_year,usage_count) VALUES(request_row.user_id,request_row.product_id,month_start,1)
+    ON CONFLICT(user_id,product_id,month_year) DO UPDATE SET usage_count=activation_usage.usage_count+1,updated_at=NOW();
+  END IF;
+  IF p_status IS DISTINCT FROM request_row.status THEN
+    INSERT INTO notifications(user_id,type,title,message,link) VALUES(
+      request_row.user_id,'new_message',
+      CASE WHEN p_status='completed' THEN 'Activation Completed' WHEN p_status='in_progress' THEN 'Activation In Progress' ELSE 'Activation Request Update' END,
+      CASE WHEN p_status='completed' THEN 'Your '||request_row.product_name||' activation has been completed!'
+           WHEN p_status='in_progress' THEN 'Your '||request_row.product_name||' activation is being processed.'
+           ELSE 'Your activation request status has been updated.' END,'/activations');
+  END IF;
+  RETURN TRUE;
+END $$;
+
+CREATE OR REPLACE FUNCTION public.get_activation_stats()
+RETURNS JSON LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=public,pg_temp AS $$
+DECLARE result JSON; month_start DATE:=date_trunc('month',NOW())::DATE;
+BEGIN
+  IF NOT public.is_session_allowed() THEN RAISE EXCEPTION 'Account access is restricted'; END IF;
+  IF NOT (public.is_platform_admin(auth.uid()) OR public.is_platform_moderator(auth.uid())) THEN RAISE EXCEPTION 'Administrator access required'; END IF;
+  SELECT json_build_object('total_products',(SELECT count(*) FROM activation_products WHERE is_active),
+    'total_requests',(SELECT count(*) FROM activation_requests),'pending_requests',(SELECT count(*) FROM activation_requests WHERE status='pending'),
+    'in_progress_requests',(SELECT count(*) FROM activation_requests WHERE status='in_progress'),
+    'completed_this_month',(SELECT count(*) FROM activation_requests WHERE status='completed' AND date_trunc('month',processed_at)=month_start),
+    'rejected_this_month',(SELECT count(*) FROM activation_requests WHERE status='rejected' AND date_trunc('month',processed_at)=month_start),
+    'total_users_with_activations',(SELECT count(DISTINCT user_id) FROM activation_requests WHERE status='completed')) INTO result;
+  RETURN result;
+END $$;
+
 DO $$
 BEGIN
     ALTER PUBLICATION supabase_realtime ADD TABLE live_session_messages;
 EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$
+DECLARE table_name TEXT;
+BEGIN
+    FOREACH table_name IN ARRAY ARRAY['posts','comments','messages','notifications','reactions','group_members','event_attendees'] LOOP
+        BEGIN
+            EXECUTE format('ALTER PUBLICATION supabase_realtime ADD TABLE public.%I', table_name);
+        EXCEPTION WHEN duplicate_object THEN NULL;
+        END;
+    END LOOP;
 END $$;
 
 
@@ -3623,7 +3703,11 @@ INSERT INTO site_settings (key, value) VALUES
     ('logo_dark_url', ''),
     ('favicon_url', ''),
     ('support_email', ''),
-    ('support_url', '')
+    ('support_url', ''),
+    ('feature_live_room', 'premium_only'),
+    ('feature_activations', 'premium_only'),
+    ('feature_roadmap', 'all'),
+    ('feature_showcase', 'all')
 ON CONFLICT (key) DO NOTHING;
 
 ALTER TABLE site_settings ENABLE ROW LEVEL SECURITY;
@@ -3651,6 +3735,486 @@ CREATE TRIGGER update_site_settings_updated_at BEFORE UPDATE ON site_settings
 
 GRANT SELECT ON site_settings TO anon;
 GRANT SELECT, INSERT, UPDATE ON site_settings TO authenticated;
+
+-- #############################################################################
+-- SECTION 15: PUBLIC RELEASE SECURITY HARDENING
+-- #############################################################################
+
+-- MFA seeds are owned by Supabase Auth and must never be stored in a
+-- publicly-readable profile row. Existing installations should apply the
+-- matching migration before deploying this schema revision.
+ALTER TABLE profiles DROP COLUMN IF EXISTS two_factor_secret;
+ALTER TABLE profiles DROP COLUMN IF EXISTS two_factor_verified_at;
+DROP TABLE IF EXISTS two_factor_backup_codes;
+
+ALTER TABLE activation_product_secrets ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON activation_product_secrets FROM PUBLIC, anon, authenticated;
+GRANT ALL ON activation_product_secrets TO service_role;
+
+-- A single restrictive guard applies bans and enrolled MFA to every direct
+-- PostgREST request. SECURITY DEFINER avoids recursive profile RLS checks.
+CREATE OR REPLACE FUNCTION public.is_session_allowed()
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+    SELECT CASE
+        WHEN auth.uid() IS NULL THEN TRUE
+        ELSE EXISTS (
+            SELECT 1
+            FROM profiles p
+            WHERE p.id = auth.uid()
+              AND NOT (p.is_banned AND (p.ban_expires_at IS NULL OR p.ban_expires_at > NOW()))
+              AND (
+                  NOT COALESCE(p.two_factor_enabled, FALSE)
+                  OR COALESCE(auth.jwt() ->> 'aal', 'aal1') = 'aal2'
+              )
+        )
+    END
+$$;
+
+DO $policy_guard$
+DECLARE
+    table_name TEXT;
+BEGIN
+    FOREACH table_name IN ARRAY ARRAY[
+        'profiles','groups','group_members','categories','posts','comments','reactions','assets',
+        'messages','notifications','leaderboard_entries','events','event_attendees','point_activities',
+        'group_assets','recordings','announcements','announcement_dismissals','notification_preferences',
+        'showcases','showcase_images','showcase_tags','showcase_tag_relations','showcase_reviews',
+        'activation_products','activation_requests','activation_usage','feature_requests',
+        'feature_request_comments','follows','live_sessions','live_session_rsvps','live_session_messages',
+        'comment_votes','modules','lesson_completions','stripe_customers','stripe_subscriptions','site_settings'
+    ] LOOP
+        EXECUTE format('DROP POLICY IF EXISTS %I ON public.%I', 'Require active MFA-valid session', table_name);
+        EXECUTE format(
+            'CREATE POLICY %I ON public.%I AS RESTRICTIVE FOR ALL TO authenticated USING (public.is_session_allowed()) WITH CHECK (public.is_session_allowed())',
+            'Require active MFA-valid session', table_name
+        );
+    END LOOP;
+END
+$policy_guard$;
+
+-- Profile rows are created only by the auth trigger and removed only through
+-- the server-side account deletion flow. This closes delete/reinsert role
+-- escalation while retaining ordinary self-updates.
+DROP POLICY IF EXISTS "Users can insert their own profile" ON profiles;
+DROP POLICY IF EXISTS "Users can delete their own profile" ON profiles;
+
+CREATE OR REPLACE FUNCTION public.protect_profile_sensitive_columns()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+    actor_role user_role;
+BEGIN
+    IF auth.uid() IS NULL THEN
+        RETURN NEW;
+    END IF;
+
+    SELECT role INTO actor_role FROM profiles WHERE id = auth.uid();
+    IF OLD.role IS DISTINCT FROM NEW.role AND actor_role <> 'superadmin' THEN
+        RAISE EXCEPTION 'Only superadmins can change user roles';
+    END IF;
+    IF (OLD.is_banned, OLD.ban_reason, OLD.ban_expires_at, OLD.banned_by, OLD.banned_at)
+       IS DISTINCT FROM
+       (NEW.is_banned, NEW.ban_reason, NEW.ban_expires_at, NEW.banned_by, NEW.banned_at)
+       AND actor_role NOT IN ('admin', 'superadmin') THEN
+        RAISE EXCEPTION 'Only admins can modify ban status';
+    END IF;
+    IF OLD.membership_type IS DISTINCT FROM NEW.membership_type
+       AND actor_role NOT IN ('admin', 'superadmin') THEN
+        RAISE EXCEPTION 'Membership type cannot be changed directly';
+    END IF;
+    IF OLD.two_factor_enabled IS DISTINCT FROM NEW.two_factor_enabled THEN
+        RAISE EXCEPTION '2FA status can only be synchronized by the trusted server';
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+-- Bind every privileged/identity-bearing RPC to the authenticated caller.
+CREATE OR REPLACE FUNCTION public.ban_user(
+    target_user_id UUID, admin_user_id UUID, ban_reason TEXT DEFAULT NULL, ban_duration INTERVAL DEFAULT NULL
+)
+RETURNS BOOLEAN LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
+DECLARE actor UUID := auth.uid(); actor_role user_role; target_role user_role;
+BEGIN
+    IF NOT public.is_session_allowed() THEN RAISE EXCEPTION 'Account access is restricted'; END IF;
+    IF actor IS NULL OR admin_user_id IS DISTINCT FROM actor THEN RAISE EXCEPTION 'Invalid administrator identity'; END IF;
+    SELECT role INTO actor_role FROM profiles WHERE id = actor;
+    SELECT role INTO target_role FROM profiles WHERE id = target_user_id;
+    IF actor_role NOT IN ('admin','superadmin') THEN RAISE EXCEPTION 'Insufficient permissions to ban users'; END IF;
+    IF target_role = 'superadmin' AND actor_role <> 'superadmin' THEN RAISE EXCEPTION 'Cannot ban a superadmin'; END IF;
+    UPDATE profiles SET is_banned=TRUE, ban_reason=ban_user.ban_reason, banned_by=actor,
+        banned_at=NOW(), ban_expires_at=CASE WHEN ban_duration IS NULL THEN NULL ELSE NOW()+ban_duration END
+    WHERE id=target_user_id;
+    RETURN FOUND;
+END $$;
+
+CREATE OR REPLACE FUNCTION public.unban_user(target_user_id UUID, admin_user_id UUID)
+RETURNS BOOLEAN LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
+DECLARE actor UUID := auth.uid(); actor_role user_role;
+BEGIN
+    IF NOT public.is_session_allowed() THEN RAISE EXCEPTION 'Account access is restricted'; END IF;
+    IF actor IS NULL OR admin_user_id IS DISTINCT FROM actor THEN RAISE EXCEPTION 'Invalid administrator identity'; END IF;
+    SELECT role INTO actor_role FROM profiles WHERE id=actor;
+    IF actor_role NOT IN ('admin','superadmin') THEN RAISE EXCEPTION 'Insufficient permissions to unban users'; END IF;
+    UPDATE profiles SET is_banned=FALSE, ban_reason=NULL, banned_by=NULL, banned_at=NULL, ban_expires_at=NULL WHERE id=target_user_id;
+    RETURN FOUND;
+END $$;
+
+CREATE OR REPLACE FUNCTION public.has_premium_access(p_user_id UUID)
+RETURNS BOOLEAN LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, pg_temp AS $$
+    SELECT CASE WHEN auth.uid() IS NOT NULL AND NOT public.is_session_allowed() THEN FALSE
+        WHEN auth.uid() IS NOT NULL AND p_user_id IS DISTINCT FROM auth.uid()
+        AND NOT public.is_platform_admin(auth.uid()) THEN FALSE
+        ELSE EXISTS (SELECT 1 FROM profiles WHERE id=p_user_id AND (membership_type='premium' OR role IN ('moderator','admin','superadmin')))
+          OR EXISTS (SELECT 1 FROM stripe_subscriptions WHERE user_id=p_user_id AND status IN ('active','trialing')) END
+$$;
+
+CREATE OR REPLACE FUNCTION public.can_access_group(p_user_id UUID, p_group_id UUID)
+RETURNS BOOLEAN LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, pg_temp AS $$
+    SELECT public.is_session_allowed()
+       AND p_user_id IS NOT DISTINCT FROM auth.uid()
+       AND EXISTS (
+          SELECT 1 FROM groups g
+          WHERE g.id=p_group_id
+            AND (NOT g.is_private OR public.is_group_member(g.id,p_user_id) OR public.is_platform_admin(p_user_id))
+            AND (NOT g.is_premium OR public.has_premium_access(p_user_id) OR public.is_platform_admin(p_user_id))
+       )
+$$;
+
+CREATE OR REPLACE FUNCTION public.request_activation(
+    p_user_id UUID, p_product_id UUID, p_website_url TEXT, p_wp_username TEXT, p_wp_password TEXT, p_notes TEXT DEFAULT NULL
+)
+RETURNS UUID LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
+DECLARE v_request UUID;
+BEGIN
+    IF NOT public.is_session_allowed() THEN RAISE EXCEPTION 'Account access is restricted'; END IF;
+    IF auth.uid() IS NULL OR p_user_id IS DISTINCT FROM auth.uid() THEN RAISE EXCEPTION 'Invalid user identity'; END IF;
+    IF NOT public.has_premium_access(auth.uid()) THEN RAISE EXCEPTION 'Premium membership required'; END IF;
+    IF public.get_remaining_activations(auth.uid(),p_product_id)<=0 THEN RAISE EXCEPTION 'Monthly activation limit reached for this product'; END IF;
+    IF public.has_active_request(auth.uid(),p_product_id) THEN RAISE EXCEPTION 'You already have an active request for this product'; END IF;
+    INSERT INTO activation_requests(user_id,product_id,website_url,wp_username,wp_password,notes,status)
+    VALUES(auth.uid(),p_product_id,p_website_url,p_wp_username,p_wp_password,p_notes,'pending') RETURNING id INTO v_request;
+    RETURN v_request;
+END $$;
+
+CREATE OR REPLACE FUNCTION public.toggle_reaction(p_user_id UUID,p_reactable_type TEXT,p_reactable_id UUID,p_reaction_type TEXT)
+RETURNS JSON LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,pg_temp AS $$
+DECLARE existing_id UUID; existing_type TEXT; v_rt reactable_type:=p_reactable_type::reactable_type; v_reaction reaction_type:=p_reaction_type::reaction_type;
+BEGIN
+    IF NOT public.is_session_allowed() THEN RAISE EXCEPTION 'Account access is restricted'; END IF;
+    IF auth.uid() IS NULL OR p_user_id IS DISTINCT FROM auth.uid() THEN RAISE EXCEPTION 'Invalid user identity'; END IF;
+    SELECT id,reaction_type::TEXT INTO existing_id,existing_type FROM reactions WHERE user_id=auth.uid() AND reactable_type=v_rt AND reactable_id=p_reactable_id;
+    IF existing_id IS NOT NULL AND existing_type=p_reaction_type THEN DELETE FROM reactions WHERE id=existing_id; RETURN json_build_object('added',false,'reactionType',NULL);
+    ELSIF existing_id IS NOT NULL THEN UPDATE reactions SET reaction_type=v_reaction WHERE id=existing_id; RETURN json_build_object('added',true,'reactionType',p_reaction_type);
+    ELSE INSERT INTO reactions(user_id,reactable_type,reactable_id,reaction_type) VALUES(auth.uid(),v_rt,p_reactable_id,v_reaction); RETURN json_build_object('added',true,'reactionType',p_reaction_type); END IF;
+END $$;
+
+CREATE OR REPLACE FUNCTION public.toggle_comment_vote(p_user_id UUID,p_comment_id UUID,p_vote_type TEXT)
+RETURNS JSON LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,pg_temp AS $$
+DECLARE existing_id UUID; existing_type TEXT;
+BEGIN
+    IF NOT public.is_session_allowed() THEN RAISE EXCEPTION 'Account access is restricted'; END IF;
+    IF auth.uid() IS NULL OR p_user_id IS DISTINCT FROM auth.uid() THEN RAISE EXCEPTION 'Invalid user identity'; END IF;
+    SELECT id,vote_type INTO existing_id,existing_type FROM comment_votes WHERE user_id=auth.uid() AND comment_id=p_comment_id;
+    IF existing_id IS NOT NULL AND existing_type=p_vote_type THEN DELETE FROM comment_votes WHERE id=existing_id; RETURN json_build_object('action','removed','voteType',NULL);
+    ELSIF existing_id IS NOT NULL THEN UPDATE comment_votes SET vote_type=p_vote_type WHERE id=existing_id; RETURN json_build_object('action','switched','voteType',p_vote_type);
+    ELSE INSERT INTO comment_votes(user_id,comment_id,vote_type) VALUES(auth.uid(),p_comment_id,p_vote_type); RETURN json_build_object('action','added','voteType',p_vote_type); END IF;
+END $$;
+
+-- Direct calls may award points only from an administrator. Trigger-internal
+-- calls remain valid and use their fixed, server-authored values.
+CREATE OR REPLACE FUNCTION public.award_points(p_user_id UUID,p_action_type point_action_type,p_points INTEGER,p_group_id UUID DEFAULT NULL,p_description TEXT DEFAULT NULL,p_reference_id UUID DEFAULT NULL)
+RETURNS UUID LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,pg_temp AS $$
+DECLARE result_id UUID;
+BEGIN
+    IF NOT public.is_session_allowed() THEN RAISE EXCEPTION 'Account access is restricted'; END IF;
+    IF pg_trigger_depth()=0 AND NOT public.is_platform_admin(auth.uid()) THEN RAISE EXCEPTION 'Only administrators can adjust points'; END IF;
+    IF abs(p_points)>10000 THEN RAISE EXCEPTION 'Point adjustment is outside the allowed range'; END IF;
+    INSERT INTO point_activities(user_id,group_id,action_type,points,description,reference_id)
+    VALUES(p_user_id,p_group_id,p_action_type,p_points,p_description,p_reference_id) RETURNING id INTO result_id;
+    PERFORM update_leaderboard_entry(p_user_id,p_group_id,(CURRENT_DATE-INTERVAL '29 days')::DATE,CURRENT_DATE);
+    PERFORM update_leaderboard_entry(p_user_id,p_group_id,'2000-01-01'::DATE,'2099-12-31'::DATE);
+    RETURN result_id;
+END $$;
+
+CREATE OR REPLACE FUNCTION public.search_posts(p_search_term TEXT,p_group_id UUID DEFAULT NULL)
+RETURNS TABLE(id UUID,title TEXT,content TEXT,author_id UUID,group_id UUID,created_at TIMESTAMPTZ,rank REAL)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public,pg_temp AS $$
+    SELECT p.id,p.title,p.content,p.author_id,p.group_id,p.created_at,
+      ts_rank(to_tsvector('english',coalesce(p.title,'')||' '||p.content),plainto_tsquery('english',p_search_term))
+    FROM posts p
+    WHERE auth.uid() IS NOT NULL
+      AND public.is_session_allowed()
+      AND (p_group_id IS NULL OR p.group_id=p_group_id)
+      AND (p.group_id IS NULL OR public.can_access_group(auth.uid(),p.group_id) OR public.is_platform_admin(auth.uid()))
+      AND to_tsvector('english',coalesce(p.title,'')||' '||p.content) @@ plainto_tsquery('english',p_search_term)
+    ORDER BY 7 DESC,p.created_at DESC LIMIT 50
+$$;
+
+CREATE OR REPLACE FUNCTION public.get_active_announcements(user_id UUID,p_group_id UUID DEFAULT NULL)
+RETURNS TABLE(id UUID,title VARCHAR(200),content TEXT,type announcement_type,scope announcement_scope,group_id UUID,is_dismissible BOOLEAN,created_at TIMESTAMPTZ)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public,pg_temp AS $$
+    SELECT a.id,a.title,a.content,a.type,a.scope,a.group_id,a.is_dismissible,a.created_at
+    FROM announcements a LEFT JOIN announcement_dismissals d ON d.announcement_id=a.id AND d.user_id=auth.uid()
+    WHERE auth.uid() IS NOT NULL AND public.is_session_allowed() AND user_id=auth.uid() AND d.id IS NULL AND a.is_active
+      AND (a.starts_at IS NULL OR a.starts_at<=NOW()) AND (a.expires_at IS NULL OR a.expires_at>NOW())
+      AND (a.scope='global' OR (a.scope='group' AND a.group_id=p_group_id AND public.can_access_group(auth.uid(),a.group_id)))
+    ORDER BY a.created_at DESC
+$$;
+
+-- Premium and private classroom checks are enforced where data is read or
+-- membership is created, not merely in React route guards.
+DROP POLICY IF EXISTS "Users can join groups" ON group_members;
+CREATE POLICY "Users can join entitled public groups" ON group_members FOR INSERT TO authenticated
+WITH CHECK ((auth.uid()=user_id AND role='member' AND public.can_access_group(auth.uid(),group_id)) OR check_group_admin(group_id,auth.uid()));
+
+DROP POLICY IF EXISTS "Posts viewable by everyone or group members" ON posts;
+CREATE POLICY "Posts viewable by entitled members" ON posts FOR SELECT
+USING (group_id IS NULL OR public.can_access_group(auth.uid(),group_id) OR public.is_platform_admin(auth.uid()));
+DROP POLICY IF EXISTS "Authenticated users can create posts" ON posts;
+CREATE POLICY "Entitled users can create posts" ON posts FOR INSERT TO authenticated
+WITH CHECK (auth.uid()=author_id AND (group_id IS NULL OR public.can_access_group(auth.uid(),group_id)));
+
+DROP POLICY IF EXISTS "Group members can view group assets" ON group_assets;
+CREATE POLICY "Entitled members can view group assets" ON group_assets FOR SELECT TO authenticated
+USING (public.can_access_group(auth.uid(),group_id) OR public.is_platform_admin(auth.uid()));
+DROP POLICY IF EXISTS "Group members can view recordings" ON recordings;
+CREATE POLICY "Entitled members can view recordings" ON recordings FOR SELECT TO authenticated
+USING (public.can_access_group(auth.uid(),group_id) OR public.is_platform_admin(auth.uid()));
+DROP POLICY IF EXISTS "Users can view recording comments" ON comments;
+CREATE POLICY "Entitled users can view recording comments" ON comments FOR SELECT TO authenticated USING (
+  recording_id IS NOT NULL AND EXISTS(SELECT 1 FROM recordings r WHERE r.id=comments.recording_id AND (public.can_access_group(auth.uid(),r.group_id) OR public.is_platform_admin(auth.uid())))
+);
+DROP POLICY IF EXISTS "Users can create recording comments" ON comments;
+CREATE POLICY "Entitled users can create recording comments" ON comments FOR INSERT TO authenticated WITH CHECK (
+  recording_id IS NOT NULL AND auth.uid()=author_id AND EXISTS(SELECT 1 FROM recordings r WHERE r.id=comments.recording_id AND public.can_access_group(auth.uid(),r.group_id))
+);
+DROP POLICY IF EXISTS "Assets viewable based on parent visibility" ON assets;
+CREATE POLICY "Assets viewable through authorized parents" ON assets FOR SELECT TO authenticated USING (
+  uploaded_by=auth.uid()
+  OR (post_id IS NOT NULL AND EXISTS(SELECT 1 FROM posts p WHERE p.id=assets.post_id AND (p.group_id IS NULL OR public.can_access_group(auth.uid(),p.group_id))))
+  OR (message_id IS NOT NULL AND EXISTS(SELECT 1 FROM messages m WHERE m.id=assets.message_id AND auth.uid() IN (m.sender_id,m.recipient_id)))
+  OR EXISTS(SELECT 1 FROM group_assets ga WHERE ga.asset_id=assets.id AND public.can_access_group(auth.uid(),ga.group_id))
+);
+
+-- Exposed SECURITY DEFINER routines must enforce the same caller/session
+-- boundary as direct table access; RLS does not apply inside these routines.
+CREATE OR REPLACE FUNCTION public.has_active_subscription(p_user_id UUID)
+RETURNS BOOLEAN LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public,pg_temp AS $$
+  SELECT public.is_session_allowed()
+     AND (auth.uid() IS NULL OR p_user_id=auth.uid() OR public.is_platform_admin(auth.uid()))
+     AND EXISTS (
+       SELECT 1 FROM stripe_subscriptions s
+       WHERE s.user_id=p_user_id AND s.status IN ('active','trialing')
+         AND (s.current_period_end IS NULL OR s.current_period_end>NOW())
+     )
+$$;
+
+CREATE OR REPLACE FUNCTION public.search_users(p_search_term TEXT)
+RETURNS TABLE(id UUID,username TEXT,display_name TEXT,avatar_url TEXT,bio TEXT)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public,pg_temp AS $$
+  SELECT p.id,p.username,p.display_name,p.avatar_url,p.bio
+  FROM profiles p
+  WHERE auth.uid() IS NOT NULL AND public.is_session_allowed() AND NOT p.is_banned
+    AND (p.username ILIKE '%'||p_search_term||'%' OR p.display_name ILIKE '%'||p_search_term||'%')
+  ORDER BY CASE WHEN p.username ILIKE p_search_term||'%' THEN 1 WHEN p.display_name ILIKE p_search_term||'%' THEN 2 ELSE 3 END,p.username
+  LIMIT 20
+$$;
+
+CREATE OR REPLACE FUNCTION public.mark_message_read(p_message_id UUID)
+RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,pg_temp AS $$
+BEGIN
+  IF auth.uid() IS NULL OR NOT public.is_session_allowed() THEN RAISE EXCEPTION 'Account access is restricted'; END IF;
+  UPDATE messages SET is_read=TRUE,read_at=COALESCE(read_at,NOW()) WHERE id=p_message_id AND recipient_id=auth.uid();
+END $$;
+
+CREATE OR REPLACE FUNCTION public.mark_all_notifications_read()
+RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,pg_temp AS $$
+BEGIN
+  IF auth.uid() IS NULL OR NOT public.is_session_allowed() THEN RAISE EXCEPTION 'Account access is restricted'; END IF;
+  UPDATE notifications SET is_read=TRUE WHERE user_id=auth.uid() AND NOT is_read;
+END $$;
+
+CREATE OR REPLACE FUNCTION public.get_user_rank(
+  p_user_id UUID,p_group_id UUID DEFAULT NULL,p_period_start DATE DEFAULT '2000-01-01'::DATE,p_period_end DATE DEFAULT '2099-12-31'::DATE
+)
+RETURNS TABLE(rank BIGINT,points INTEGER,total_users BIGINT)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public,pg_temp AS $$
+  WITH ranked AS (
+    SELECT le.user_id,le.total_points,
+      row_number() OVER (ORDER BY le.total_points DESC,le.updated_at ASC) AS user_rank
+    FROM leaderboard_entries le
+    WHERE le.period_start=p_period_start AND le.period_end=p_period_end
+      AND ((p_group_id IS NULL AND le.group_id IS NULL) OR le.group_id=p_group_id)
+  )
+  SELECT r.user_rank,r.total_points,(SELECT count(*) FROM ranked)::BIGINT
+  FROM ranked r
+  WHERE public.is_session_allowed()
+    AND (auth.uid() IS NULL OR p_user_id=auth.uid() OR public.is_platform_admin(auth.uid()))
+    AND (p_group_id IS NULL OR auth.uid() IS NULL OR public.can_access_group(auth.uid(),p_group_id) OR public.is_platform_admin(auth.uid()))
+    AND r.user_id=p_user_id
+$$;
+
+CREATE OR REPLACE FUNCTION public.get_leaderboard_for_period(
+  p_group_id UUID DEFAULT NULL,p_period_start TIMESTAMPTZ DEFAULT (NOW()-INTERVAL '30 days'),p_limit INTEGER DEFAULT 100,p_offset INTEGER DEFAULT 0
+)
+RETURNS TABLE(user_id UUID,total_points BIGINT,activity_count BIGINT,"user" JSONB)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public,pg_temp AS $$
+  SELECT pa.user_id,COALESCE(sum(pa.points),0)::BIGINT AS total_points,count(*)::BIGINT AS activity_count,
+    jsonb_build_object('id',p.id,'username',p.username,'display_name',p.display_name,'avatar_url',p.avatar_url,'location',p.location) AS "user"
+  FROM point_activities pa JOIN profiles p ON p.id=pa.user_id
+  WHERE public.is_session_allowed()
+    AND (p_group_id IS NULL OR auth.uid() IS NULL OR public.can_access_group(auth.uid(),p_group_id) OR public.is_platform_admin(auth.uid()))
+    AND pa.created_at>=p_period_start
+    AND (p_group_id IS NULL OR pa.group_id=p_group_id)
+  GROUP BY pa.user_id,p.id,p.username,p.display_name,p.avatar_url,p.location
+  HAVING COALESCE(sum(pa.points),0)>0
+  ORDER BY total_points DESC,pa.user_id
+  LIMIT LEAST(GREATEST(p_limit,1),100) OFFSET GREATEST(p_offset,0)
+$$;
+
+-- Feature flags are an authorization decision, not only a navigation hint.
+CREATE OR REPLACE FUNCTION public.is_feature_available(p_key TEXT)
+RETURNS BOOLEAN LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public,pg_temp AS $$
+  SELECT CASE
+    WHEN auth.uid() IS NOT NULL AND public.is_platform_admin(auth.uid()) THEN TRUE
+    WHEN COALESCE((SELECT value FROM site_settings WHERE key=p_key),'disabled')='all' THEN TRUE
+    WHEN auth.uid() IS NOT NULL
+      AND COALESCE((SELECT value FROM site_settings WHERE key=p_key),'disabled')='premium_only'
+      THEN public.has_premium_access(auth.uid())
+    ELSE FALSE
+  END
+$$;
+
+DO $feature_policies$
+DECLARE table_name TEXT; feature_key TEXT;
+BEGIN
+  FOREACH table_name IN ARRAY ARRAY['showcases','showcase_images','showcase_tags','showcase_tag_relations','showcase_reviews'] LOOP
+    EXECUTE format('DROP POLICY IF EXISTS %I ON public.%I','Feature module enabled',table_name);
+    EXECUTE format('CREATE POLICY %I ON public.%I AS RESTRICTIVE FOR ALL TO authenticated USING (public.is_feature_available(''feature_showcase'')) WITH CHECK (public.is_feature_available(''feature_showcase''))','Feature module enabled',table_name);
+  END LOOP;
+  FOREACH table_name IN ARRAY ARRAY['feature_requests','feature_request_comments'] LOOP
+    EXECUTE format('DROP POLICY IF EXISTS %I ON public.%I','Feature module enabled',table_name);
+    EXECUTE format('CREATE POLICY %I ON public.%I AS RESTRICTIVE FOR ALL TO authenticated USING (public.is_feature_available(''feature_roadmap'')) WITH CHECK (public.is_feature_available(''feature_roadmap''))','Feature module enabled',table_name);
+  END LOOP;
+  FOREACH table_name IN ARRAY ARRAY['live_sessions','live_session_rsvps','live_session_messages'] LOOP
+    EXECUTE format('DROP POLICY IF EXISTS %I ON public.%I','Feature module enabled',table_name);
+    EXECUTE format('CREATE POLICY %I ON public.%I AS RESTRICTIVE FOR ALL TO authenticated USING (public.is_feature_available(''feature_live_room'')) WITH CHECK (public.is_feature_available(''feature_live_room''))','Feature module enabled',table_name);
+  END LOOP;
+  FOREACH table_name IN ARRAY ARRAY['activation_products','activation_requests','activation_usage'] LOOP
+    EXECUTE format('DROP POLICY IF EXISTS %I ON public.%I','Feature module enabled',table_name);
+    EXECUTE format('CREATE POLICY %I ON public.%I AS RESTRICTIVE FOR ALL TO authenticated USING (public.is_feature_available(''feature_activations'')) WITH CHECK (public.is_feature_available(''feature_activations''))','Feature module enabled',table_name);
+  END LOOP;
+  FOREACH table_name IN ARRAY ARRAY['showcases','showcase_images','showcase_tags','showcase_tag_relations','showcase_reviews'] LOOP
+    EXECUTE format('DROP POLICY IF EXISTS %I ON public.%I','Public showcase enabled',table_name);
+    EXECUTE format('CREATE POLICY %I ON public.%I AS RESTRICTIVE FOR SELECT TO anon USING (public.is_feature_available(''feature_showcase''))','Public showcase enabled',table_name);
+  END LOOP;
+END
+$feature_policies$;
+
+REVOKE SELECT ON feature_requests,feature_request_comments FROM anon;
+
+-- Asset metadata may only point to an object owned by the authenticated
+-- uploader. Trusted server uploads run as service_role (auth.uid() is null).
+CREATE OR REPLACE FUNCTION public.protect_asset_fields()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,pg_temp AS $$
+BEGIN
+  IF auth.uid() IS NULL THEN RETURN NEW; END IF;
+  IF TG_OP='INSERT' THEN
+    IF NEW.uploaded_by<>auth.uid() THEN RAISE EXCEPTION 'Invalid uploader identity'; END IF;
+    IF NEW.storage_key IS NULL OR NEW.storage_key NOT LIKE 'users/'||auth.uid()::TEXT||'/%' THEN
+      RAISE EXCEPTION 'Invalid storage object ownership';
+    END IF;
+  ELSE
+    IF (NEW.uploaded_by,NEW.storage_key,NEW.file_url,NEW.post_id,NEW.message_id,NEW.feature_request_id)
+       IS DISTINCT FROM (OLD.uploaded_by,OLD.storage_key,OLD.file_url,OLD.post_id,OLD.message_id,OLD.feature_request_id)
+    THEN RAISE EXCEPTION 'Asset ownership and storage fields are immutable'; END IF;
+  END IF;
+  RETURN NEW;
+END $$;
+DROP TRIGGER IF EXISTS protect_asset_fields_trigger ON assets;
+CREATE TRIGGER protect_asset_fields_trigger BEFORE INSERT OR UPDATE ON assets FOR EACH ROW EXECUTE FUNCTION protect_asset_fields();
+
+-- Protect server/moderator-owned fields from column overposting.
+CREATE OR REPLACE FUNCTION public.protect_showcase_fields() RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,pg_temp AS $$
+BEGIN
+  IF auth.uid() IS NULL OR public.is_platform_moderator(auth.uid()) THEN RETURN NEW; END IF;
+  IF TG_OP='INSERT' THEN
+    NEW.author_id:=auth.uid(); NEW.status:='pending'; NEW.moderation_notes:=NULL; NEW.moderated_by:=NULL; NEW.moderated_at:=NULL;
+    NEW.is_featured:=FALSE; NEW.featured_at:=NULL; NEW.vote_count:=0; NEW.review_count:=0; NEW.average_rating:=0;
+  ELSE
+    IF (NEW.author_id,NEW.status,NEW.moderation_notes,NEW.moderated_by,NEW.moderated_at,NEW.is_featured,NEW.featured_at,NEW.vote_count,NEW.review_count,NEW.average_rating)
+       IS DISTINCT FROM (OLD.author_id,OLD.status,OLD.moderation_notes,OLD.moderated_by,OLD.moderated_at,OLD.is_featured,OLD.featured_at,OLD.vote_count,OLD.review_count,OLD.average_rating)
+    THEN RAISE EXCEPTION 'Moderation and aggregate fields cannot be changed directly'; END IF;
+  END IF;
+  RETURN NEW;
+END $$;
+DROP TRIGGER IF EXISTS protect_showcase_fields_trigger ON showcases;
+CREATE TRIGGER protect_showcase_fields_trigger BEFORE INSERT OR UPDATE ON showcases FOR EACH ROW EXECUTE FUNCTION protect_showcase_fields();
+
+CREATE OR REPLACE FUNCTION public.protect_showcase_review_fields() RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,pg_temp AS $$
+DECLARE is_maker BOOLEAN;
+BEGIN
+  IF auth.uid() IS NULL OR public.is_platform_admin(auth.uid()) THEN RETURN NEW; END IF;
+  SELECT EXISTS(SELECT 1 FROM showcases s WHERE s.id=OLD.showcase_id AND s.author_id=auth.uid()) INTO is_maker;
+  IF auth.uid()=OLD.author_id THEN NEW.maker_reply:=OLD.maker_reply; NEW.maker_replied_at:=OLD.maker_replied_at;
+  ELSIF is_maker THEN NEW.showcase_id:=OLD.showcase_id; NEW.author_id:=OLD.author_id; NEW.content:=OLD.content; NEW.rating:=OLD.rating; NEW.is_edited:=OLD.is_edited; NEW.created_at:=OLD.created_at;
+  ELSE RAISE EXCEPTION 'Not authorized to update this review'; END IF;
+  RETURN NEW;
+END $$;
+DROP TRIGGER IF EXISTS protect_showcase_review_fields_trigger ON showcase_reviews;
+CREATE TRIGGER protect_showcase_review_fields_trigger BEFORE UPDATE ON showcase_reviews FOR EACH ROW EXECUTE FUNCTION protect_showcase_review_fields();
+
+CREATE OR REPLACE FUNCTION public.protect_message_fields() RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,pg_temp AS $$
+BEGIN
+  IF auth.uid() IS NULL THEN RETURN NEW; END IF;
+  IF auth.uid()<>OLD.recipient_id THEN RAISE EXCEPTION 'Only the recipient can update a message'; END IF;
+  NEW.sender_id:=OLD.sender_id; NEW.recipient_id:=OLD.recipient_id; NEW.content:=OLD.content; NEW.created_at:=OLD.created_at;
+  IF NEW.is_read=FALSE THEN NEW.read_at:=NULL; ELSIF OLD.is_read=FALSE AND NEW.read_at IS NULL THEN NEW.read_at:=NOW(); END IF;
+  RETURN NEW;
+END $$;
+DROP TRIGGER IF EXISTS protect_message_fields_trigger ON messages;
+CREATE TRIGGER protect_message_fields_trigger BEFORE UPDATE ON messages FOR EACH ROW EXECUTE FUNCTION protect_message_fields();
+
+-- Private helpers and queued-email routines are server-only.
+REVOKE EXECUTE ON ALL FUNCTIONS IN SCHEMA public FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.get_pending_notification_emails(INTEGER) FROM authenticated;
+REVOKE ALL ON FUNCTION public.mark_notification_email_sent(UUID) FROM authenticated;
+GRANT EXECUTE ON FUNCTION public.get_pending_notification_emails(INTEGER) TO service_role;
+GRANT EXECUTE ON FUNCTION public.mark_notification_email_sent(UUID) TO service_role;
+
+-- New Supabase projects no longer auto-expose tables. Explicit grants make a
+-- fresh install deterministic; RLS remains the authorization boundary.
+GRANT SELECT,INSERT,UPDATE,DELETE ON profiles,groups,group_members,categories,posts,comments,reactions,assets,messages,
+ notifications,events,event_attendees,group_assets,recordings,announcement_dismissals,notification_preferences,
+ showcases,showcase_images,showcase_tag_relations,showcase_reviews,activation_requests,feature_requests,
+ feature_request_comments,follows,live_session_rsvps,live_session_messages,comment_votes,lesson_completions TO authenticated;
+GRANT SELECT ON leaderboard_entries,point_activities,announcements,showcase_tags,activation_products,activation_usage,
+ modules,live_sessions,stripe_customers,stripe_subscriptions,site_settings TO authenticated;
+GRANT SELECT ON profiles,groups,showcases,showcase_images,showcase_tags,showcase_tag_relations,site_settings TO anon;
+REVOKE UPDATE ON activation_requests FROM authenticated;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO service_role;
+
+GRANT EXECUTE ON FUNCTION public.is_session_allowed(),public.is_feature_available(TEXT),
+ public.is_platform_admin(UUID),public.is_platform_moderator(UUID),public.is_superadmin(UUID),public.get_user_role(UUID),
+ public.is_group_member(UUID,UUID),public.is_group_admin_or_mod(UUID,UUID),public.check_group_admin(UUID,UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.is_feature_available(TEXT) TO anon;
+GRANT EXECUTE ON FUNCTION public.search_posts(TEXT,UUID),public.search_users(TEXT),public.get_active_announcements(UUID,UUID),
+ public.has_active_subscription(UUID),public.has_premium_access(UUID),public.can_access_group(UUID,UUID),
+ public.get_remaining_activations(UUID,UUID),public.has_active_request(UUID,UUID),public.request_activation(UUID,UUID,TEXT,TEXT,TEXT,TEXT),
+ public.toggle_reaction(UUID,TEXT,UUID,TEXT),public.toggle_comment_vote(UUID,UUID,TEXT),public.get_user_rank(UUID,UUID,DATE,DATE),
+ public.get_leaderboard_for_period(UUID,TIMESTAMPTZ,INTEGER,INTEGER),public.mark_message_read(UUID),public.mark_all_notifications_read() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.process_activation_request(UUID,UUID,activation_request_status,TEXT),public.get_activation_stats(),
+ public.award_points(UUID,point_action_type,INTEGER,UUID,TEXT,UUID),public.ban_user(UUID,UUID,TEXT,INTERVAL),public.unban_user(UUID,UUID) TO authenticated;
 
 -- =============================================================================
 -- SCHEMA COMPLETE

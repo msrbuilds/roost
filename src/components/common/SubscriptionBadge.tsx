@@ -60,7 +60,8 @@ export default function SubscriptionBadge({ showDetails = false, className = '' 
 
     // Grace period
     if (inGracePeriod) {
-        const endsAt = subscription.endsAt ? new Date(subscription.endsAt) : null;
+        const endDate = subscription.endsAt || subscription.currentPeriodEnd;
+        const endsAt = endDate ? new Date(endDate) : null;
         const daysRemaining = endsAt
             ? Math.ceil((endsAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
             : null;

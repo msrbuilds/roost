@@ -99,7 +99,7 @@ liveRoomRouter.post('/sessions', async (req: Request, res: Response) => {
 
   const parsed = createSessionSchema.safeParse(req.body);
   if (!parsed.success) {
-    return res.status(400).json({ error: 'Invalid request', details: parsed.error.errors });
+    return res.status(400).json({ error: 'Invalid request', details: parsed.error.issues });
   }
 
   const { title, description, youtube_embed_url, scheduled_at, visibility } = parsed.data;
@@ -142,7 +142,7 @@ liveRoomRouter.put('/sessions/:id', async (req: Request<{ id: string }>, res: Re
 
   const parsed = updateSessionSchema.safeParse(req.body);
   if (!parsed.success) {
-    return res.status(400).json({ error: 'Invalid request', details: parsed.error.errors });
+    return res.status(400).json({ error: 'Invalid request', details: parsed.error.issues });
   }
 
   const sessionId = req.params.id;
