@@ -43,8 +43,9 @@ the built preview. Set `WEBSITE_BASE_URL` to test a deployed site instead.
 
 ## Cloudflare deployment
 
-Deploy the contents of `dist/` as a static Cloudflare Pages site. For a Git-based
-build of this monorepo, build from the repository root using:
+The `Website and docs` GitHub Actions workflow deploys every push to `main` to
+the existing `roost-msrbuilds` Cloudflare Pages project. Manual runs are also
+available on `main`. Build from the repository root so shared guides are included:
 
 ```bash
 npm --prefix website ci && npm --prefix website run build
@@ -53,6 +54,20 @@ npm --prefix website ci && npm --prefix website run build
 Set the output directory to `website/dist` and the Node version to `22.23.5`.
 Building from the repository root keeps the shared `guides/` directory available.
 No server adapter or runtime environment secrets are required.
+
+The `cloudflare-pages` GitHub environment stores the encrypted
+`CLOUDFLARE_API_TOKEN` secret and `CLOUDFLARE_ACCOUNT_ID` variable. The token needs
+only Cloudflare Pages Write for the deployment account. Restrict this environment
+to `main`; never expose the token to pull-request workflows. Pages' production
+branch must also be `main`.
+
+Each run validates links and metadata, builds the documentation search index,
+and runs browser tests before publishing. It then verifies the public
+`/build-info.json` commit and guide-content hash and repeats the browser tests
+against the custom domain. Failed build or preview tests prevent publishing;
+failed live checks mark the run as failed. To recover from a bad deployment,
+revert the change on `main` and let this workflow redeploy, or roll back to a
+known-good production deployment in the Cloudflare Pages dashboard.
 
 The canonical domain is configured in `astro.config.mjs` and `public/robots.txt`.
 Keep both synchronized if the domain changes. Preserve existing DNS records for

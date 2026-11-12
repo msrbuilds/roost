@@ -22,8 +22,17 @@ docsMenu?.addEventListener("click", () => {
 if (docsMenu) docsMenu.disabled = false;
 
 for (const pre of document.querySelectorAll<HTMLElement>(
-  ".docs-content pre, .install-command",
+  ".docs-content pre, .install-command, .docs-start-code pre",
 )) {
+  const code = pre.querySelector("code");
+  if (!code) continue;
+  const block = document.createElement("div");
+  block.className = "code-block";
+  const toolbar = document.createElement("div");
+  toolbar.className = "code-toolbar";
+  const label = document.createElement("span");
+  label.textContent = pre.dataset.language || "Code";
+  toolbar.append(label);
   const button = document.createElement("button");
   button.type = "button";
   button.className = "copy-code";
@@ -33,7 +42,7 @@ for (const pre of document.querySelectorAll<HTMLElement>(
   button.addEventListener("click", async () => {
     try {
       await navigator.clipboard.writeText(
-        pre.querySelector("code")?.textContent || "",
+        code.textContent || "",
       );
       button.textContent = "Copied";
     } catch {
@@ -43,7 +52,9 @@ for (const pre of document.querySelectorAll<HTMLElement>(
       button.textContent = "Copy";
     }, 1800);
   });
-  pre.append(button);
+  toolbar.append(button);
+  pre.before(block);
+  block.append(toolbar, pre);
 }
 
 interface SearchDocument {

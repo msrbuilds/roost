@@ -9,7 +9,9 @@ export default defineConfig({
   workers: 1,
   use: { baseURL: external || 'http://127.0.0.1:4321', headless: true },
   webServer: external ? undefined : {
-    command: 'npm run preview',
+    // Keep the preview in Playwright's process tree rather than Astro's
+    // agent-detected background mode or a stale preview lock.
+    command: 'npm run preview -- --ignore-lock',
     cwd: fileURLToPath(new URL('.', import.meta.url)),
     url: 'http://127.0.0.1:4321',
     reuseExistingServer: !process.env.CI,

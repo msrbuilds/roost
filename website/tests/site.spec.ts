@@ -73,3 +73,29 @@ test('mobile menus and code copying work', async ({ page, context }) => {
   await expect(copy).toHaveText('Copied');
   expect(await page.evaluate(() => navigator.clipboard.readText())).toContain('AWS_BACKUP_BUCKET=your-private-backup-bucket');
 });
+
+test('code boxes wrap without internal scrolling and preserve copied commands', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  for (const width of [360, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const route of ['/', '/docs/', '/docs/self-hosted-setup/', '/docs/backups/', '/docs/dockploy-vps/']) {
+      await page.goto(route);
+      const boxes = page.locator('.code-block');
+      await expect(boxes.first()).toBeVisible();
+      expect(await boxes.evaluateAll((elements) => elements.every((box) => {
+        const pre = box.querySelector('pre')!;
+        const code = pre.querySelector('code')!;
+        const button = box.querySelector('button')!;
+        return pre.scrollWidth <= pre.clientWidth + 1 && pre.scrollHeight <= pre.clientHeight + 1
+          && code.getBoundingClientRect().right <= pre.getBoundingClientRect().right + 1
+          && button.getBoundingClientRect().bottom <= pre.getBoundingClientRect().top + 1;
+      })), `${route} code boxes at ${width}px`).toBe(true);
+      const original = await boxes.first().locator('code').textContent();
+      await boxes.first().getByRole('button', { name: 'Copy code to clipboard', exact: true }).click();
+      await expect(boxes.first().getByRole('button')).toHaveText('Copied');
+      // Windows' clipboard normalizes line endings to CRLF.
+      expect((await page.evaluate(() => navigator.clipboard.readText())).replace(/\r\n/g, '\n')).toBe(original?.replace(/\r\n/g, '\n'));
+      if (route === '/docs/') expect(original).toBe('git clone https://github.com/msrbuilds/roost.git\ncd roost\nbash install.sh');
+    }
+  }
+});

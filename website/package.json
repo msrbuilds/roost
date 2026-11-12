@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "astro dev --host 127.0.0.1 --port 4321",
     "check": "astro check",
-    "build": "astro check && astro build && pagefind --site dist && node scripts/check-links.mjs",
+    "build": "astro check && astro build && pagefind --site dist && node scripts/check-links.mjs && node scripts/build-info.mjs",
     "preview": "astro preview --host 127.0.0.1 --port 4321"
   },
   "dependencies": {

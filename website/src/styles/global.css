@@ -94,7 +94,9 @@ code {
   font-family: "Cascadia Code", Consolas, monospace;
 }
 pre {
-  overflow-x: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  tab-size: 2;
 }
 button {
   border: 0;
@@ -691,21 +693,61 @@ input {
   white-space: nowrap;
 }
 .copy-code {
-  position: absolute;
-  right: 12px;
-  top: 12px;
-  background: #eef3f5;
-  border: 1px solid #d7e0e6;
-  border-radius: 4px;
-  font-size: 10px;
-  padding: 6px 8px;
-  color: #314654;
+  flex-shrink: 0;
+  min-height: 36px;
+  min-width: 70px;
+  background: #294553;
+  border: 1px solid #496471;
+  border-radius: 6px;
+  font-size: 12px;
+  padding: 8px 12px;
+  color: #f5f9fa;
 }
-.install-command .copy-code {
-  right: 0;
-  top: 0;
-  padding: 3px 7px;
-  font-size: 8px;
+.copy-code:hover {
+  background: #36596a;
+}
+.code-block {
+  min-width: 0;
+  max-width: 100%;
+  margin-block: 22px;
+  border: 1px solid #3a505b;
+  border-radius: 12px;
+  background: #182b36;
+  color: #e6edf3;
+  box-shadow: 0 8px 24px -16px #182b3655;
+}
+.code-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 14px;
+  background: #203540;
+  border-bottom: 1px solid #3a505b;
+  border-radius: 11px 11px 0 0;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: #c4d5dd;
+}
+.code-toolbar > span {
+  text-transform: uppercase;
+}
+.code-block pre,
+.docs-content .code-block pre,
+.install-strip .code-block pre,
+.docs-start-code .code-block pre {
+  margin: 0;
+  padding: 20px;
+  border: 0;
+  border-radius: 0 0 11px 11px;
+  font-size: 12px;
+  line-height: 1.85;
+  max-height: none;
+  overflow: visible;
+}
+.install-strip .code-block,
+.docs-start-code .code-block {
+  margin-bottom: 0;
 }
 .faq-section {
   display: grid;
@@ -1151,7 +1193,7 @@ input {
   overflow-wrap: anywhere;
 }
 .docs-content pre {
-  padding: 44px 20px 20px;
+  padding: 20px;
   border-radius: 8px;
   position: relative;
   font-size: 11px;
@@ -1160,7 +1202,8 @@ input {
   border: 1px solid #283b43;
 }
 .docs-content pre code {
-  white-space: pre;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 .docs-content table {
   display: block;
