@@ -21,6 +21,11 @@ const errors = [];
 let count = 0;
 for (const file of files) {
   const html = await readFile(file, "utf8");
+  for (const [, attributes, body] of html.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/g)) {
+    if (!/\bsrc=/.test(attributes) && body.trim() && !/type="application\/(?:ld\+)?json"/.test(attributes)) {
+      errors.push(`Inline executable script conflicts with production CSP: ${file}`);
+    }
+  }
   for (const [, raw] of html.matchAll(/\b(?:href|src)="([^"]+)"/g)) {
     if (/^(?:[a-z]+:|\/\/|#)/i.test(raw)) continue;
     const path = decodeURIComponent(raw.split(/[?#]/)[0]);
