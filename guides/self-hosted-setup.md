@@ -15,6 +15,10 @@ Complete guide for deploying Roost on your own infrastructure.
 
 ## Quick Start
 
+On the documentation website, long commands wrap to fit your screen. Use the
+**Copy** button above a code box to copy the complete command with its original
+line breaks; visual wrapping does not add line breaks to the clipboard.
+
 ### 1. Clone and Install
 
 ```bash
