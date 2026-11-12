@@ -15,17 +15,12 @@ Step-by-step guide to deploy Roost's frontend on Vercel. The backend must be dep
 
 ## Architecture
 
-```
-[Users] --> [Vercel - Frontend (React SPA)]
-                |
-                +--> [Backend Server (Express.js)]
-                |        |
-                |        +--> [Database (Supabase)]
-                |        +--> [S3 Storage]
-                |        +--> [Redis (optional)]
-                |
-                +--> [Supabase (direct client calls)]
-```
+- **Visitors** load the React frontend from Vercel.
+- **The frontend** calls your separately hosted Express backend and makes direct Supabase client calls.
+- **The backend** connects to:
+  - Supabase for the database.
+  - S3-compatible storage for files.
+  - Redis, when configured.
 
 Vercel serves the static frontend. API calls go to your separately hosted backend.
 

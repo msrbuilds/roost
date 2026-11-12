@@ -720,7 +720,7 @@ input {
   max-width: 100%;
   margin-block: 22px;
   border: 1px solid #3a505b;
-  border-radius: 12px;
+  border-radius: 8px;
   background: #182b36;
   color: #e6edf3;
   box-shadow: 0 8px 24px -16px #182b3655;
@@ -733,7 +733,7 @@ input {
   padding: 4px 12px;
   background: #203540;
   border-bottom: 1px solid #3a505b;
-  border-radius: 11px 11px 0 0;
+  border-radius: 7px 7px 0 0;
   font-size: 10px;
   letter-spacing: 0.06em;
   color: #c4d5dd;
@@ -754,15 +754,14 @@ input {
   margin: 0;
   padding: 20px;
   border: 0;
-  border-radius: 0 0 11px 11px;
+  border-radius: 0 0 7px 7px;
   font-size: 12px;
-  line-height: 1.85;
+  line-height: 1.65;
   max-height: none;
   overflow: visible;
 }
 .code-block:not(.code-block-inline) pre {
   padding: 12px 14px;
-  line-height: 1.65;
 }
 .install-strip .code-block,
 .docs-start-code .code-block {
@@ -774,7 +773,8 @@ input {
   gap: 14px;
   width: fit-content;
   padding: 12px 14px;
-  border-radius: 8px;
+}
+.install-strip .code-block-inline {
   margin-top: 12px;
 }
 .code-block.code-block-inline pre {
@@ -1034,9 +1034,6 @@ input {
   font-size: 11px;
   line-height: 2;
   margin: 20px 0;
-}
-.docs-start-code code > span {
-  color: #b6d0b9;
 }
 .docs-start-code small {
   display: block;

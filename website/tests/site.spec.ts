@@ -150,12 +150,23 @@ test('mobile menus and code copying work', async ({ page, context }) => {
 });
 
 test('code boxes wrap without internal scrolling and preserve copied commands', async ({ page, context }) => {
+  test.setTimeout(240000);
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   for (const width of [320, 360, 390, 1440]) {
     await page.setViewportSize({ width, height: 900 });
-    for (const route of ['/', '/docs/', '/docs/self-hosted-setup/', '/docs/backups/', '/docs/dockploy-vps/']) {
+    for (const route of ['/', '/docs/', ...guides.map(({ id }) => `/docs/${id}/`)]) {
       await page.goto(route);
+      await expect(page.getByRole('button', { name: /^Search documentation/ })).toBeEnabled();
       const boxes = page.locator('.code-block');
+      if (process.env.ROOST_SCREENSHOT_DIR && [390, 1440].includes(width) && route.startsWith('/docs/')) {
+        if (await boxes.count()) await boxes.first().locator('button').scrollIntoViewIfNeeded();
+        const guide = route.split('/').filter(Boolean).at(-1);
+        await page.screenshot({ path: join(process.env.ROOST_SCREENSHOT_DIR, `${guide}-${width}.png`) });
+      }
+      if (await boxes.count() === 0) {
+        await expect(page.locator('main pre')).toHaveCount(0);
+        continue;
+      }
       await expect(boxes.first()).toBeVisible();
       expect(await boxes.evaluateAll((elements) => elements.flatMap((box) => {
         const pre = box.querySelector('pre')!;
@@ -175,12 +186,14 @@ test('code boxes wrap without internal scrolling and preserve copied commands', 
           buttonLeft: button.getBoundingClientRect().left,
         }];
       })), `${route} code boxes at ${width}px`).toEqual([]);
-      const original = await boxes.first().locator('code').textContent();
-      await boxes.first().getByRole('button', { name: 'Copy code to clipboard', exact: true }).click();
-      await expect(boxes.first().getByRole('button')).toHaveText('Copied');
-      // Windows' clipboard normalizes line endings to CRLF.
-      expect((await page.evaluate(() => navigator.clipboard.readText())).replace(/\r\n/g, '\n')).toBe(original?.replace(/\r\n/g, '\n'));
-      if (route === '/docs/') expect(original).toBe('git clone https://github.com/msrbuilds/roost.git\ncd roost\nbash install.sh');
+      for (const box of await boxes.all()) {
+        const original = await box.locator('code').textContent();
+        await box.locator('button').click();
+        await expect(box.locator('button')).toHaveText('Copied');
+        // Windows' clipboard normalizes line endings to CRLF.
+        expect((await page.evaluate(() => navigator.clipboard.readText())).replace(/\r\n/g, '\n')).toBe(original?.replace(/\r\n/g, '\n'));
+        if (route === '/docs/') expect(original).toBe('git clone https://github.com/msrbuilds/roost.git\ncd roost\nbash install.sh');
+      }
     }
   }
 });
