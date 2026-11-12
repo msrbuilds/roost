@@ -773,6 +773,10 @@ input {
   padding: 0;
   border-radius: 0;
 }
+.code-block-inline pre code {
+  display: block;
+  min-width: 0;
+}
 .faq-section {
   display: grid;
   grid-template-columns: 1fr 1.65fr;

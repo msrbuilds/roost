@@ -157,17 +157,24 @@ test('code boxes wrap without internal scrolling and preserve copied commands', 
       await page.goto(route);
       const boxes = page.locator('.code-block');
       await expect(boxes.first()).toBeVisible();
-      expect(await boxes.evaluateAll((elements) => elements.every((box) => {
+      expect(await boxes.evaluateAll((elements) => elements.flatMap((box) => {
         const pre = box.querySelector('pre')!;
         const code = pre.querySelector('code')!;
         const button = box.querySelector('button')!;
         const inline = box.classList.contains('code-block-inline');
-        return pre.scrollWidth <= pre.clientWidth + 1 && pre.scrollHeight <= pre.clientHeight + 1
+        const fits = pre.scrollWidth <= pre.clientWidth + 1 && pre.scrollHeight <= pre.clientHeight + 1
           && code.getBoundingClientRect().right <= pre.getBoundingClientRect().right + 1
           && (inline
             ? button.getBoundingClientRect().left >= pre.getBoundingClientRect().right
             : button.getBoundingClientRect().bottom <= pre.getBoundingClientRect().top + 1);
-      })), `${route} code boxes at ${width}px`).toBe(true);
+        return fits ? [] : [{
+          code: code.textContent?.slice(0, 120), inline,
+          scrollWidth: pre.scrollWidth, width: pre.clientWidth,
+          scrollHeight: pre.scrollHeight, height: pre.clientHeight,
+          codeRight: code.getBoundingClientRect().right, preRight: pre.getBoundingClientRect().right,
+          buttonLeft: button.getBoundingClientRect().left,
+        }];
+      })), `${route} code boxes at ${width}px`).toEqual([]);
       const original = await boxes.first().locator('code').textContent();
       await boxes.first().getByRole('button', { name: 'Copy code to clipboard', exact: true }).click();
       await expect(boxes.first().getByRole('button')).toHaveText('Copied');
@@ -179,7 +186,7 @@ test('code boxes wrap without internal scrolling and preserve copied commands', 
 });
 
 test('the homepage install command stays compact with Copy beside it', async ({ page }) => {
-  for (const width of [320, 390, 1440]) {
+  for (const width of [320, 360, 390, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/');
     const box = page.locator('.install-strip .code-block-inline');
@@ -207,7 +214,7 @@ test('single-line docs commands stay compact and copy their complete contents', 
     ['supabase-selfhosted', 'docker compose up -d'],
     ['supabase-selfhosted', 'docker compose restart'],
   ];
-  for (const width of [320, 390, 1440]) {
+  for (const width of [320, 360, 390, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     for (const [guide, command] of examples) {
       await page.goto(`/docs/${guide}/`);
