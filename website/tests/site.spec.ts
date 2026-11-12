@@ -96,11 +96,49 @@ test('copying remains possible when clipboard permission is denied', async ({ pa
 });
 
 test('product screenshots load and missing pages offer recovery links', async ({ page }) => {
-  for (const route of ['/', '/features/']) {
-    await page.goto(route);
-    for (const image of await page.locator('main img').all()) {
-      await image.scrollIntoViewIfNeeded();
-      await expect.poll(() => image.evaluate((element: HTMLImageElement) => element.complete && element.naturalWidth > 0)).toBe(true);
+  test.setTimeout(180000);
+  for (const width of [320, 390, 600, 768, 1024, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const route of ['/', '/features/']) {
+      await page.goto(route);
+      for (const image of await page.locator('main img').all()) {
+        await image.scrollIntoViewIfNeeded();
+        await expect.poll(() => image.evaluate((element: HTMLImageElement) => element.complete && element.naturalWidth > 0)).toBe(true);
+      }
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${route} at ${width}px`).toBe(true);
+      if (route === '/') {
+        expect(await page.evaluate(() => {
+          const sticker = document.querySelector('.preview-sticker')!.getBoundingClientRect();
+          const caption = document.querySelector('.product-preview figcaption')!.getBoundingClientRect();
+          return caption.top >= sticker.bottom;
+        }), `homepage sticker clears its caption at ${width}px`).toBe(true);
+      } else {
+        await expect(page.locator('main > section').last()).toHaveClass(/final-cta/);
+        expect(await page.locator('.feature-detail').evaluateAll((cards) => {
+          const rows = new Map<number, number[]>();
+          for (const card of cards) {
+            const row = Math.round(card.getBoundingClientRect().top);
+            const dividers = rows.get(row) || [];
+            dividers.push(card.querySelector('.check-list')!.getBoundingClientRect().top);
+            rows.set(row, dividers);
+          }
+          return [...rows.values()].every((tops) => Math.max(...tops) - Math.min(...tops) <= 1);
+        }), `feature checklist rows align at ${width}px`).toBe(true);
+      }
+      const cta = page.locator('.final-cta');
+      expect(await cta.evaluate((element) => {
+        const box = element.getBoundingClientRect();
+        const button = element.querySelector('.button')!.getBoundingClientRect();
+        return button.left >= box.left && button.right <= box.right && button.top >= box.top && button.bottom <= box.bottom;
+      }), `${route} CTA fits at ${width}px`).toBe(true);
+      if (process.env.ROOST_SCREENSHOT_DIR && [390, 1440].includes(width)) {
+        const name = route === '/' ? 'home' : 'features';
+        await page.screenshot({ path: join(process.env.ROOST_SCREENSHOT_DIR, `${name}-${width}-full.png`), fullPage: true });
+        const sections = await page.locator('main > section').all();
+        for (const [index, section] of sections.entries()) {
+          await section.screenshot({ path: join(process.env.ROOST_SCREENSHOT_DIR, `${name}-${width}-section-${index}.png`) });
+        }
+      }
     }
   }
   const response = await page.goto('/this-page-does-not-exist/');

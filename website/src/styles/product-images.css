@@ -12,6 +12,10 @@
   box-shadow: 0 22px 65px -30px #3e616b66;
   transform: rotate(-1deg);
 }
+.product-preview-visual {
+  position: relative;
+  min-width: 0;
+}
 .product-preview-frame img {
   width: 100%;
   height: auto;
@@ -22,9 +26,10 @@
   letter-spacing: 0.08em;
 }
 .product-preview figcaption {
-  font-size: 8px;
+  font-size: 11px;
+  line-height: 1.6;
   color: #586b5d;
-  margin-top: 20px;
+  margin-top: 32px;
 }
 .preview-sticker {
   display: flex;
@@ -32,7 +37,7 @@
   align-items: center;
   position: absolute;
   right: -12px;
-  bottom: 16px;
+  bottom: -12px;
   transform: rotate(3deg);
   background: #eee5d5;
   border: 1px solid #dcd0bb;
@@ -71,13 +76,14 @@
 }
 .product-tour figcaption {
   text-align: center;
-  font-size: 9px;
+  font-size: 11px;
+  line-height: 1.6;
   color: #586b5d;
   padding-top: 13px;
 }
 .feature-tour {
-  margin-top: 70px;
-  padding-bottom: 65px;
+  margin-top: 65px;
+  padding-bottom: 0;
 }
 @media (max-width: 800px) {
   .hero-copy {
@@ -93,7 +99,6 @@
   }
   .preview-sticker {
     right: 10px;
-    bottom: 0;
   }
   .product-tour {
     padding-bottom: 60px;
@@ -102,7 +107,8 @@
     padding: 10px 10px 12px;
   }
   .feature-tour {
-    margin-top: 55px;
+    margin-top: 48px;
+    padding-bottom: 0;
   }
 }
 @media (max-width: 480px) {
@@ -110,7 +116,6 @@
     padding: 10px 14px;
     font-size: 11px;
     right: 0;
-    bottom: 5px;
   }
   .preview-sticker strong {
     font-size: 15px;
@@ -119,14 +124,13 @@
     font-size: 28px;
   }
   .product-preview figcaption {
-    font-size: 7px;
-    margin-top: 25px;
+    font-size: 10px;
   }
   .product-tour figure {
     padding: 7px 7px 10px;
     border-radius: 7px;
   }
   .product-tour figcaption {
-    font-size: 8px;
+    font-size: 10px;
   }
 }

@@ -949,6 +949,9 @@ input {
   margin-top: 15px;
 }
 .feature-detail {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
   padding: 30px 28px;
   background: white;
   border: 1px solid var(--line);
@@ -968,18 +971,20 @@ input {
 .feature-detail > p {
   font-size: 12px;
   color: #586b5d;
+  margin-bottom: 24px;
 }
 .feature-detail .check-list {
   border-top: 1px solid var(--line);
   padding-top: 22px;
-  margin: 24px 0 0;
+  margin: auto 0 0;
+  width: 100%;
   gap: 10px;
 }
 .feature-detail .check-list li {
   font-size: 11px;
 }
 .feature-note {
-  margin-block: 55px 65px;
+  margin-block: 65px;
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 30px;
@@ -1779,8 +1784,17 @@ input {
   .feature-detail {
     padding: 25px;
   }
+  .feature-note {
+    margin-block: 48px;
+  }
   .feature-detail h2 {
     font-size: 25px;
+  }
+  .feature-detail > p {
+    font-size: 13px;
+  }
+  .feature-detail .check-list li {
+    font-size: 12px;
   }
   .docs-start {
     grid-template-columns: 1fr;
@@ -1863,6 +1877,11 @@ input {
     font-size: 48px;
   }
 }
+@media (max-width: 640px) {
+  .feature-detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
 @media (max-width: 480px) {
   .header-cta {
     display: none;
@@ -1894,7 +1913,6 @@ input {
     margin-top: 22px;
   }
   .hero-proof > span {
-    font-size: 8px;
     gap: 4px;
   }
   .hero-proof svg {
@@ -1985,10 +2003,7 @@ input {
     font-size: 39px;
   }
   .final-cta .small-label {
-    font-size: 6px;
-  }
-  .feature-detail-grid {
-    grid-template-columns: 1fr;
+    font-size: 9px;
   }
   .doc-card-grid {
     grid-template-columns: 1fr;
