@@ -18,7 +18,7 @@ Complete guide for deploying Roost on your own infrastructure.
 ### 1. Clone and Install
 
 ```bash
-git clone <repo-url> roost
+git clone https://github.com/msrbuilds/roost.git
 cd roost
 bash install.sh
 ```
