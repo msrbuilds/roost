@@ -1,0 +1,12 @@
+---
+import { repository, version } from '../data/site';
+---
+<footer class="site-footer">
+  <div class="container footer-top">
+    <div><a class="brand" href="/"><img src="/brand.png" alt="" width="32" height="32" /><span>roost.</span></a><p>A little more community.<br />A lot more ownership.</p></div>
+    <div><span class="footer-label">Explore</span><a href="/features/">Features</a><a href="/docs/">Documentation</a><a href="/docs/self-hosted-setup/">Self-host Roost</a></div>
+    <div><span class="footer-label">Open source</span><a href={repository}>Source code ↗</a><a href={`${repository}/issues`}>Report an issue ↗</a><a href={`${repository}/blob/main/LICENSE`}>MIT license ↗</a></div>
+    <div class="footer-note"><span class="small-label">Built to belong.</span><p>Free software, made for people bringing people together.</p><a href="https://msrbuilds.com">A project by MSR Builds ↗</a></div>
+  </div>
+  <div class="container footer-bottom"><span>© {new Date().getFullYear()} MSR · Roost {version}</span><span>MIT licensed. Hosting costs are yours.</span><a href="/privacy/">Privacy</a></div>
+</footer>

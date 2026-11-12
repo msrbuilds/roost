@@ -1,0 +1,25 @@
+{
+  "name": "roost-website",
+  "version": "0.0.2",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.23.4"
+  },
+  "scripts": {
+    "dev": "astro dev --host 127.0.0.1 --port 4321",
+    "check": "astro check",
+    "build": "astro check && astro build && pagefind --site dist && node scripts/check-links.mjs",
+    "preview": "astro preview --host 127.0.0.1 --port 4321"
+  },
+  "dependencies": {
+    "@astrojs/markdown-remark": "^7.3.8",
+    "@astrojs/sitemap": "3.7.4",
+    "astro": "7.4.11"
+  },
+  "devDependencies": {
+    "@astrojs/check": "0.9.12",
+    "pagefind": "1.6.0",
+    "typescript": "~5.6.2"
+  }
+}

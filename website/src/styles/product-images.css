@@ -1,0 +1,132 @@
+.product-preview {
+  min-inline-size: 0;
+  position: relative;
+  min-width: 0;
+  padding: 28px 0 38px;
+}
+.product-preview-frame {
+  border: 1px solid #d3dbde;
+  border-radius: 10px;
+  background: white;
+  overflow: hidden;
+  box-shadow: 0 22px 65px -30px #3e616b66;
+  transform: rotate(-1deg);
+}
+.product-preview-frame img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.product-preview .window-bar {
+  font-size: 7px;
+  letter-spacing: 0.08em;
+}
+.product-preview figcaption {
+  font-size: 8px;
+  color: #586b5d;
+  margin-top: 20px;
+}
+.preview-sticker {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  position: absolute;
+  right: -12px;
+  bottom: 16px;
+  transform: rotate(3deg);
+  background: #eee5d5;
+  border: 1px solid #dcd0bb;
+  border-radius: 6px;
+  padding: 14px 20px;
+  box-shadow: 0 10px 30px -20px #536151;
+  font-family: Georgia, serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #675a42;
+}
+.preview-sticker > span {
+  font-size: 39px;
+  color: #586b5d;
+}
+.preview-sticker strong {
+  font-weight: 400;
+  font-style: italic;
+  font-size: 18px;
+}
+.product-tour {
+  padding-bottom: 85px;
+}
+.product-tour figure {
+  border: 1px solid #e0e5df;
+  border-radius: 12px;
+  background: #e7eee9;
+  padding: 20px 20px 12px;
+}
+.product-tour img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 6px;
+  border: 1px solid #d9e0df;
+}
+.product-tour figcaption {
+  text-align: center;
+  font-size: 9px;
+  color: #586b5d;
+  padding-top: 13px;
+}
+.feature-tour {
+  margin-top: 70px;
+  padding-bottom: 65px;
+}
+@media (max-width: 800px) {
+  .hero-copy {
+    min-width: 0;
+  }
+  .hero h1 em {
+    white-space: normal;
+  }
+  .product-preview {
+    width: min(630px, 100%);
+    margin-inline: auto;
+    padding-bottom: 20px;
+  }
+  .preview-sticker {
+    right: 10px;
+    bottom: 0;
+  }
+  .product-tour {
+    padding-bottom: 60px;
+  }
+  .product-tour figure {
+    padding: 10px 10px 12px;
+  }
+  .feature-tour {
+    margin-top: 55px;
+  }
+}
+@media (max-width: 480px) {
+  .preview-sticker {
+    padding: 10px 14px;
+    font-size: 11px;
+    right: 0;
+    bottom: 5px;
+  }
+  .preview-sticker strong {
+    font-size: 15px;
+  }
+  .preview-sticker > span {
+    font-size: 28px;
+  }
+  .product-preview figcaption {
+    font-size: 7px;
+    margin-top: 25px;
+  }
+  .product-tour figure {
+    padding: 7px 7px 10px;
+    border-radius: 7px;
+  }
+  .product-tour figcaption {
+    font-size: 8px;
+  }
+}

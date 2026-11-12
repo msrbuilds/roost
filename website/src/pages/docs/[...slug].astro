@@ -1,0 +1,27 @@
+---
+import { getCollection, render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import Icon from '../../components/Icon.astro';
+import { guides, guideGroups, repository } from '../../data/site';
+export async function getStaticPaths() {
+  const entries = await getCollection('guides');
+  return entries.filter((entry) => guides.some((guide) => guide.id === entry.id)).map((entry) => ({ params: { slug: entry.id }, props: { entry } }));
+}
+const { entry } = Astro.props;
+const guide = guides.find((item) => item.id === entry.id)!;
+const { Content, headings } = await render(entry);
+const index = guides.findIndex((item) => item.id === entry.id);
+const previous = guides[index - 1];
+const next = guides[index + 1];
+---
+<Base title={guide.title} description={guide.description} docs>
+  <div class="docs-layout container">
+    <button class="docs-menu-toggle" aria-expanded="false" aria-controls="docs-sidebar">Browse documentation <span>+</span></button>
+    <aside id="docs-sidebar" class="docs-sidebar" aria-label="Documentation navigation"><a class="docs-home-link" href="/docs/">← All documentation</a>{guideGroups.map((group) => <div class="sidebar-group"><h2>{group}</h2>{guides.filter((item) => item.group === group).map((item) => <a href={`/docs/${item.id}/`} aria-current={item.id === guide.id ? 'page' : undefined}>{item.title}</a>)}</div>)}</aside>
+    <main id="main" class="docs-main" data-pagefind-body><div class="breadcrumb"><a href="/docs/">Docs</a><span>/</span><span>{guide.group}</span></div><header class="doc-heading"><span class="small-label">{guide.group}</span><h1 data-pagefind-meta="title">{guide.title}</h1><p>{guide.description}</p></header><article class="docs-content"><Content /></article>
+      <div class="doc-edit"><span>These docs live with the source code.</span><a href={`${repository}/edit/main/guides/${entry.id}.md`}>Improve this page ↗</a></div>
+      <nav class="doc-pagination" aria-label="Previous and next guide">{previous ? <a href={`/docs/${previous.id}/`}><small>← Previous</small><strong>{previous.title}</strong></a> : <span></span>}{next && <a href={`/docs/${next.id}/`}><small>Next →</small><strong>{next.title}</strong></a>}</nav>
+    </main>
+    <aside class="docs-toc" aria-label="On this page"><span class="small-label">ON THIS PAGE</span>{headings.filter((heading) => heading.depth === 2).map((heading) => <a href={`#${heading.slug}`}>{heading.text}</a>)}<a class="toc-help" href={`${repository}/issues`}>Need a hand? <Icon name="external" size={14} /></a></aside>
+  </div>
+</Base>
