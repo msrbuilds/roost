@@ -36,6 +36,7 @@ export default defineConfig({
   vite: { build: { assetsInlineLimit: 0 } },
   markdown: {
     processor: unified({ remarkPlugins: [documentationLinks] }),
-    shikiConfig: { theme: "github-dark", langAlias: { env: "dotenv" } },
+    // The older github-dark theme renders comments below AA contrast.
+    shikiConfig: { theme: "github-dark-default", langAlias: { env: "dotenv" } },
   },
 });

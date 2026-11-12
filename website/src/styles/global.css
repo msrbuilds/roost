@@ -288,6 +288,11 @@ input {
 .mobile-navigation[hidden] {
   display: none;
 }
+@media (min-width: 801px) {
+  .mobile-navigation {
+    display: none;
+  }
+}
 .hero {
   display: grid;
   grid-template-columns: 1fr 1.07fr;
@@ -678,6 +683,10 @@ input {
   font-size: 8px;
   color: #586b5d;
 }
+.install-strip > div {
+  flex: 1;
+  min-width: 0;
+}
 .install-strip pre {
   font-size: 12px;
   margin: 10px 0 0;
@@ -748,6 +757,21 @@ input {
 .install-strip .code-block,
 .docs-start-code .code-block {
   margin-bottom: 0;
+}
+.code-block-inline {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: fit-content;
+  padding: 12px 14px;
+  border-radius: 8px;
+  margin-top: 12px;
+}
+.install-strip .code-block-inline pre {
+  min-width: 0;
+  flex: 1;
+  padding: 0;
+  border-radius: 0;
 }
 .faq-section {
   display: grid;
@@ -983,15 +1007,13 @@ input {
   margin: 17px 0 22px;
 }
 .docs-start-code {
-  padding: 25px;
-  background: #20343f;
-  border-radius: 8px;
-  color: #dde5e4;
+  min-width: 0;
+  padding: 0;
   align-self: center;
 }
 .code-label {
-  font-size: 8px;
-  color: #a7bcbf;
+  font-size: 10px;
+  color: #586b5d;
   letter-spacing: 0.15em;
 }
 .docs-start-code pre {
@@ -1003,8 +1025,10 @@ input {
   color: #b6d0b9;
 }
 .docs-start-code small {
-  font-size: 9px;
-  color: #a2b8bc;
+  display: block;
+  margin-top: 14px;
+  font-size: 12px;
+  color: #586b5d;
 }
 .docs-directory {
   padding-block: 50px;
@@ -1395,7 +1419,7 @@ input {
   border: 1px solid #cadbdc;
   border-radius: 6px;
   background: white;
-  font-size: 15px;
+  font-size: 16px;
   color: var(--ink);
 }
 #search-status {
@@ -1962,7 +1986,7 @@ input {
     padding: 24px;
   }
   .docs-start-code {
-    padding: 20px;
+    padding: 0;
   }
   .docs-start-code pre {
     font-size: 9px;

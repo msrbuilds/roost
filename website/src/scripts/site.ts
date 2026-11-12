@@ -1,6 +1,15 @@
 const menuButton = document.querySelector<HTMLButtonElement>(".menu-trigger");
 const mobileNavigation =
   document.querySelector<HTMLElement>("#mobile-navigation");
+function closeMobileNavigation() {
+  menuButton?.setAttribute("aria-expanded", "false");
+  menuButton?.setAttribute("aria-label", "Open navigation");
+  if (mobileNavigation) mobileNavigation.hidden = true;
+}
+const mobileViewport = window.matchMedia("(max-width: 800px)");
+mobileViewport.addEventListener("change", ({ matches }) => {
+  if (!matches) closeMobileNavigation();
+});
 menuButton?.addEventListener("click", () => {
   const open = menuButton.getAttribute("aria-expanded") !== "true";
   menuButton.setAttribute("aria-expanded", String(open));
@@ -28,6 +37,8 @@ for (const pre of document.querySelectorAll<HTMLElement>(
   if (!code) continue;
   const block = document.createElement("div");
   block.className = "code-block";
+  const inline = pre.classList.contains("install-command");
+  if (inline) block.classList.add("code-block-inline");
   const toolbar = document.createElement("div");
   toolbar.className = "code-toolbar";
   const label = document.createElement("span");
@@ -39,22 +50,38 @@ for (const pre of document.querySelectorAll<HTMLElement>(
   button.textContent = "Copy";
   button.setAttribute("aria-label", "Copy code to clipboard");
   button.setAttribute("aria-live", "polite");
+  let resetLabel: number;
   button.addEventListener("click", async () => {
+    window.clearTimeout(resetLabel);
     try {
       await navigator.clipboard.writeText(
         code.textContent || "",
       );
       button.textContent = "Copied";
+      button.setAttribute("aria-label", "Copied code to clipboard");
     } catch {
-      button.textContent = "Select to copy";
+      // Clipboard access can be denied by the browser. Select the real code so
+      // the user can still copy it using their keyboard or selection menu.
+      const selection = window.getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(code);
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+      button.textContent = "Code selected";
+      button.setAttribute("aria-label", "Code selected; copy using your keyboard or selection menu");
     }
-    window.setTimeout(() => {
+    resetLabel = window.setTimeout(() => {
       button.textContent = "Copy";
-    }, 1800);
+      button.setAttribute("aria-label", "Copy code to clipboard");
+    }, 2500);
   });
-  toolbar.append(button);
   pre.before(block);
-  block.append(toolbar, pre);
+  if (inline) {
+    block.append(pre, button);
+  } else {
+    toolbar.append(button);
+    block.append(toolbar, pre);
+  }
 }
 
 interface SearchDocument {
@@ -68,6 +95,11 @@ interface SearchModule {
   ) => Promise<{ results: { data: () => Promise<SearchDocument> }[] }>;
 }
 const dialog = document.querySelector<HTMLDialogElement>("#search-dialog");
+const searchShortcut = document.querySelector<HTMLElement>("[data-search-shortcut]");
+if (searchShortcut && /Mac|iPhone|iPad/.test(navigator.userAgent)) {
+  searchShortcut.textContent = "⌘ K";
+  searchShortcut.closest("button")?.setAttribute("aria-label", "Search documentation ⌘ K");
+}
 const searchInput = document.querySelector<HTMLInputElement>("#docs-search");
 const searchStatus = document.querySelector<HTMLElement>("#search-status");
 const searchResults = document.querySelector<HTMLElement>("#search-results");
@@ -94,6 +126,23 @@ dialog?.addEventListener("click", (event) => {
   if (event.target === dialog) dialog.close();
 });
 document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !dialog?.open) {
+    if (menuButton?.getAttribute("aria-expanded") === "true") {
+      closeMobileNavigation();
+      menuButton.focus();
+    } else if (mobileViewport.matches && docsMenu?.getAttribute("aria-expanded") === "true") {
+      docsMenu.setAttribute("aria-expanded", "false");
+      document.querySelector("#docs-sidebar")?.classList.remove("is-open");
+      docsMenu.focus();
+    }
+  }
+  if (event.key === "Escape" && dialog?.open) {
+    // A focused search input otherwise consumes the first Escape to clear its
+    // value, leaving the modal open. Escape should always dismiss this dialog.
+    event.preventDefault();
+    dialog.close();
+    return;
+  }
   if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
     event.preventDefault();
     openSearch();
