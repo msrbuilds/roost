@@ -46,6 +46,19 @@ test('documentation search finds and opens the recovery guide', async ({ page })
   await expect(page.getByRole('heading', { level: 1, name: 'Backups & recovery', exact: true })).toBeVisible();
 });
 
+test('controls wait for their handlers when the site script is delayed', async ({ page }) => {
+  let releaseScript!: () => void;
+  const scriptReady = new Promise<void>((resolve) => { releaseScript = resolve; });
+  await page.route('**/_astro/*.js', async (route) => { await scriptReady; await route.continue(); });
+  await page.goto('/', { waitUntil: 'commit' });
+  const search = page.getByRole('button', { name: 'Search documentation', exact: true });
+  await expect(search).toBeDisabled();
+  releaseScript();
+  await expect(search).toBeEnabled();
+  await search.click();
+  await expect(page.getByRole('searchbox', { name: 'Search documentation', exact: true })).toBeVisible();
+});
+
 test('mobile menus and code copying work', async ({ page, context }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await page.setViewportSize({ width: 390, height: 844 });

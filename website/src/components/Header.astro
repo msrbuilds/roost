@@ -12,9 +12,9 @@ const path = Astro.url.pathname;
       <a href={repository}>GitHub <Icon name="external" size={14} /></a>
     </nav>
     <div class="header-actions">
-      <button class="search-trigger" data-search-open aria-label="Search documentation"><Icon name="search" size={18} /><span>Search docs</span><kbd>⌘ K</kbd></button>
+      <button class="search-trigger" disabled data-search-open aria-label="Search documentation"><Icon name="search" size={18} /><span>Search docs</span><kbd>⌘ K</kbd></button>
       <a class="button button-small header-cta" href="/docs/self-hosted-setup/">Get started <Icon name="arrow" size={16} /></a>
-      <button class="menu-trigger" aria-expanded="false" aria-controls="mobile-navigation" aria-label="Open navigation"><span></span><span></span></button>
+      <button class="menu-trigger" disabled aria-expanded="false" aria-controls="mobile-navigation" aria-label="Open navigation"><span></span><span></span></button>
     </div>
   </div>
   <nav id="mobile-navigation" class="mobile-navigation" aria-label="Mobile navigation" hidden>

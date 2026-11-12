@@ -12,11 +12,14 @@ menuButton?.addEventListener("click", () => {
 });
 
 const docsMenu = document.querySelector<HTMLButtonElement>(".docs-menu-toggle");
+if (menuButton) menuButton.disabled = false;
 docsMenu?.addEventListener("click", () => {
   const open = docsMenu.getAttribute("aria-expanded") !== "true";
   docsMenu.setAttribute("aria-expanded", String(open));
   document.querySelector("#docs-sidebar")?.classList.toggle("is-open", open);
 });
+
+if (docsMenu) docsMenu.disabled = false;
 
 for (const pre of document.querySelectorAll<HTMLElement>(
   ".docs-content pre, .install-command",
@@ -68,8 +71,10 @@ function openSearch() {
   dialog.showModal();
   searchInput?.focus();
 }
-for (const button of document.querySelectorAll("[data-search-open]"))
+for (const button of document.querySelectorAll<HTMLButtonElement>("[data-search-open]")) {
   button.addEventListener("click", openSearch);
+  button.disabled = false;
+}
 document
   .querySelector("[data-search-close]")
   ?.addEventListener("click", () => dialog?.close());
