@@ -1,4 +1,5 @@
 export const repository = "https://github.com/msrbuilds/roost";
+export const liveDemo = "https://roost-demo.msrbuilds.com";
 export const version = "0.0.2";
 
 export const guides = [

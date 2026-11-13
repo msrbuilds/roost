@@ -1,4 +1,32 @@
 const menuButton = document.querySelector<HTMLButtonElement>(".menu-trigger");
+
+for (const tour of document.querySelectorAll<HTMLElement>("[data-screenshot-tour]")) {
+  const tabs = [...tour.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+  const panels = [...tour.querySelectorAll<HTMLElement>('[role="tabpanel"]')];
+  const activate = (index: number, focus = false) => {
+    tabs.forEach((tab, position) => {
+      tab.setAttribute('aria-selected', String(position === index));
+      tab.tabIndex = position === index ? 0 : -1;
+      panels[position].hidden = position !== index;
+    });
+    if (focus) tabs[index].focus();
+  };
+  tabs.forEach((tab, index) => {
+    tab.addEventListener('click', () => activate(index));
+    tab.addEventListener('keydown', (event) => {
+      const keys: Record<string, number> = {
+        ArrowRight: (index + 1) % tabs.length,
+        ArrowLeft: (index - 1 + tabs.length) % tabs.length,
+        Home: 0,
+        End: tabs.length - 1,
+      };
+      if (!(event.key in keys)) return;
+      event.preventDefault();
+      activate(keys[event.key], true);
+    });
+    tab.disabled = false;
+  });
+}
 const mobileNavigation =
   document.querySelector<HTMLElement>("#mobile-navigation");
 function closeMobileNavigation() {

@@ -1,13 +1,13 @@
 ---
 import Base from '../layouts/Base.astro';
 import Icon from '../components/Icon.astro';
-import { features } from '../data/site';
-import ProductTour from '../components/ProductTour.astro';
+import { features, liveDemo } from '../data/site';
+import FeatureTour from '../components/FeatureTour.astro';
 ---
 <Base title="Features for a community that’s yours" description="Explore Roost’s community feed, classrooms, private groups, direct messaging, events, showcases, and admin tools.">
-  <main id="main"><section class="container page-intro"><span class="small-label">A LITTLE MORE ROOM TO BELONG</span><h1>Built for the way<br />communities <em>come together.</em></h1><p>A conversation becomes a connection. A lesson becomes a new skill. Put the pieces in one place, and let your people do the rest.</p></section>
+  <main id="main"><section class="container page-intro"><span class="small-label">A LITTLE MORE ROOM TO BELONG</span><h1>Built for the way<br />communities <em>come together.</em></h1><p>A conversation becomes a connection. A lesson becomes a new skill. Put the pieces in one place, and let your people do the rest.</p><div class="button-row product-actions"><a class="button" href={liveDemo}>Try Live Demo <Icon name="external" size={17} /></a><a class="text-link" href="/docs/self-hosted-setup/">Self-host Roost <Icon name="arrow" size={18} /></a></div></section>
     <section class="container feature-detail-grid">{features.map((feature) => <article class="feature-detail"><span class="feature-icon"><Icon name={feature.icon} size={27} /></span><span class="small-label">{feature.eyebrow}</span><h2>{feature.title}</h2><p>{feature.text}</p><ul class="check-list">{feature.items.map((item) => <li><Icon name="check" size={17} />{item}</li>)}</ul></article>)}</section>
-    <ProductTour lesson />
+    <FeatureTour />
     <section class="container feature-note"><h2>Start with what you need.</h2><p>Feature flags let you enable or hide areas such as showcases, live rooms, activations, and leaderboards. Paid memberships are optional and disabled by default; enabling billing requires a configured and tested Stripe integration.</p><a class="text-link" href="/docs/self-hosted-setup/">Read the setup guide <Icon name="arrow" size={18} /></a></section>
     <section class="container final-cta"><div><span class="small-label">FREE TO RUN. FREE TO MAKE YOUR OWN.</span><h2>Your next community<br /><em>starts with you.</em></h2></div><a class="button button-light" href="/docs/self-hosted-setup/">Get started <Icon name="arrow" size={18} /></a></section>
   </main>

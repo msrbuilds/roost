@@ -85,6 +85,38 @@
   margin-top: 65px;
   padding-bottom: 0;
 }
+.product-actions { gap: 12px; }
+.button-outline { background: transparent; color: var(--blue); }
+.button-outline:hover { background: #e4eef4; }
+.hero-source-link { margin-top: 18px; font-size: 12px; }
+.page-intro .product-actions { margin-top: 26px; }
+.tour-footer { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 22px; font-size: 13px; color: #586b5d; }
+.tour-intro { max-width: 700px; margin: -12px 0 24px; color: #586b5d; font-size: 14px; }
+.tour-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+.tour-tabs button { border: 1px solid #cbd6d2; background: white; color: var(--ink); border-radius: 6px; padding: 10px 14px; min-height: 42px; font-size: 12px; font-weight: 600; cursor: pointer; }
+.tour-tabs button:hover { background: #e7eee9; }
+.tour-tabs button[aria-selected="true"] { background: var(--ink); border-color: var(--ink); color: white; }
+.tour-tabs button:disabled { cursor: wait; }
+.tour-panel { scroll-margin-top: 100px; border-radius: 12px; }
+.tour-panel img { aspect-ratio: 1440 / 1000; object-fit: contain; background: white; }
+.tour-panel figcaption { text-align: left; padding: 20px 8px 8px; }
+.tour-panel h3 { margin: 0 0 7px; font-size: 22px; letter-spacing: -.03em; }
+.tour-panel figcaption p { margin: 0 0 12px; font-size: 13px; max-width: 760px; }
+.tour-caption-footer { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; }
+.tour-caption-footer > span { font-size: 10px; }
+.tour-caption-footer .text-link { font-size: 11px; }
+@media (max-width: 800px) {
+  .tour-intro { margin-top: 0; font-size: 13px; }
+  .tour-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .tour-tabs button { padding: 10px 6px; font-size: 11px; }
+  .tour-panel h3 { font-size: 21px; }
+  .tour-panel figcaption { padding: 16px 6px 6px; }
+}
+@media (max-width: 480px) {
+  .hero .product-actions { gap: 10px; }
+  .hero .product-actions .button { gap: 12px; padding-inline: 15px; }
+  .tour-footer { align-items: flex-start; flex-direction: column; }
+}
 @media (max-width: 800px) {
   .hero-copy {
     min-width: 0;

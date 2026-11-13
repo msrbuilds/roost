@@ -1,0 +1,33 @@
+---
+import { Image } from 'astro:assets';
+import Icon from './Icon.astro';
+import { liveDemo } from '../data/site';
+import feed from '../assets/demo/feed.jpg';
+import classrooms from '../assets/demo/classrooms.jpg';
+import lesson from '../assets/demo/lesson.jpg';
+import messages from '../assets/demo/messages.jpg';
+import calendar from '../assets/demo/calendar.jpg';
+import members from '../assets/demo/members.jpg';
+import showcase from '../assets/demo/showcase.jpg';
+import roadmap from '../assets/demo/roadmap.jpg';
+import leaderboard from '../assets/demo/leaderboard.jpg';
+const screens = [
+  { id: 'feed', label: 'Community feed', image: feed, title: 'Keep the conversation close.', description: 'A shared feed with pinned posts, discussions, reactions, and people worth following.', alt: 'Roost demo home feed with a pinned welcome post, member posts, and contributor leaderboard.' },
+  { id: 'classrooms', label: 'Classrooms', image: classrooms, title: 'Give learning a place to belong.', description: 'Browse classrooms, see who is inside, and bring related lessons and conversations together.', alt: 'Roost demo classroom directory with Design Studio, Build with Roost, and Learning Lab cards.' },
+  { id: 'lessons', label: 'Lessons', image: lesson, title: 'From a first lesson to a new skill.', description: 'Organize videos into modules, track progress, and keep lesson discussions in context.', alt: 'Roost demo lesson with module navigation, an embedded video, and a discussion area.' },
+  { id: 'messages', label: 'Messaging', image: messages, title: 'Keep the connection going.', description: 'One-to-one conversations give your members a space to connect beyond the public feed.', alt: 'Roost demo messaging with a fictional conversation between Demo Explorer and Maya Chen.' },
+  { id: 'calendar', label: 'Events', image: calendar, title: 'Make time to come together.', description: 'A shared calendar, event details, and RSVPs help your community find its next gathering.', alt: 'Roost demo calendar showing a sample community co-working event and upcoming event details.' },
+  { id: 'members', label: 'Members', image: members, title: 'People, with more than a name.', description: 'Profiles, a searchable directory, and direct connections help members find each other.', alt: 'Roost demo member directory with five fictional members, biographies, and profile links.' },
+  { id: 'showcase', label: 'Showcases', image: showcase, title: 'Give good work a little spotlight.', description: 'A place for members to share projects, discover what others are making, and exchange feedback.', alt: 'Roost demo project detail with a project preview, author, review tab, and website link.' },
+  { id: 'roadmap', label: 'Roadmap', image: roadmap, title: 'Build the next chapter together.', description: 'Collect ideas and bug reports, let members vote, and show how requests move forward.', alt: 'Roost demo feature roadmap with status filters and a sample community learning request.' },
+  { id: 'leaderboard', label: 'Leaderboard', image: leaderboard, title: 'Recognize the people who show up.', description: 'Highlight community contributions and explore activity over different time periods.', alt: 'Roost demo leaderboard ranking fictional community contributors by earned points.' },
+];
+---
+<section class="container product-tour feature-tour screenshot-tour" id="product-tour" data-screenshot-tour aria-labelledby="product-tour-heading">
+  <div class="section-heading"><div><span class="small-label">A REAL LOOK INSIDE</span><h2 id="product-tour-heading">Room for your people.<br /><em>Space for what comes next.</em></h2></div><a class="text-link" href={liveDemo}>Try Live Demo <Icon name="external" size={17} /></a></div>
+  <p class="tour-intro">Explore real screens from the live demo. All content is from our sample community; the shared demo is read-only.</p>
+  <div class="tour-tabs" role="tablist" aria-label="Product screenshots">{screens.map((screen, index) => <button type="button" role="tab" id={`tour-tab-${screen.id}`} aria-controls={`tour-panel-${screen.id}`} aria-selected={index === 0 ? 'true' : 'false'} tabindex={index === 0 ? 0 : -1} disabled>{screen.label}</button>)}</div>
+  {screens.map((screen, index) => <div role="tabpanel" class="tour-panel" id={`tour-panel-${screen.id}`} aria-labelledby={`tour-tab-${screen.id}`} tabindex="0" hidden={index !== 0}>
+    <figure><Image src={screen.image} alt={screen.alt} width={1440} widths={[640, 1000, 1440]} sizes="(max-width: 800px) 95vw, 1200px" format="webp" loading="lazy" /><figcaption><h3>{screen.title}</h3><p>{screen.description}</p><div class="tour-caption-footer"><span>Captured from roost-demo.msrbuilds.com</span><a class="text-link" href={screen.image.src} target="_blank" rel="noopener noreferrer">Open full-size screenshot <Icon name="external" size={14} /></a></div></figcaption></figure>
+  </div>)}
+</section>

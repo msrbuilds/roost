@@ -101,7 +101,7 @@ test('product screenshots load and missing pages offer recovery links', async ({
     await page.setViewportSize({ width, height: 900 });
     for (const route of ['/', '/features/']) {
       await page.goto(route);
-      for (const image of await page.locator('main img').all()) {
+      for (const image of await page.locator('main img:visible').all()) {
         await image.scrollIntoViewIfNeeded();
         await expect.poll(() => image.evaluate((element: HTMLImageElement) => element.complete && element.naturalWidth > 0)).toBe(true);
       }
@@ -146,6 +146,41 @@ test('product screenshots load and missing pages offer recovery links', async ({
   await expect(page.getByRole('heading', { level: 1 })).toContainText('This perch is');
   await page.getByRole('link', { name: 'Browse the docs →', exact: true }).click();
   await expect(page).toHaveURL(/\/docs\/$/);
+});
+
+test('live demo calls to action and the real screenshot tour work with pointer and keyboard', async ({ page }) => {
+  test.setTimeout(120000);
+  for (const width of [390, 1440]) {
+    await page.setViewportSize({ width, height: 1000 });
+    for (const path of ['/', '/features/']) {
+      await page.goto(path);
+      const demoLinks = page.getByRole('link', { name: 'Try Live Demo', exact: true });
+      expect(await demoLinks.count()).toBeGreaterThan(0);
+      for (const link of await demoLinks.all()) await expect(link).toHaveAttribute('href', 'https://roost-demo.msrbuilds.com');
+    }
+    const tabs = page.getByRole('tablist', { name: 'Product screenshots' }).getByRole('tab');
+    await expect(tabs).toHaveCount(9);
+    for (const tab of await tabs.all()) {
+      await tab.click();
+      await expect(tab).toHaveAttribute('aria-selected', 'true');
+      const panel = page.getByRole('tabpanel');
+      await expect(panel).toHaveCount(1);
+      await expect(panel).toHaveAttribute('aria-labelledby', (await tab.getAttribute('id'))!);
+      const screenshot = panel.locator('img');
+      await screenshot.scrollIntoViewIfNeeded();
+      await expect.poll(() => screenshot.evaluate((element: HTMLImageElement) => element.complete && element.naturalWidth > 0)).toBe(true);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    }
+    await tabs.last().focus();
+    await page.keyboard.press('Home');
+    await expect(tabs.first()).toBeFocused();
+    await page.keyboard.press('ArrowRight');
+    await expect(tabs.nth(1)).toBeFocused();
+    await expect(tabs.nth(1)).toHaveAttribute('aria-selected', 'true');
+    await page.keyboard.press('End');
+    await expect(tabs.last()).toBeFocused();
+    await expect(tabs.last()).toHaveAttribute('aria-selected', 'true');
+  }
 });
 
 test('documentation search finds and opens the recovery guide', async ({ page }) => {

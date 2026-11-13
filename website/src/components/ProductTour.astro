@@ -1,11 +1,11 @@
 ---
 import { Image } from 'astro:assets';
-import community from '../assets/community.png';
-import lessonImage from '../assets/lesson.png';
-interface Props { lesson?: boolean; }
-const { lesson = false } = Astro.props;
+import community from '../assets/demo/feed.jpg';
+import Icon from './Icon.astro';
+import { liveDemo } from '../data/site';
 ---
-<section class:list={['container', 'product-tour', lesson && 'feature-tour']}>
-  <div class="section-heading"><div><span class="small-label">{lesson ? 'LESS SCATTERED. MORE LEARNING.' : 'A CLOSER LOOK'}</span><h2>{lesson ? 'A classroom that feels' : 'This is where your'}<br /><em>{lesson ? 'part of the community.' : 'community comes to life.'}</em></h2></div>{!lesson && <p>A shared feed. Familiar faces.<br />A reason to come back.</p>}</div>
-  <figure><Image src={lesson ? lessonImage : community} alt={lesson ? 'A Roost lesson page with course modules, progress, an embedded video, and discussion.' : 'Roost’s community feed with pinned posts, reactions, member activity, and a contributor leaderboard.'} width={1600} widths={[640, 1000, 1600]} sizes="(max-width: 800px) 95vw, 1200px" format="webp" loading="lazy" /><figcaption>{lesson ? 'Classroom learning' : 'Community feed'} · example content shown</figcaption></figure>
+<section class="container product-tour">
+  <div class="section-heading"><div><span class="small-label">A CLOSER LOOK</span><h2>This is where your<br /><em>community comes to life.</em></h2></div><a class="text-link" href={liveDemo}>Try Live Demo <Icon name="external" size={17} /></a></div>
+  <figure><Image src={community} alt="The live Roost demo feed, with a pinned welcome post, followed members, and the contributor leaderboard." width={1440} widths={[640, 1000, 1440]} sizes="(max-width: 800px) 95vw, 1200px" format="webp" loading="lazy" /><figcaption>Community feed · captured from the read-only live demo</figcaption></figure>
+  <div class="tour-footer"><span>Conversations are just the beginning.</span><a class="text-link" href="/features/#product-tour">Explore the full product tour <Icon name="arrow" size={18} /></a></div>
 </section>

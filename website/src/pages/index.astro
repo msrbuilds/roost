@@ -3,7 +3,7 @@ import Base from '../layouts/Base.astro';
 import Icon from '../components/Icon.astro';
 import CommunityPreview from '../components/CommunityPreview.astro';
 import ProductTour from '../components/ProductTour.astro';
-import { features, repository } from '../data/site';
+import { features, repository, liveDemo } from '../data/site';
 const faqs = [
   ['Is Roost really free?', 'Yes. Roost is free, open-source software under the MIT license. There is no Roost license fee or per-member charge. You pay your own infrastructure providers for hosting, storage, email, and any other services you choose.'],
   ['Do I need to know how to code?', 'You do not need to write application code to install Roost. You should be comfortable with a terminal, DNS, environment variables, and maintaining a server. The interactive installer and deployment guides walk through the setup.'],
@@ -18,7 +18,8 @@ const faqs = [
       <div class="hero-copy"><a class="release-pill" href={repository}><span class="status-dot"></span> OPEN SOURCE. OPEN POSSIBILITIES. <Icon name="external" size={14} /></a>
         <h1>A home for<br />your people.<br /><em>A platform you own.</em></h1>
         <p class="hero-description">Bring your conversations, classrooms, and community together. Roost is free, open source, and ready to make your own.</p>
-        <div class="button-row"><a class="button" href="/docs/self-hosted-setup/">Self-host Roost <Icon name="arrow" size={19} /></a><a class="text-link" href={repository}>Explore the code <Icon name="external" size={17} /></a></div>
+        <div class="button-row product-actions"><a class="button" href="/docs/self-hosted-setup/">Self-host Roost <Icon name="arrow" size={19} /></a><a class="button button-outline" href={liveDemo}>Try Live Demo <Icon name="external" size={17} /></a></div>
+        <a class="text-link hero-source-link" href={repository}>Explore the code <Icon name="external" size={15} /></a>
         <div class="hero-proof"><span><Icon name="check" size={15} /> MIT licensed</span><span><Icon name="check" size={15} /> Your infrastructure</span><span><Icon name="check" size={15} /> No per-member fees</span></div>
       </div><CommunityPreview />
     </section>
