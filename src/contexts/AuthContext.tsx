@@ -62,6 +62,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const [profile, setProfile] = useState<Profile | null>(null);
     const [session, setSession] = useState<Session | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [isProfileLoading, setIsProfileLoading] = useState(true);
     const [isPremiumLoading, setIsPremiumLoading] = useState(true);
     const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
 
@@ -90,6 +91,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     useEffect(() => {
         let isMounted = true;
         let authEventHandled = false;
+        let activeUserId: string | null = null;
+        let loadedProfileUserId: string | null = null;
 
         // Set up auth state change listener FIRST
         // This handles both initial session load and subsequent changes
@@ -103,6 +106,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
                 }
 
                 setSession(session);
+                activeUserId = session?.user.id ?? null;
                 // Preserve user object reference on token refresh to avoid cascading re-renders
                 setUser(prev => {
                     const newUser = session?.user ?? null;
@@ -111,14 +115,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
                 });
 
                 if (session?.user) {
-                    // Fetch profile in background
-                    fetchProfile(session.user.id).then(userProfile => {
-                        if (isMounted) {
+                    const requestedUserId = session.user.id;
+                    // Route permissions depend on the profile. Wait on first load or
+                    // account changes; token refreshes can keep the current screen.
+                    if (loadedProfileUserId !== requestedUserId) {
+                        setProfile(null);
+                        setIsProfileLoading(true);
+                    }
+                    fetchProfile(requestedUserId).then(userProfile => {
+                        if (isMounted && activeUserId === requestedUserId) {
                             setProfile(userProfile);
+                            loadedProfileUserId = requestedUserId;
+                            setIsProfileLoading(false);
                         }
                     });
                 } else {
+                    loadedProfileUserId = null;
                     setProfile(null);
+                    setIsProfileLoading(false);
                 }
 
                 // Only set loading false after processing
@@ -136,21 +150,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
                 // Only update if we haven't received an auth state change yet
                 if (!authEventHandled) {
+                    activeUserId = session?.user.id ?? null;
                     setSession(session);
                     setUser(session?.user ?? null);
 
                     if (session?.user) {
                         const userProfile = await fetchProfile(session.user.id);
-                        if (isMounted) {
+                        if (isMounted && activeUserId === session.user.id) {
                             setProfile(userProfile);
+                            loadedProfileUserId = session.user.id;
+                            setIsProfileLoading(false);
                         }
+                    } else {
+                        setIsProfileLoading(false);
                     }
                     setIsLoading(false);
                 }
             } catch (error) {
                 console.error('Error checking session:', error);
-                if (isMounted) {
+                if (isMounted && !authEventHandled) {
                     setIsLoading(false);
+                    setIsProfileLoading(false);
                 }
             }
         };
@@ -341,7 +361,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         user,
         profile,
         session,
-        isLoading,
+        isLoading: isLoading || isProfileLoading,
         isAuthenticated: !!user,
         isEmailConfirmed,
         isBanned,
@@ -360,7 +380,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         refreshProfile: refreshProfileCb,
         refreshPremiumStatus: refreshPremiumStatusCb,
     }), [
-        user, profile, session, isLoading, isEmailConfirmed,
+        user, profile, session, isLoading, isProfileLoading, isEmailConfirmed,
         isBanned, banInfo, isPlatformAdmin, isPlatformModerator,
         isSuperAdmin, membershipType, isPremium, isPremiumLoading,
         signUpCb, signInCb, signOutCb, resetPasswordCb,

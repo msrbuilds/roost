@@ -556,7 +556,7 @@ export default function PostFeed({
                                         {Array.from({ length: totalSlides }).map((_, slideIdx) => {
                                             const slidePosts = pinnedPosts.slice(slideIdx * 2, slideIdx * 2 + 2);
                                             return (
-                                                <div key={slideIdx} className="w-full flex-shrink-0 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                <div key={slideIdx} className={`w-full flex-shrink-0 grid grid-cols-1 ${slidePosts.length > 1 ? 'sm:grid-cols-2' : ''} gap-4`}>
                                                     {slidePosts.map((post) => (
                                                         <PostCard
                                                             key={post.id}
