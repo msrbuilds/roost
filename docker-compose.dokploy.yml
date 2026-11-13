@@ -370,7 +370,13 @@ services:
       - ${ROOST_PROXY_CONFIG:-./dokploy-template/nginx-proxy.conf}:/etc/nginx/conf.d/default.conf:ro
     expose:
       - 80
+    # Retain the private project network when Dokploy adds its proxy network.
+    networks:
+      - default
 
 volumes:
   db-data:
   minio-data:
+
+networks:
+  default:
