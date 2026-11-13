@@ -81,6 +81,10 @@ async function main() {
     { id: id('comment-1'), post_id: id('weekly-wins'), author_id: users.sara, content: '<p>I learned to break a big task into a small experiment. Much easier to start!</p>' },
     { id: id('comment-2'), post_id: id('weekly-wins'), author_id: users.jordan, content: '<p>Sharing early has been a great habit for me too. Progress over perfection.</p>' },
   ]);
+  await put('messages', [
+    { id: id('message-1'), sender_id: users.maya, recipient_id: users.demo, content: 'Welcome to the demo! This is an example direct conversation. Explore the classrooms and member profiles; sending and editing are disabled in this shared preview.' },
+    { id: id('message-2'), sender_id: users.demo, recipient_id: users.maya, content: 'Thanks! I am exploring how conversations and learning fit together in Roost. (Sample message)' },
+  ]);
   for (const [slug, name, , owner] of groups) {
     await put('modules', [
       { id: id(`${slug}:module-1`), group_id: id(slug), title: 'Start here', description: `Your first steps in ${name}.`, created_by: users[owner], display_order: 0 },
@@ -88,12 +92,13 @@ async function main() {
     ]);
     await put('recordings', [
       { id: id(`${slug}:lesson-1`), group_id: id(slug), module_id: id(`${slug}:module-1`), title: 'Welcome to your learning space', description: '<p>Lessons, progress, and discussion live together here. Sample lesson: HTML Crash Course for Absolute Beginners by Traversy Media, embedded from their public YouTube channel.</p>', video_url: 'https://www.youtube.com/watch?v=UB1O30fR-EE', video_platform: 'youtube', video_id: 'UB1O30fR-EE', published_by: users[owner], display_order: 0 },
+      { id: id(`${slug}:lesson-2`), group_id: id(slug), module_id: id(`${slug}:module-2`), title: 'Practice: style your first page', description: '<p>A sample follow-up lesson: CSS Crash Course for Absolute Beginners by Traversy Media, embedded from their public YouTube channel. Use the learning space to keep videos and discussion together.</p>', video_url: 'https://www.youtube.com/watch?v=yfoY53QXEnI', video_platform: 'youtube', video_id: 'yfoY53QXEnI', published_by: users[owner], display_order: 0 },
     ]);
   }
   const nextWeek = new Date(); nextWeek.setDate(nextWeek.getDate() + 7); nextWeek.setHours(15, 0, 0, 0);
   await put('events', [{ id: id('community-session'), title: 'Community co-working · example event', description: 'A sample calendar event. Bring a small project, share a goal, and make progress together. This is example content, not an actual scheduled session.', start_time: nextWeek.toISOString(), end_time: new Date(nextWeek.getTime() + 3600000).toISOString(), location: 'Demo community', is_virtual: false, created_by: users.maya }]);
   await put('showcases', [{ id: id('showcase'), title: 'Roost: a place for your people', tagline: 'Conversations, classrooms, and community in one place.', description: 'An example project showcase for the open-source Roost platform. Read the code, explore the docs, and make your own community on infrastructure you control.', url: 'https://roost.msrbuilds.com', category: 'web_app', tech_stack: ['React', 'TypeScript', 'Supabase'], author_id: users.alex, status: 'approved', is_featured: true, thumbnail_url: '/demo/build-with-roost.svg' }]);
   await put('feature_requests', [{ id: id('roadmap'), title: 'A home for every learning journey', description: '<p>A sample roadmap idea: make it easier to discover the next lesson, find related discussions, and celebrate progress together.</p>', author_id: users.sara }]);
-  console.log('Demo seeded: 5 fictional members, 3 classrooms, 6 modules, 3 lessons, feed, comments, event, showcase, and roadmap. Shared login has member access only.');
+  console.log('Demo seeded: 5 fictional members, 3 classrooms, 6 modules, 6 lessons, feed, comments, messages, event, showcase, and roadmap. Shared login has member access only.');
 }
 main().catch((error) => { console.error(error.message); process.exitCode = 1; });
