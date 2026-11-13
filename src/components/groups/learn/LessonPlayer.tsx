@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ChevronLeft, ChevronRight, CheckCircle2, Circle, Loader2 } from 'lucide-react';
 import { markLessonComplete, markLessonIncomplete } from '@/services/module';
 import type { RecordingWithCompletion } from '@/types';
+import { APP_CONFIG } from '@/config/app';
 
 interface LessonPlayerProps {
     recording: RecordingWithCompletion;
@@ -107,7 +108,8 @@ export default function LessonPlayer({
                 {/* Mark Complete */}
                 <button
                     onClick={handleToggleComplete}
-                    disabled={isToggling}
+                    disabled={isToggling || APP_CONFIG.demo.enabled}
+                    title={APP_CONFIG.demo.enabled ? 'Progress changes are disabled in the shared demo' : undefined}
                     className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors flex-shrink-0 ${
                         isCompleted
                             ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/30'
@@ -121,7 +123,7 @@ export default function LessonPlayer({
                     ) : (
                         <Circle className="w-4 h-4" />
                     )}
-                    {isCompleted ? 'Completed' : 'Mark Complete'}
+                    {APP_CONFIG.demo.enabled ? 'Read-only' : isCompleted ? 'Completed' : 'Mark Complete'}
                 </button>
 
                 {/* Next */}
