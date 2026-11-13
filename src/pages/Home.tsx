@@ -40,7 +40,7 @@ export default function Home() {
     return (
         <>
             {/* Fixed Right Sidebar - hidden on mobile */}
-            <div className="hidden lg:block fixed top-16 right-0 w-80 h-[calc(100vh-4rem)] overflow-y-auto scrollbar-thin p-4 space-y-6 bg-white dark:bg-surface-900 border-l border-surface-200 dark:border-surface-800">
+            <div className={`hidden lg:block fixed ${APP_CONFIG.demo.enabled ? 'top-28 h-[calc(100vh-7rem)]' : 'top-16 h-[calc(100vh-4rem)]'} right-0 w-80 overflow-y-auto scrollbar-thin p-4 space-y-6 bg-white dark:bg-surface-900 border-l border-surface-200 dark:border-surface-800`}>
                 {/* About card */}
                 <div className="card p-6 shadow-none">
                     <h2 className="font-semibold text-surface-900 dark:text-surface-100 mb-4">About</h2>
@@ -107,7 +107,7 @@ export default function Home() {
                             Welcome back, {profile?.display_name || 'there'}! 👋
                         </h1>
                         <p className="text-surface-500 dark:text-surface-400 mt-1 text-xs   md:text-base">
-                            What would you like to share with the community today?
+                            {APP_CONFIG.demo.enabled ? 'Explore the feed, meet the members, and find your next classroom.' : 'What would you like to share with the community today?'}
                         </p>
                     </div>
 

@@ -6,6 +6,7 @@ import { toggleFollow, getFollowedUserIds, getFollowStatusForUsers } from '@/ser
 import { cacheInvalidate } from '@/lib/cache';
 import { Category, ReactionType } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
+import { APP_CONFIG } from '@/config/app';
 import PostCard from './PostCard';
 import CategoryFilter, { SortOption } from './CategoryFilter';
 import CreatePostModal from './CreatePostModal';
@@ -448,7 +449,7 @@ export default function PostFeed({
     return (
         <div className="space-y-6">
             {/* Create post trigger */}
-            <div className="card p-4 shadow-none">
+            {!APP_CONFIG.demo.enabled && <div className="card p-4 shadow-none">
                 <div className="flex items-center gap-3">
                     {profile?.avatar_url ? (
                         <img
@@ -472,7 +473,7 @@ export default function PostFeed({
                         Write something...
                     </button>
                 </div>
-            </div>
+            </div>}
 
             {/* Category filter */}
             {categories.length > 0 && (
