@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import type { Message, Profile, Asset } from '../types/database';
 import { deleteFile, uploadFile, type UploadResult } from './s3';
+import { APP_CONFIG } from '@/config/app';
 
 // Extended types for messages with author information
 export interface MessageWithSender extends Message {
@@ -248,6 +249,8 @@ export async function markConversationAsRead(
   currentUserId: string,
   otherUserId: string
 ): Promise<void> {
+  // The shared demo can read conversations but intentionally cannot write receipts.
+  if (APP_CONFIG.demo.enabled) return;
   try {
     const result: any = await (supabase as any)
       .from('messages')

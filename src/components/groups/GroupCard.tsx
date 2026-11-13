@@ -35,7 +35,7 @@ export default function GroupCard({ group, onJoin, onLeave, userIsPremium = true
     return (
         <Link
             to={linkTo}
-            className={`card p-6 hover:shadow-elevated transition-all duration-200 group block relative ${!canAccess ? 'opacity-90' : ''}`}
+            className={`card p-6 hover:shadow-elevated transition-all duration-200 group flex flex-col h-full relative ${!canAccess ? 'opacity-90' : ''}`}
         >
             {/* Premium badge */}
             {isPremiumGroup && (
@@ -68,45 +68,45 @@ export default function GroupCard({ group, onJoin, onLeave, userIsPremium = true
                 </div>
             )}
 
-            <div className="flex items-start gap-4">
+            <div className="flex flex-col flex-1 min-w-0">
                 {/* Avatar */}
                 {group.avatar_url ? (
                     <img
                         src={group.avatar_url}
                         alt={group.name}
-                        className="w-14 h-14 rounded-xl object-cover flex-shrink-0"
+                        className="w-14 h-14 rounded-xl object-cover flex-shrink-0 mb-4"
                     />
                 ) : (
-                    <div className={`w-14 h-14 rounded-xl flex items-center justify-center text-white text-xl font-bold flex-shrink-0 ${isPremiumGroup ? 'bg-gradient-to-br from-amber-400 to-orange-500' : 'bg-gradient-to-br from-primary-400 to-primary-600'}`}>
+                    <div className={`w-14 h-14 rounded-xl flex items-center justify-center text-white text-xl font-bold flex-shrink-0 mb-4 ${isPremiumGroup ? 'bg-gradient-to-br from-amber-400 to-orange-500' : 'bg-gradient-to-br from-primary-400 to-primary-600'}`}>
                         {group.name.charAt(0).toUpperCase()}
                     </div>
                 )}
 
-                <div className="flex-1 min-w-0">
+                <div className="flex flex-col flex-1 min-w-0">
                     {/* Name and privacy indicator */}
-                    <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-surface-900 dark:text-surface-100 truncate group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+                    <div className="flex items-start justify-between gap-3">
+                        <h3 className="font-semibold text-surface-900 dark:text-surface-100 leading-snug break-words min-w-0 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
                             {group.name}
                         </h3>
                         {group.is_private ? (
-                            <Lock className="w-4 h-4 text-surface-400 dark:text-surface-500 flex-shrink-0" />
+                            <Lock className="w-4 h-4 mt-0.5 text-surface-400 dark:text-surface-500 flex-shrink-0" />
                         ) : (
-                            <Globe className="w-4 h-4 text-surface-400 dark:text-surface-500 flex-shrink-0" />
+                            <Globe className="w-4 h-4 mt-0.5 text-surface-400 dark:text-surface-500 flex-shrink-0" />
                         )}
                     </div>
 
                     {/* Description */}
                     {group.description && (
-                        <p className="text-sm text-surface-500 dark:text-surface-400 mt-1 line-clamp-2">
+                        <p className="text-sm text-surface-500 dark:text-surface-400 mt-2 mb-5 line-clamp-3 leading-relaxed">
                             {group.description}
                         </p>
                     )}
 
                     {/* Member count and role */}
-                    <div className="flex items-center gap-3 mt-3">
-                        <div className="flex items-center gap-1 text-sm text-surface-500 dark:text-surface-400">
-                            <Users className="w-4 h-4" />
-                            <span>{group.member_count} members</span>
+                    <div className="flex flex-wrap items-center justify-between gap-2 mt-auto pt-1">
+                        <div className="flex items-center gap-1.5 text-sm text-surface-500 dark:text-surface-400 whitespace-nowrap">
+                            <Users className="w-4 h-4 flex-shrink-0" />
+                            <span>{group.member_count} {group.member_count === 1 ? 'member' : 'members'}</span>
                         </div>
                         {group.is_member && group.user_role && (
                             <span className={`

@@ -28,6 +28,13 @@ test.describe('public read-only demo', () => {
         await expect(page.getByRole('note')).toContainText('Read-only demo');
         await expect(page.getByText(content, { exact: true }).first()).toBeVisible();
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${path} fits at ${width}px`).toBe(true);
+        if (path === '/classrooms') {
+          const card = page.locator('a.card').filter({ has: page.getByRole('heading', { name: 'Build with Roost', exact: true }) });
+          const icon = await card.getByText('B', { exact: true }).boundingBox();
+          const title = await card.getByRole('heading', { name: 'Build with Roost', exact: true }).boundingBox();
+          expect(icon!.y + icon!.height).toBeLessThanOrEqual(title!.y);
+          expect(await card.locator('h3').evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+        }
       }
       await page.goto('/classrooms/build-with-roost');
       await page.getByRole('button', { name: /^Start here Your first steps/ }).click();
@@ -36,6 +43,10 @@ test.describe('public read-only demo', () => {
       await expect(page.getByRole('button', { name: 'Read-only', exact: true })).toBeDisabled();
       await expect(page.getByText(/Lessons, progress, and discussion live together here/)).not.toContainText('<p>');
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      await page.goto('/messages');
+      await page.getByRole('button', { name: /^M Maya Chen/ }).click();
+      await expect(page.getByText(/Welcome to the demo! This is an example direct conversation/)).toBeVisible();
+      await expect(page.getByText('Failed to load messages', { exact: true })).toHaveCount(0);
       await page.goto('/admin');
       await expect(page).toHaveURL('/');
       await expect(page.getByRole('heading', { name: 'Welcome back, Demo Explorer!' })).toBeVisible();
