@@ -61,7 +61,7 @@ async function main() {
   })));
   await put('group_members', groups.flatMap(([slug, , , owner]) => people.map(([username]) => ({
     id: id(`${slug}:${username}`), group_id: id(slug), user_id: users[username], role: username === owner ? 'admin' : 'member',
-  }))));
+  }))), 'group_id,user_id');
   const posts = [
     ['welcome', 'maya', 'Welcome to a community that feels like home', '<p>This is a sample Roost community: a shared feed, places to learn, and people bringing ideas to life.</p><p>Try the classrooms, explore member profiles, or open a conversation. This shared demo is read-only, so you can browse without changing anything.</p>', true],
     ['weekly-wins', 'alex', 'Small wins, shared progress', '<p>This week I turned a rough sketch into a working prototype. The best part was getting feedback before spending days polishing it.</p><p>What is one small thing you learned or built this week?</p>', false],

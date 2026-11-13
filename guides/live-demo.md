@@ -28,7 +28,7 @@ Never use the shared account or these demo settings on a real community database
 After the isolated stack is healthy, run in the **backend** container terminal:
 
 ```sh
-ROOST_DEMO_SEED=true node scripts/seed-demo.cjs
+ROOST_DEMO_SEED=true node /app/scripts/seed-demo.cjs
 ```
 
 The idempotent seed refuses databases with non-demo accounts and creates no
