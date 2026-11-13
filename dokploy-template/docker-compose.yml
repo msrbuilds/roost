@@ -40,7 +40,7 @@ services:
       GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@db:5432/postgres
       GOTRUE_SITE_URL: https://${ROOST_DOMAIN:?ROOST_DOMAIN is required}
       GOTRUE_URI_ALLOW_LIST: https://${ROOST_DOMAIN:?ROOST_DOMAIN is required}/**
-      GOTRUE_DISABLE_SIGNUP: "false"
+      GOTRUE_DISABLE_SIGNUP: ${GOTRUE_DISABLE_SIGNUP:-false}
       GOTRUE_JWT_ADMIN_ROLES: service_role
       GOTRUE_JWT_AUD: authenticated
       GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
@@ -290,7 +290,8 @@ services:
         - VITE_SUPABASE_URL=https://${ROOST_DOMAIN:?ROOST_DOMAIN is required}
         - VITE_SUPABASE_PUBLISHABLE_KEY=${ANON_KEY:?ANON_KEY is required}
         - VITE_STRIPE_ENABLED=${STRIPE_ENABLED:-false}
-        - VITE_ENABLE_SIGNUP=true
+        - VITE_ENABLE_SIGNUP=${VITE_ENABLE_SIGNUP:-true}
+        - VITE_DEMO_MODE=${VITE_DEMO_MODE:-false}
     restart: unless-stopped
     depends_on:
       - kong

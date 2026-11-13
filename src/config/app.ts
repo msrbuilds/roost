@@ -10,6 +10,12 @@ export const APP_CONFIG = {
   description: import.meta.env.VITE_APP_DESCRIPTION || 'A community platform for learning, building, and growing together.',
   url: import.meta.env.VITE_APP_URL || 'http://localhost:5000',
   apiUrl: import.meta.env.VITE_API_URL || 'http://localhost:3000',
+  // Public, read-only demonstration credentials. Never use this account on a real community.
+  demo: {
+    enabled: envFlag(import.meta.env.VITE_DEMO_MODE),
+    email: 'demo@roost.example',
+    password: 'ExploreRoost2026!',
+  },
   logo: {
     square: '/logo-square-sm.png',
     wide: '/logo-wide.png',

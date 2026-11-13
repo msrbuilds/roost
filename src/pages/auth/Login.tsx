@@ -10,8 +10,8 @@ export default function Login() {
     const navigate = useNavigate();
 
     // Form state
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+    const [email, setEmail] = useState(APP_CONFIG.demo.enabled ? APP_CONFIG.demo.email : '');
+    const [password, setPassword] = useState(APP_CONFIG.demo.enabled ? APP_CONFIG.demo.password : '');
     const [showPassword, setShowPassword] = useState(false);
     const [twoFactorCode, setTwoFactorCode] = useState('');
     const [mfaFactorId, setMfaFactorId] = useState('');
@@ -241,9 +241,11 @@ export default function Login() {
 
                 {/* Header */}
                 <div className="text-center mb-8">
-                    <h1 className="text-2xl font-bold text-surface-900 dark:text-surface-100">Welcome back</h1>
-                    <p className="text-surface-500 dark:text-surface-400 mt-1 text-sm">Sign in to your account to continue</p>
+                    <h1 className="text-2xl font-bold text-surface-900 dark:text-surface-100">{APP_CONFIG.demo.enabled ? 'Explore Roost' : 'Welcome back'}</h1>
+                    <p className="text-surface-500 dark:text-surface-400 mt-1 text-sm">{APP_CONFIG.demo.enabled ? 'A sample community, ready for you to explore.' : 'Sign in to your account to continue'}</p>
                 </div>
+
+                {APP_CONFIG.demo.enabled && <p className="mb-6 rounded-xl bg-primary-50 p-4 text-sm text-primary-800 dark:bg-primary-900/30 dark:text-primary-200">Use the prefilled shared login below. This demo is read-only: accounts, content, and files cannot be changed. All people and community content are examples.</p>}
 
                 {/* Error message */}
                 {error && (
@@ -302,14 +304,14 @@ export default function Login() {
                     </div>
 
                     {/* Forgot password link */}
-                    <div className="flex justify-end">
+                    {!APP_CONFIG.demo.enabled && <div className="flex justify-end">
                         <Link
                             to="/forgot-password"
                             className="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 font-medium"
                         >
                             Forgot password?
                         </Link>
-                    </div>
+                    </div>}
 
                     {/* Submit button */}
                     <button
@@ -323,7 +325,7 @@ export default function Login() {
                                 <span>Signing in...</span>
                             </>
                         ) : (
-                            <span>Sign In</span>
+                            <span>{APP_CONFIG.demo.enabled ? 'Explore the demo' : 'Sign In'}</span>
                         )}
                     </button>
                 </form>

@@ -41,6 +41,7 @@ RUN npm ci --omit=dev
 
 # Copy built files from builder
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/scripts ./scripts
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \

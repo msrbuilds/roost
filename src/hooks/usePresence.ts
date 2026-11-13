@@ -1,6 +1,7 @@
 import { useEffect, useCallback } from 'react';
 import { supabase } from '@/services/supabase';
 import { useAuth } from '@/contexts/AuthContext';
+import { APP_CONFIG } from '@/config/app';
 
 /**
  * Hook to track user's online presence
@@ -11,7 +12,7 @@ export function usePresence() {
 
     // Update online status in database
     const updateOnlineStatus = useCallback(async (isOnline: boolean) => {
-        if (!user) return;
+        if (!user || APP_CONFIG.demo.enabled) return;
 
         try {
             await supabase
