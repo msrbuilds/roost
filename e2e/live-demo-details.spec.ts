@@ -160,6 +160,9 @@ test.describe('shared demo feature details', () => {
         await page.getByRole('button', { name: view, exact: true }).click();
         await fits(page);
         if (view === 'Week') {
+          for (const header of await page.locator('.rbc-time-header .rbc-header').all()) {
+            expect(await header.evaluate(element => element.scrollHeight <= element.clientHeight)).toBe(true);
+          }
           for (const label of await page.locator('.rbc-time-header .rbc-header button').all()) {
             expect(await label.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
           }

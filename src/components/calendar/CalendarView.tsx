@@ -132,7 +132,7 @@ export default function CalendarView({ events, onCreateEvent, onRefresh, onRange
                     .calendar-container .rbc-toolbar .rbc-btn-group { width: 100%; }
                     .calendar-container .rbc-toolbar button { flex: 1; padding: 6px 4px; font-size: 12px; }
                     .calendar-container .rbc-header { font-size: 11px; }
-                    .calendar-container .rbc-time-header .rbc-header { padding: 3px 0; }
+                    .calendar-container .rbc-time-header .rbc-header { min-height: 36px; padding: 3px 0; }
                     .calendar-container .rbc-time-header .rbc-header button { width: 100%; padding: 0; white-space: normal; line-height: 1.2; }
                     .calendar-container .rbc-time-view .rbc-label { font-size: 11px; padding: 0 3px; }
                     .calendar-container .rbc-agenda-table { font-size: 12px; }
