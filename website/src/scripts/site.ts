@@ -48,6 +48,8 @@ for (const slider of document.querySelectorAll<HTMLElement>('[data-showcase-slid
   const tabs = [...slider.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
   const panels = [...slider.querySelectorAll<HTMLElement>('[role="tabpanel"]')];
   const play = slider.querySelector<HTMLButtonElement>('[data-slider-play]')!;
+  const playLabel = play.querySelector<HTMLElement>('[data-slider-play-label]')!;
+  const playIcon = play.querySelector<SVGPathElement>('[data-slider-play-icon]')!;
   const previous = slider.querySelector<HTMLButtonElement>('[data-slider-prev]')!;
   const next = slider.querySelector<HTMLButtonElement>('[data-slider-next]')!;
   const description = slider.querySelector<HTMLElement>('[data-slider-description]')!;
@@ -60,7 +62,8 @@ for (const slider of document.querySelectorAll<HTMLElement>('[data-showcase-slid
   let request = 0;
   const sync = () => {
     window.clearTimeout(timer);
-    play.textContent = playing ? 'Pause Ⅱ' : 'Play ▷';
+    playLabel.textContent = playing ? 'Pause' : 'Play';
+    playIcon.setAttribute('d', playing ? 'M8 5v14M16 5v14' : 'm8 5 11 7-11 7Z');
     play.setAttribute('aria-label', playing ? 'Pause screenshot slideshow' : 'Play screenshot slideshow');
     play.disabled = reducedMotion.matches;
     play.title = reducedMotion.matches ? 'Automatic rotation is off because reduced motion is enabled.' : '';

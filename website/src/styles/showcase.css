@@ -2,8 +2,9 @@
 .alternatives-heading { display: flex; justify-content: center; align-items: center; gap: 20px; padding-inline: 20px; }
 .alternatives-heading .small-label { font-size: 10px; letter-spacing: .12em; }
 .showcase-topline button { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); background: white; color: var(--muted); min-height: 36px; padding: 6px 10px; font-size: 11px; cursor: pointer; }
-.alternatives-window { display: block; width: 100%; overflow: hidden; margin-block: 20px; border: 0; padding: 0; color: inherit; background: transparent; font: inherit; }
-.alternatives-window:focus-visible { outline-offset: -3px; }
+.alternatives-window { position: relative; display: block; width: 100%; overflow: hidden; margin-block: 20px; }
+.alternatives-toggle { position: absolute; inset: 0; width: 100%; border: 0; padding: 0; background: transparent; }
+.alternatives-toggle:focus-visible { outline-offset: -3px; }
 .alternatives-track { display: flex; width: max-content; }
 .alternatives-group { list-style: none; display: flex; align-items: center; flex-shrink: 0; gap: 64px; margin: 0; padding: 0 32px; }
 .alternatives-group > span { display: flex; gap: 10px; align-items: center; white-space: nowrap; font-size: 20px; font-weight: 650; letter-spacing: -.03em; height: 44px; }
@@ -32,7 +33,7 @@
 .showcase-tabs button[aria-selected="true"] { background: var(--blue); border-color: var(--blue); color: white; }
 .showcase-navigation button:hover { border-color: var(--blue); }
 .showcase-slider button:disabled { cursor: default; opacity: .6; }
-.alternatives-window:disabled { cursor: default; }
+.alternatives-toggle:disabled { cursor: default; }
 .showcase-description { font-size: 13px; line-height: 1.6; color: var(--muted); text-align: center; margin: 12px 0 0; min-height: 2em; }
 .showcase-provenance { color: var(--muted); font-size: 10px; line-height: 1.6; text-align: center; margin: 8px 0 0; }
 .showcase-tablet { max-width: 680px; margin-inline: auto; }
@@ -50,7 +51,8 @@
 .calendar-preview-copy p { font-size: 14px; margin: 0; line-height: 1.75; }
 .hero-copy { position: relative; }
 .hero-technologies { position: absolute; inset: 12px -92px 84px; display: grid; grid-template-columns: repeat(2, 76px); grid-template-rows: repeat(3, 82px); justify-content: space-between; align-content: space-between; margin: 0; padding: 0; list-style: none; pointer-events: none; }
-.hero-tech { position: relative; width: 76px; height: 82px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; background: #fff; border: 1px solid var(--line); border-radius: 12px; --float-rise: -6px; --float-turn: .8deg; transform: rotate(var(--tilt)); animation: hero-tech-enter 700ms cubic-bezier(.2, .7, .2, 1) var(--enter-delay) backwards, hero-tech-float var(--float-duration) ease-in-out calc(700ms + var(--enter-delay)) infinite; }
+.hero-tech { position: relative; width: 76px; height: 82px; --float-rise: -6px; --float-turn: .8deg; animation: hero-tech-enter 700ms cubic-bezier(.2, .7, .2, 1) var(--enter-delay) backwards; }
+.hero-tech-card { position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; background: #fff; border: 1px solid var(--line); border-radius: 12px; transform: rotate(var(--tilt)); animation: hero-tech-float var(--float-duration) ease-in-out calc(700ms + var(--enter-delay)) infinite; }
 .hero-tech img { width: 36px; height: 36px; object-fit: contain; }
 .hero-tech span { color: var(--muted); font-size: 9px; font-weight: 550; letter-spacing: -.02em; }
 .hero-tech-react { --tilt: -9deg; --enter-delay: 0ms; --float-duration: 10s; }
@@ -59,10 +61,10 @@
 .hero-tech-nodejs { right: 86px; --tilt: -7deg; --enter-delay: 160ms; --float-duration: 11s; --float-turn: -.8deg; }
 .hero-tech-tailwindcss { left: 172px; --tilt: -7deg; --enter-delay: 320ms; --float-duration: 12s; }
 .hero-tech-docker { right: 172px; --tilt: 7deg; --enter-delay: 320ms; --float-duration: 12s; --float-turn: -.8deg; }
-.hero-copy:focus-within .hero-tech, .hero-technologies[data-motion-paused] .hero-tech { animation-play-state: running, paused; }
+.hero-copy:focus-within .hero-tech-card, .hero-technologies[data-motion-paused] .hero-tech-card { animation-play-state: paused; }
 @keyframes hero-tech-enter {
-  from { opacity: 0; transform: translateY(12px) rotate(calc(var(--tilt) - 3deg)) scale(.94); }
-  to { opacity: 1; transform: translateY(0) rotate(var(--tilt)) scale(1); }
+  from { opacity: 0; transform: translateY(12px) rotate(-3deg) scale(.94); }
+  to { opacity: 1; transform: translateY(0) rotate(0) scale(1); }
 }
 @keyframes hero-tech-float {
   0%, 100% { transform: translateY(0) rotate(var(--tilt)); }
@@ -70,7 +72,8 @@
 }
 @media (max-width: 1279px) {
   .hero-technologies { position: static; display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 25px; }
-  .hero-tech { position: static; width: 64px; height: 68px; --tilt: 0deg; --float-rise: -3px; --float-turn: 0deg; transform: none; border-radius: 8px; gap: 6px; }
+  .hero-tech { position: static; width: 64px; height: 68px; --tilt: 0deg; --float-rise: -3px; --float-turn: 0deg; }
+  .hero-tech-card { border-radius: 8px; gap: 6px; }
   .hero-tech img { width: 28px; height: 28px; }
 }
 @media (max-width: 800px) {

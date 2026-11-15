@@ -24,7 +24,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
   <body class:list={[docs && 'docs-page']}>
     <a class="skip-link" href="#main">Skip to content</a><Header /><slot /><Footer />
     <dialog id="search-dialog" class="search-dialog" aria-labelledby="search-title">
-      <div class="search-heading"><h2 id="search-title">Search the docs</h2><button data-search-close aria-label="Close search">Esc</button></div>
+      <div class="search-heading"><h2 id="search-title">Search the docs</h2><button data-search-close aria-label="Esc: Close search">Esc</button></div>
       <label for="docs-search" class="sr-only">Search documentation</label><input id="docs-search" type="search" placeholder="Installation, backups, email…" autocomplete="off" />
       <p id="search-status" role="status">Find your next step.</p><ul id="search-results"></ul>
     </dialog>

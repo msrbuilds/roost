@@ -1,9 +1,11 @@
 ---
 import { repository, version } from '../data/site';
+import { Image } from 'astro:assets';
+import brand from '../assets/roost-brand.png';
 ---
 <footer class="site-footer">
   <div class="container footer-top">
-    <div><a class="brand" href="/"><img src="/brand.png" alt="" width="32" height="32" /><span>roost.</span></a><p>Open-source community software.<br />Built to run on your terms.</p></div>
+    <div><a class="brand" href="/"><Image src={brand} alt="" width={32} widths={[32, 64]} sizes="32px" format="webp" /><span>roost.</span></a><p>Open-source community software.<br />Built to run on your terms.</p></div>
     <div><span class="footer-label">Explore</span><a href="/features/">Features</a><a href="/compare/">Compare</a><a href="/docs/">Documentation</a><a href="/docs/self-hosted-setup/">Self-host Roost</a></div>
     <div><span class="footer-label">Open source</span><a href={repository}>Source code ↗</a><a href={`${repository}/issues`}>Report an issue ↗</a><a href={`${repository}/blob/main/LICENSE`}>MIT license ↗</a></div>
     <div class="footer-note"><span class="small-label">Built in the open.</span><p>Your discussions, courses, and members. Your code and infrastructure.</p><a href="https://msrbuilds.com">A project by MSR Builds ↗</a></div>

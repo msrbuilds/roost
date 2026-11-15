@@ -8,3 +8,5 @@ Official brand assets, downloaded 2026-11-15, used only to identify alternative 
 - discourse.svg: https://www.discourse.org/a/img/logo.svg
 - discord.svg: https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66e3d741b8346ed0ecebb501_Logo.svg
 - slack.svg: https://a.slack-edge.com/1f40066/marketing/img/nav/logo.svg
+
+The Skool source also lives at `src/assets/skool-mark.png` so Astro can generate small, content-hashed WebP variants for the carousel. The original public PNG remains available for existing links.

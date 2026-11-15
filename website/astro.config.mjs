@@ -27,6 +27,20 @@ function documentationLinks() {
   };
 }
 
+function keyboardTables() {
+  return (tree) => {
+    function walk(node) {
+      // Add this to the rendered HTML tree, including tables produced by GFM.
+      if (node.type === 'element' && node.tagName === 'table') {
+        node.properties ||= {};
+        node.properties.tabIndex = 0;
+      }
+      for (const child of node.children || []) walk(child);
+    }
+    walk(tree);
+  };
+}
+
 export default defineConfig({
   site: "https://roost.msrbuilds.com",
   output: "static",
@@ -35,7 +49,7 @@ export default defineConfig({
   // The deployed CSP allows same-origin scripts without inline execution.
   vite: { build: { assetsInlineLimit: 0 } },
   markdown: {
-    processor: unified({ remarkPlugins: [documentationLinks] }),
+    processor: unified({ remarkPlugins: [documentationLinks], rehypePlugins: [keyboardTables] }),
     // The older github-dark theme renders comments below AA contrast.
     shikiConfig: { theme: "github-dark-default", langAlias: { env: "dotenv" } },
   },

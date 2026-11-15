@@ -18,18 +18,18 @@ test('technology icons clear hero content and the calendar stays compact', async
       heading.selectNodeContents(document.querySelector('.hero-copy h1')!);
       content.push(...[...heading.getClientRects()].filter(rect => rect.width > 0 && rect.height > 0));
       return elements.every(el => {
-        const icon = el.getBoundingClientRect();
+        const icon = el.querySelector('.hero-tech-card')!.getBoundingClientRect();
         return content.every(text => icon.right <= text.left || icon.left >= text.right || icon.bottom <= text.top || icon.top >= text.bottom);
       });
     }), `technology icons clear hero text and actions at ${width}px`).toBe(true);
     if (width >= 1280) {
       expect(await page.locator('.hero-copy').evaluate(hero => {
         const actions = hero.querySelector('.button-row')!.getBoundingClientRect();
-        const tailwind = hero.querySelector('.hero-tech-tailwindcss')!.getBoundingClientRect();
-        const docker = hero.querySelector('.hero-tech-docker')!.getBoundingClientRect();
+        const tailwind = hero.querySelector('.hero-tech-tailwindcss .hero-tech-card')!.getBoundingClientRect();
+        const docker = hero.querySelector('.hero-tech-docker .hero-tech-card')!.getBoundingClientRect();
         const first = hero.querySelector('.button-row > a')!.getBoundingClientRect();
         const last = hero.querySelector('.button-row > a:last-child')!.getBoundingClientRect();
-        const pairs = [['react', 'typescript'], ['supabase', 'nodejs'], ['tailwindcss', 'docker']].map(pair => pair.map(name => hero.querySelector(`.hero-tech-${name}`)!.getBoundingClientRect()));
+        const pairs = [['react', 'typescript'], ['supabase', 'nodejs'], ['tailwindcss', 'docker']].map(pair => pair.map(name => hero.querySelector(`.hero-tech-${name} .hero-tech-card`)!.getBoundingClientRect()));
         const mid = hero.getBoundingClientRect().left + hero.getBoundingClientRect().width / 2;
         const centers = pairs.map(pair => pair.map(rect => ({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 })));
         const symmetric = centers.every(pair => Math.abs((pair[0].x + pair[1].x) / 2 - mid) < 1 && Math.abs(pair[0].y - pair[1].y) < 1);
@@ -58,25 +58,26 @@ test('hero logos float gently and stop for keyboard focus or reduced motion', as
     await page.goto('/');
     const icons = page.locator('.hero-tech');
     await expect.poll(() => icons.evaluateAll(items => items.every(item => getComputedStyle(item).opacity === '1'))).toBe(true);
-    expect(await icons.evaluateAll(items => items.every(item => item.getAnimations().some(animation => {
+    expect(await icons.evaluateAll(items => items.every(item => item.getAnimations({ subtree: true }).some(animation => {
       const timing = animation.effect!.getComputedTiming();
       return timing.iterations === Infinity && Number(timing.duration) >= 8000 && animation.playState === 'running';
     })))).toBe(true);
-    const first = icons.first();
+    const first = icons.first().locator('.hero-tech-card');
     const initialTransform = await first.evaluate(item => getComputedStyle(item).transform);
     await expect.poll(() => first.evaluate(item => getComputedStyle(item).transform)).not.toBe(initialTransform);
     await page.locator('#technology-heading').scrollIntoViewIfNeeded();
-    await expect(first).toHaveCSS('animation-play-state', 'running, paused');
+    await expect(first).toHaveCSS('animation-play-state', 'paused');
     await page.locator('.hero-copy h1').scrollIntoViewIfNeeded();
     await expect.poll(() => first.evaluate(item => item.getAnimations().some(animation =>
       animation.effect!.getComputedTiming().iterations === Infinity && animation.playState === 'running'
     ))).toBe(true);
     await page.locator('.hero-copy .button-row > a').first().focus();
-    await expect(first).toHaveCSS('animation-play-state', 'running, paused');
+    await expect(first).toHaveCSS('animation-play-state', 'paused');
     await page.emulateMedia({ reducedMotion: 'reduce' });
     for (const icon of await icons.all()) {
       await expect(icon).toHaveCSS('animation-name', 'none');
       await expect(icon).toHaveCSS('opacity', '1');
+      await expect(icon.locator('.hero-tech-card')).toHaveCSS('animation-name', 'none');
     }
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   }
@@ -320,6 +321,40 @@ test('product, features, and docs fit desktop and mobile widths', async ({ page 
     await page.setViewportSize({ width: 390, height: 844 });
     await page.screenshot({ path: join(process.env.ROOST_SCREENSHOT_DIR, 'roost-product-mobile.png'), fullPage: true });
   }
+});
+
+test('public pages expose consistent crawl controls, metadata, and sitemap coverage', async ({ request }) => {
+  const origin = 'https://roost.msrbuilds.com';
+  const routes = ['/', '/features/', '/docs/', '/compare/', '/privacy/', ...guides.map(({ id }) => `/docs/${id}/`)];
+  const robots = await request.get('/robots.txt');
+  expect(robots.ok()).toBe(true);
+  expect(await robots.text()).toContain(`Sitemap: ${origin}/sitemap-index.xml`);
+  expect(await robots.text()).not.toMatch(/^Disallow:\s*\/\s*$/m);
+  const index = await request.get('/sitemap-index.xml');
+  expect(index.ok()).toBe(true);
+  const sitemapURL = (await index.text()).match(/<loc>([^<]+)<\/loc>/)![1];
+  const sitemap = await request.get(new URL(sitemapURL).pathname);
+  expect(sitemap.ok()).toBe(true);
+  const locations = [...(await sitemap.text()).matchAll(/<loc>([^<]+)<\/loc>/g)].map(match => match[1]);
+  const titles: string[] = [];
+  const descriptions: string[] = [];
+  for (const route of routes) {
+    const response = await request.get(route);
+    expect(response.status(), route).toBe(200);
+    expect(response.headers()['x-robots-tag'] || '').not.toMatch(/noindex/i);
+    const html = await response.text();
+    expect(html).not.toMatch(/name="robots"[^>]+content="[^"]*noindex/);
+    expect(html).toContain(`rel="canonical" href="${origin}${route}"`);
+    expect(locations, route).toContain(`${origin}${route}`);
+    titles.push(html.match(/<title>([^<]+)<\/title>/)![1]);
+    descriptions.push(html.match(/name="description" content="([^"]+)"/)![1]);
+  }
+  expect(new Set(titles).size).toBe(routes.length);
+  expect(new Set(descriptions).size).toBe(routes.length);
+  expect(locations.some(location => location.includes('404'))).toBe(false);
+  const missing = await request.get('/quality-audit-missing-page/');
+  expect(missing.status()).toBe(404);
+  expect(await missing.text()).toContain('content="noindex,follow"');
 });
 
 test('navigation closes with Escape and resets when switching to desktop', async ({ page }) => {

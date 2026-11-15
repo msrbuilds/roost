@@ -150,7 +150,7 @@ body:not(.docs-page) main > section.container::after { right: -5px; }
 .comparison-notes p { max-width: 980px; color: var(--muted); font-size: 12px; line-height: 1.8; }
 .comparison-notes strong { color: var(--ink); }
 .comparison-sources { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px; font-size: 11px; color: var(--muted); }
-.comparison-sources a { color: #1d4ed8; display: inline-flex; align-items: center; gap: 4px; text-decoration: underline; text-underline-offset: 3px; }
+.comparison-sources a { color: #1d4ed8; display: inline-flex; align-items: center; gap: 4px; min-height: 32px; text-decoration: underline; text-underline-offset: 3px; }
 .comparison-more { margin-top: 24px; color: var(--blue); }
 .choice-section { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); padding-inline: 0 !important; }
 .choice-section > div { padding: 40px; }
@@ -169,6 +169,7 @@ body:not(.docs-page) main > section.container::after { right: -5px; }
 .docs-content blockquote { border-radius: 0; }
 .docs-content blockquote p { font-size: 14px; }
 .docs-content table { font-size: 12px; }
+.docs-content table:focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
 .doc-pagination > a { overflow-wrap: anywhere; }
 .doc-pagination > a[rel="prev"] { text-align: left; }
 .doc-pagination > a[rel="next"] { text-align: right; }
