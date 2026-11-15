@@ -5,11 +5,13 @@ import { guides } from '../src/data/site';
 
 test('technology icons clear hero content and the calendar stays compact', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  for (const width of [320, 390, 768, 1024, 1280, 1440]) {
+  for (const width of [320, 390, 500, 768, 1024, 1280, 1440]) {
     await page.setViewportSize({ width, height: 1000 });
     await page.goto('/');
+    await expect(page.locator('.faq-section h2')).toHaveText(/A few things\s+worth knowing\./);
     const icons = page.locator('.hero-tech');
     await expect(icons).toHaveCount(6);
+    if (width <= 600) expect(await icons.evaluateAll(items => new Set(items.map(item => Math.round(item.getBoundingClientRect().top))).size)).toBe(1);
     expect(await icons.evaluateAll(elements => {
       const content = [...document.querySelectorAll('.hero-copy h1, .hero-description, .hero-copy .button-row, .hero-proof, .hero-cost-note')].map(el => el.getBoundingClientRect());
       return elements.every(el => {
@@ -72,6 +74,7 @@ test('showcase and landscape sliders navigate, wrap, and load every screenshot',
 test('logo marquee and screenshot rotation can pause and respect reduced motion', async ({ page }) => {
   await page.goto('/');
   const marquee = page.locator('[data-logo-marquee]');
+  await expect(marquee.locator('.alternatives-heading button')).toHaveCount(0);
   const pause = marquee.getByRole('button', { name: 'Pause scrolling logos' });
   await pause.click();
   await expect(marquee).toHaveAttribute('data-paused', '');
@@ -79,7 +82,7 @@ test('logo marquee and screenshot rotation can pause and respect reduced motion'
   await marquee.getByRole('button', { name: 'Resume scrolling logos' }).click();
   await expect(marquee).not.toHaveAttribute('data-paused');
   await expect(marquee.locator('ul:not([aria-hidden]) li')).toHaveCount(6);
-  await expect(marquee.locator('ul[aria-hidden="true"] a, ul[aria-hidden="true"] button')).toHaveCount(0);
+  await expect(marquee.locator('.alternatives-group[aria-hidden="true"] a, .alternatives-group[aria-hidden="true"] button')).toHaveCount(0);
   for (const image of await marquee.locator('img').all()) {
     await expect.poll(() => image.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
   }
@@ -109,6 +112,57 @@ test('screenshot slides advance only while visible and stop after manual interac
   await page.mouse.move(0, 0);
   await page.clock.runFor(16000);
   await expect(slider.getByRole('tab', { name: 'Calendar', exact: true })).toHaveAttribute('aria-selected', 'true');
+});
+
+test('pausing while the next screenshot loads keeps the current slide visible', async ({ page }) => {
+  await page.clock.install();
+  let releaseImage!: () => void;
+  const imageGate = new Promise<void>(resolve => { releaseImage = resolve; });
+  let imageRequested = false;
+  await page.route(/\/_astro\/classrooms\..*\.webp$/, async route => {
+    imageRequested = true;
+    await imageGate;
+    await route.continue();
+  });
+  try {
+    await page.goto('/');
+    const slider = page.getByRole('region', { name: 'Roost product showcase', exact: true });
+    await slider.scrollIntoViewIfNeeded();
+    await page.mouse.move(0, 0);
+    await page.clock.runFor(8000);
+    await expect.poll(() => imageRequested).toBe(true);
+    await slider.getByRole('button', { name: 'Pause screenshot slideshow' }).click();
+    releaseImage();
+    await expect.poll(() => slider.locator('#hero-showcase-panel-1 img').evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
+    await expect(slider.getByRole('tab', { name: 'Community', exact: true })).toHaveAttribute('aria-selected', 'true');
+    await expect(slider.getByRole('button', { name: 'Play screenshot slideshow' })).toBeVisible();
+  } finally {
+    releaseImage();
+  }
+});
+
+test('the feature tour keeps its current screenshot until the next one loads', async ({ page }) => {
+  let releaseImage!: () => void;
+  const imageGate = new Promise<void>(resolve => { releaseImage = resolve; });
+  let imageRequested = false;
+  await page.route(/\/_astro\/classrooms\..*\.webp$/, async route => {
+    imageRequested = true;
+    await imageGate;
+    await route.continue();
+  });
+  try {
+    await page.goto('/features/');
+    const tabs = page.getByRole('tablist', { name: 'Product screenshots' });
+    await tabs.getByRole('tab', { name: 'Classrooms', exact: true }).click();
+    await expect.poll(() => imageRequested).toBe(true);
+    await expect(tabs.getByRole('tab', { name: 'Community feed', exact: true })).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('#tour-panel-feed')).toBeVisible();
+    releaseImage();
+    await expect(tabs.getByRole('tab', { name: 'Classrooms', exact: true })).toHaveAttribute('aria-selected', 'true');
+    await expect.poll(() => page.locator('#tour-panel-classrooms img').evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
+  } finally {
+    releaseImage();
+  }
 });
 
 // Exercise the real production policy locally, where astro preview does not
@@ -167,9 +221,14 @@ test('navigation closes with Escape and resets when switching to desktop', async
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(navigation).toBeHidden();
   await page.goto('/docs/self-hosted-setup/');
-  const docsToggle = page.getByRole('button', { name: 'Browse documentation' });
+  const docsToggle = page.locator('.docs-menu-toggle');
   await docsToggle.click();
   await expect(page.locator('#docs-sidebar')).toBeVisible();
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await expect(docsToggle).toHaveAttribute('aria-expanded', 'false');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.locator('#docs-sidebar')).toBeHidden();
+  await docsToggle.click();
   await page.keyboard.press('Escape');
   await expect(page.locator('#docs-sidebar')).toBeHidden();
   await expect(docsToggle).toBeFocused();

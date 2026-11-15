@@ -9,9 +9,11 @@ const brands = [
 ];
 ---
 <div class="alternatives-marquee" data-logo-marquee aria-label="Alternative community platforms">
-  <div class="alternatives-heading"><span class="small-label">AN OPEN-SOURCE ALTERNATIVE TO</span><button type="button" data-marquee-pause disabled aria-label="Pause scrolling logos" aria-pressed="false">Pause <span aria-hidden="true">Ⅱ</span></button></div>
-  <div class="alternatives-window"><div class="alternatives-track">
-    {[0, 1].map(copy => <ul class="alternatives-group" aria-hidden={copy === 1 ? 'true' : undefined}>{brands.map(brand => <li><img src={`/alternatives/${brand.image}`} alt={brand.wordmark && copy === 0 ? brand.name : ''} width={brand.wordmark ? 145 : 32} height="32" loading="eager" class:list={[brand.wordmark && 'brand-wordmark']} />{!brand.wordmark && <span>{brand.name}</span>}</li>)}</ul>)}
-  </div></div>
+  <div class="alternatives-heading"><span class="small-label">AN OPEN-SOURCE ALTERNATIVE TO</span></div>
+  <ul class="sr-only alternatives-list" aria-label="Alternative platforms">{brands.map(brand => <li>{brand.name}</li>)}</ul>
+  <button class="alternatives-window" type="button" data-marquee-pause disabled aria-label="Pause scrolling logos" aria-pressed="false" aria-describedby="alternatives-motion-help"><span class="alternatives-track" aria-hidden="true">
+    {[0, 1].map(copy => <span class="alternatives-group" aria-hidden={copy === 1 ? 'true' : undefined}>{brands.map(brand => <span><img src={`/alternatives/${brand.image}`} alt="" width={brand.wordmark ? 145 : 32} height="32" loading="eager" class:list={[brand.wordmark && 'brand-wordmark']} />{!brand.wordmark && <span>{brand.name}</span>}</span>)}</span>)}
+  </span></button>
+  <span class="sr-only" id="alternatives-motion-help">Activate the logo strip to pause or resume scrolling. It also pauses on hover or keyboard focus.</span>
   <p>Paid, free, and open-source platforms. Your community has another option.<br /><span>Names and marks belong to their owners. No affiliation or endorsement.</span></p>
 </div>

@@ -7,7 +7,6 @@ for (const marquee of document.querySelectorAll<HTMLElement>('[data-logo-marquee
     marquee.toggleAttribute('data-paused', paused || document.hidden || reducedMotion.matches);
     pause.setAttribute('aria-pressed', String(paused));
     pause.setAttribute('aria-label', paused ? 'Resume scrolling logos' : 'Pause scrolling logos');
-    pause.textContent = paused ? 'Play ▷' : 'Pause Ⅱ';
     pause.disabled = reducedMotion.matches;
   };
   pause.addEventListener('click', () => { paused = !paused; render(); });
@@ -48,6 +47,11 @@ for (const slider of document.querySelectorAll<HTMLElement>('[data-showcase-slid
     image.loading = 'eager';
     try { await image.decode(); } catch { sync(); return; }
     if (currentRequest !== request) return;
+    // A decoded image may arrive after the visitor pauses or leaves the slider.
+    if (!manual && (!playing || !inView || hovered || document.hidden || reducedMotion.matches)) {
+      sync();
+      return;
+    }
     index = target;
     tabs.forEach((tab, position) => {
       tab.setAttribute('aria-selected', String(position === index));
@@ -100,7 +104,15 @@ for (const screenshot of document.querySelectorAll<HTMLImageElement>(".docs-cont
 for (const tour of document.querySelectorAll<HTMLElement>("[data-screenshot-tour]")) {
   const tabs = [...tour.querySelectorAll<HTMLButtonElement>(':scope > .tour-tabs > [role="tab"]')];
   const panels = [...tour.querySelectorAll<HTMLElement>(':scope > [role="tabpanel"]')];
-  const activate = (index: number, focus = false) => {
+  let request = 0;
+  const activate = async (index: number, focus = false) => {
+    const currentRequest = ++request;
+    const image = panels[index].querySelector<HTMLImageElement>('figure img');
+    if (image) {
+      image.loading = 'eager';
+      try { await image.decode(); } catch { return; }
+    }
+    if (currentRequest !== request) return;
     tabs.forEach((tab, position) => {
       tab.setAttribute('aria-selected', String(position === index));
       tab.tabIndex = position === index ? 0 : -1;
@@ -109,7 +121,7 @@ for (const tour of document.querySelectorAll<HTMLElement>("[data-screenshot-tour
     if (focus) tabs[index].focus();
   };
   tabs.forEach((tab, index) => {
-    tab.addEventListener('click', () => activate(index));
+    tab.addEventListener('click', () => { void activate(index); });
     tab.addEventListener('keydown', (event) => {
       const keys: Record<string, number> = {
         ArrowRight: (index + 1) % tabs.length,
@@ -119,7 +131,7 @@ for (const tour of document.querySelectorAll<HTMLElement>("[data-screenshot-tour
       };
       if (!(event.key in keys)) return;
       event.preventDefault();
-      activate(keys[event.key], true);
+      void activate(keys[event.key], true);
     });
     tab.disabled = false;
   });
@@ -133,7 +145,10 @@ function closeMobileNavigation() {
 }
 const mobileViewport = window.matchMedia("(max-width: 800px)");
 mobileViewport.addEventListener("change", ({ matches }) => {
-  if (!matches) closeMobileNavigation();
+  if (!matches) {
+    closeMobileNavigation();
+    closeDocumentationNavigation();
+  }
 });
 menuButton?.addEventListener("click", () => {
   const open = menuButton.getAttribute("aria-expanded") !== "true";
@@ -146,6 +161,10 @@ menuButton?.addEventListener("click", () => {
 });
 
 const docsMenu = document.querySelector<HTMLButtonElement>(".docs-menu-toggle");
+function closeDocumentationNavigation() {
+  docsMenu?.setAttribute("aria-expanded", "false");
+  document.querySelector("#docs-sidebar")?.classList.remove("is-open");
+}
 if (menuButton) menuButton.disabled = false;
 docsMenu?.addEventListener("click", () => {
   const open = docsMenu.getAttribute("aria-expanded") !== "true";
@@ -262,8 +281,7 @@ document.addEventListener("keydown", (event) => {
       closeMobileNavigation();
       menuButton.focus();
     } else if (mobileViewport.matches && docsMenu?.getAttribute("aria-expanded") === "true") {
-      docsMenu.setAttribute("aria-expanded", "false");
-      document.querySelector("#docs-sidebar")?.classList.remove("is-open");
+      closeDocumentationNavigation();
       docsMenu.focus();
     }
   }
