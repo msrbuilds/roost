@@ -121,6 +121,7 @@ export default function CalendarView({ events, onCreateEvent, onRefresh, onRange
                 .calendar-container .rbc-agenda-table { table-layout: fixed; }
                 .calendar-container .rbc-agenda-table th:nth-child(1), .calendar-container .rbc-agenda-table td:nth-child(1) { width: 25% !important; }
                 .calendar-container .rbc-agenda-table th:nth-child(2), .calendar-container .rbc-agenda-table td:nth-child(2) { width: 30% !important; }
+                .calendar-container .rbc-agenda-table th:nth-child(3), .calendar-container .rbc-agenda-table td:nth-child(3) { width: 45% !important; }
                 .calendar-container .rbc-agenda-table td { white-space: normal; overflow-wrap: anywhere; }
                 .calendar-container .agenda-event-button { color: #7e22ce; text-align: left; font-weight: 600; }
                 .dark .calendar-container .agenda-event-button { color: #c4b5fd; }
@@ -132,7 +133,7 @@ export default function CalendarView({ events, onCreateEvent, onRefresh, onRange
                     .calendar-container .rbc-toolbar button { flex: 1; padding: 6px 4px; font-size: 12px; }
                     .calendar-container .rbc-header { font-size: 11px; }
                     .calendar-container .rbc-agenda-table { font-size: 12px; }
-                    .calendar-container .rbc-agenda-table tbody > tr > td { padding: 6px 4px; }
+                    .calendar-container .rbc-agenda-view table.rbc-agenda-table tbody > tr > td { padding: 6px 4px; }
                 }
                 /* Dark mode styles for react-big-calendar */
                 .dark .calendar-container .rbc-calendar {

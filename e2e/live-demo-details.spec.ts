@@ -30,7 +30,7 @@ test.describe('shared demo feature details', () => {
       await expect(page.getByRole('heading', { name: 'Maya Chen', exact: true })).toBeVisible();
       await expect(page.getByRole('button', { name: 'Following', exact: true }).first()).toBeDisabled();
       for (const tab of ['Point Activity', 'Followers', 'Following', 'Posts']) {
-        await page.getByRole('button', { name: new RegExp(`^${tab}( \\d+)?$`) }).last().click();
+        await page.getByRole('button', { name: new RegExp(`^${tab}\\s*\\d*$`) }).last().click();
         await fits(page);
       }
 
@@ -38,10 +38,10 @@ test.describe('shared demo feature details', () => {
       await page.getByPlaceholder('Search members...').fill('qzxunmatched937');
       await expect(page.getByRole('heading', { name: 'No members found' })).toBeVisible();
       await page.getByPlaceholder('Search members...').fill('Maya');
-      await expect(page.locator('main a[href="/profile/maya"]')).toBeVisible();
+      await expect(page.locator('main a[href="/profile/maya"]').first()).toBeVisible();
       await page.getByPlaceholder('Search members...').fill('');
       await page.getByRole('combobox').last().selectOption('alphabetical');
-      await expect(page.locator('main a[href="/profile/alex"]')).toBeVisible();
+      await expect(page.locator('main a[href="/profile/alex"]').first()).toBeVisible();
 
       await page.goto('/classrooms');
       await page.getByPlaceholder('Search classrooms...').fill('Build');
