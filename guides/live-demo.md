@@ -49,5 +49,17 @@ signup, MFA enrollment, content changes, privileged RPCs, uploads, checkout,
 backup creation, and admin APIs. Run them after every demo deployment. A new
 read-only RPC must be reviewed before adding it to the proxy allowlist.
 
+Run the desktop and mobile member tours against the same dedicated deployment:
+
+```sh
+PLAYWRIGHT_BASE_URL=https://roost-demo.msrbuilds.com ROOST_DEMO_BROWSER_TESTS=true npx playwright test e2e/live-demo --workers=1
+```
+
+The tours cover search, profiles, classroom lessons, discussions, project and
+roadmap details, notifications, calendar views and date navigation, settings,
+mobile menus, theme switching, and disabled write controls. They also check the
+calendar at 320px and the shared member experience at 390px and 1440px. Billing,
+uploads, account changes, and content writes intentionally remain unavailable.
+
 The deliberately public member credentials are `demo@roost.example` /
 `ExploreRoost2026!`. Both the login screen and seeder use the same values.

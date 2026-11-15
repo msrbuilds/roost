@@ -86,6 +86,7 @@ export default function CalendarView({ events, onCreateEvent, onRefresh, onRange
 
     // Event styling based on user RSVP status
     const eventStyleGetter = (event: CalendarEvent) => {
+        if (currentView === 'agenda') return {};
         const userRSVP = event.resource.userRSVP;
         const isPast = new Date(event.resource.end_time) < new Date();
 
@@ -117,6 +118,12 @@ export default function CalendarView({ events, onCreateEvent, onRefresh, onRange
         <div className="h-full bg-white dark:bg-surface-900 rounded-lg shadow-sm dark:shadow-none dark:border dark:border-surface-700 p-4 calendar-container">
             <style>{`
                 .calendar-container .rbc-toolbar { gap: 8px; }
+                .calendar-container .rbc-agenda-table { table-layout: fixed; }
+                .calendar-container .rbc-agenda-table th:nth-child(1), .calendar-container .rbc-agenda-table td:nth-child(1) { width: 25% !important; }
+                .calendar-container .rbc-agenda-table th:nth-child(2), .calendar-container .rbc-agenda-table td:nth-child(2) { width: 30% !important; }
+                .calendar-container .rbc-agenda-table td { white-space: normal; overflow-wrap: anywhere; }
+                .calendar-container .agenda-event-button { color: #7e22ce; text-align: left; font-weight: 600; }
+                .dark .calendar-container .agenda-event-button { color: #c4b5fd; }
                 .calendar-container .rbc-btn-group { display: flex; flex-wrap: wrap; }
                 .calendar-container .rbc-toolbar button { padding: 6px 8px; }
                 @media (max-width: 480px) {
@@ -124,6 +131,8 @@ export default function CalendarView({ events, onCreateEvent, onRefresh, onRange
                     .calendar-container .rbc-toolbar .rbc-btn-group { width: 100%; }
                     .calendar-container .rbc-toolbar button { flex: 1; padding: 6px 4px; font-size: 12px; }
                     .calendar-container .rbc-header { font-size: 11px; }
+                    .calendar-container .rbc-agenda-table { font-size: 12px; }
+                    .calendar-container .rbc-agenda-table tbody > tr > td { padding: 6px 4px; }
                 }
                 /* Dark mode styles for react-big-calendar */
                 .dark .calendar-container .rbc-calendar {
@@ -295,6 +304,7 @@ export default function CalendarView({ events, onCreateEvent, onRefresh, onRange
                 }}
                 eventPropGetter={eventStyleGetter}
                 views={['month', 'week', 'day', 'agenda']}
+                components={{ agenda: { event: ({ event }) => <button type="button" className="agenda-event-button" onClick={() => handleSelectEvent(event)}>{event.title}</button> } }}
             />
 
             {/* Event Details Modal */}

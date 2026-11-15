@@ -1,6 +1,6 @@
 import { X, Calendar, MapPin, Video, User, Edit, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { EventWithDetails } from '../../types';
 import type { RSVPStatus } from '../../types/database';
 import RSVPButton from './RSVPButton';
@@ -27,6 +27,15 @@ export default function EventDetails({
     const { user } = useAuth();
     const [deleting, setDeleting] = useState(false);
     const [showAttendees, setShowAttendees] = useState(false);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        const closeWithEscape = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') onClose();
+        };
+        document.addEventListener('keydown', closeWithEscape);
+        return () => document.removeEventListener('keydown', closeWithEscape);
+    }, [isOpen, onClose]);
 
     if (!isOpen) return null;
 
@@ -58,11 +67,11 @@ export default function EventDetails({
             />
 
             {/* Modal */}
-            <div className="fixed inset-4 md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-full md:max-w-2xl md:max-h-[90vh] bg-white dark:bg-surface-900 rounded-lg shadow-2xl z-50 flex flex-col">
+            <div role="dialog" aria-modal="true" aria-labelledby="event-details-title" className="fixed inset-4 md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-full md:max-w-2xl md:max-h-[90vh] bg-white dark:bg-surface-900 rounded-lg shadow-2xl z-50 flex flex-col">
                 {/* Header */}
                 <div className="flex items-start justify-between p-6 border-b border-gray-200 dark:border-surface-700">
                     <div className="flex-1">
-                        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+                        <h2 id="event-details-title" className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
                             {event.title}
                         </h2>
                         {event.group && (

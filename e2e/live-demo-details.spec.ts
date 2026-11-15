@@ -11,6 +11,7 @@ async function fits(page: Page) {
 }
 
 test.describe('shared demo feature details', () => {
+  test.use({ actionTimeout: 20000 });
   test.skip(process.env.ROOST_DEMO_BROWSER_TESTS !== 'true', 'Requires the dedicated live demo');
   for (const width of [390, 1440]) {
     test(`search, profiles, discussions, projects, roadmap, and guide at ${width}px`, async ({ page }) => {
@@ -89,6 +90,7 @@ test.describe('shared demo feature details', () => {
         await fits(page);
       }
       for (const image of await page.locator('main img').all()) {
+        await image.scrollIntoViewIfNeeded();
         await expect.poll(() => image.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
       }
       expect(errors).toEqual([]);
@@ -165,7 +167,10 @@ test.describe('shared demo feature details', () => {
       await fits(page);
       if (width === 390) {
         await page.setViewportSize({ width: 320, height: 900 });
-        await fits(page);
+        for (const view of ['Month', 'Week', 'Day', 'Agenda']) {
+          await page.getByRole('button', { name: view, exact: true }).click();
+          await fits(page);
+        }
       }
       expect(errors).toEqual([]);
       expect(denied).toEqual([]);
