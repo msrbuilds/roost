@@ -323,3 +323,8 @@ export async function getBackupDownloadUrl(filename: string): Promise<string> {
   const url = await getSignedUrl(s3Client, command, { expiresIn: 900 }); // 15 minutes
   return url;
 }
+
+/** Fetch through the API when the storage endpoint is private to the server. */
+export async function getBackupFile(filename: string) {
+  return s3Client.send(new GetObjectCommand({ Bucket: BUCKET_NAME, Key: `${BACKUP_PREFIX}${filename}` }));
+}

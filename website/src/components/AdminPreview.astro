@@ -1,0 +1,9 @@
+---
+import { Image } from 'astro:assets';
+import dashboard from '../assets/admin/dashboard.jpg';
+import Icon from './Icon.astro';
+---
+<div class="admin-preview">
+  <div><span class="small-label">BEHIND THE COMMUNITY</span><h3>A clear view.<br /><em>A steady hand.</em></h3><p>Manage members, moderate content, shape your branding, and keep a private backup. Your admin workspace brings the everyday work together.</p><a class="text-link" href="/docs/administration/">Explore administration <Icon name="arrow" size={17} /></a></div>
+  <figure><Image src={dashboard} alt="Roost admin dashboard showing community totals, activity, and contributor points using fictional data." widths={[640, 1000, 1440]} sizes="(max-width: 800px) 90vw, 760px" format="webp" loading="lazy" /><figcaption>Administration · sample community <a href={dashboard.src} target="_blank" rel="noopener noreferrer">Open full-size screenshot</a></figcaption></figure>
+</div>

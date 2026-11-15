@@ -17,22 +17,13 @@ import {
     getTopContributors,
 } from '../../services';
 import type { AdminStats, UserGrowthData, ActivityStatsData } from '../../services';
-
-interface TopContributor {
-    user: {
-        id: string;
-        username: string;
-        display_name: string;
-        avatar_url: string | null;
-    };
-    points: number;
-}
+import { MemberAvatar } from '../../components/common/MemberAvatar';
 
 export default function AdminDashboard() {
     const [stats, setStats] = useState<AdminStats | null>(null);
     const [userGrowth, setUserGrowth] = useState<UserGrowthData[]>([]);
     const [activityStats, setActivityStats] = useState<ActivityStatsData[]>([]);
-    const [topContributors, setTopContributors] = useState<TopContributor[]>([]);
+    const [topContributors, setTopContributors] = useState<Awaited<ReturnType<typeof getTopContributors>>>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -49,7 +40,7 @@ export default function AdminDashboard() {
             setStats(statsData);
             setUserGrowth(growth);
             setActivityStats(activity);
-            setTopContributors(contributors as TopContributor[]);
+            setTopContributors(contributors);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to load dashboard data');
         } finally {
@@ -216,11 +207,7 @@ export default function AdminDashboard() {
                                 <span className="text-lg font-bold text-gray-400 dark:text-gray-500 w-6">
                                     {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}
                                 </span>
-                                <img
-                                    src={contributor.user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(contributor.user.display_name)}`}
-                                    alt={contributor.user.display_name}
-                                    className="w-10 h-10 rounded-full object-cover"
-                                />
+                                <MemberAvatar src={contributor.user.avatar_url} name={contributor.user.display_name} />
                                 <div className="flex-1 min-w-0">
                                     <p className="font-medium text-gray-900 dark:text-gray-100 truncate">
                                         {contributor.user.display_name}
@@ -228,7 +215,7 @@ export default function AdminDashboard() {
                                     <p className="text-sm text-gray-500 dark:text-gray-400">@{contributor.user.username}</p>
                                 </div>
                                 <div className="text-right">
-                                    <p className="font-semibold text-primary-600 dark:text-primary-400">{contributor.points}</p>
+                                    <p className="font-semibold text-primary-600 dark:text-primary-400">{contributor.total_points}</p>
                                     <p className="text-xs text-gray-500 dark:text-gray-400">points</p>
                                 </div>
                             </div>

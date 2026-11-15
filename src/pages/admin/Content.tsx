@@ -1,3 +1,4 @@
+import { MemberAvatar } from '../../components/common/MemberAvatar';
 import { useEffect, useState, useCallback } from 'react';
 import {
     Search,
@@ -241,11 +242,7 @@ export default function AdminContent() {
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-2">
-                                                <img
-                                                    src={post.author.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(post.author.display_name)}`}
-                                                    alt=""
-                                                    className="w-8 h-8 rounded-full"
-                                                />
+                                                <MemberAvatar src={post.author.avatar_url} name={post.author.display_name} className="w-8 h-8" />
                                                 <div>
                                                     <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{post.author.display_name}</p>
                                                     <p className="text-xs text-gray-500 dark:text-gray-400">@{post.author.username}</p>
@@ -303,11 +300,7 @@ export default function AdminContent() {
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-2">
-                                                <img
-                                                    src={comment.author.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(comment.author.display_name)}`}
-                                                    alt=""
-                                                    className="w-8 h-8 rounded-full"
-                                                />
+                                                <MemberAvatar src={comment.author.avatar_url} name={comment.author.display_name} className="w-8 h-8" />
                                                 <div>
                                                     <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{comment.author.display_name}</p>
                                                     <p className="text-xs text-gray-500 dark:text-gray-400">@{comment.author.username}</p>

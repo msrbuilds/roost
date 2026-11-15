@@ -1,0 +1,41 @@
+# Local-only override for the full self-hosted stack. Bind only to loopback;
+# never use this override for a public deployment.
+services:
+  auth:
+    environment:
+      API_EXTERNAL_URL: ${LOCAL_ORIGIN:-http://127.0.0.1:15489}
+      GOTRUE_SITE_URL: ${LOCAL_ORIGIN:-http://127.0.0.1:15489}
+      GOTRUE_URI_ALLOW_LIST: ${LOCAL_ORIGIN:-http://127.0.0.1:15489}/**
+      GOTRUE_MAILER_AUTOCONFIRM: "true"
+      GOTRUE_SMTP_HOST: mailpit
+      GOTRUE_SMTP_PORT: 1025
+      GOTRUE_SMTP_USER: ""
+      GOTRUE_SMTP_PASS: ""
+  frontend:
+    build:
+      args:
+        VITE_APP_URL: ${LOCAL_ORIGIN:-http://127.0.0.1:15489}
+        VITE_API_URL: ${LOCAL_ORIGIN:-http://127.0.0.1:15489}
+        VITE_SUPABASE_URL: ${LOCAL_ORIGIN:-http://127.0.0.1:15489}
+        VITE_ENABLE_ACTIVATIONS: "true"
+        VITE_DEMO_MODE: "false"
+  backend:
+    volumes:
+      - ./server/scripts/seed-screenshots.cjs:/app/scripts/seed-screenshots.cjs:ro
+    environment:
+      FRONTEND_URL: ${LOCAL_ORIGIN:-http://127.0.0.1:15489}
+      ALLOWED_ORIGINS: ${LOCAL_ORIGIN:-http://127.0.0.1:15489}
+      PUBLIC_API_URL: ${LOCAL_ORIGIN:-http://127.0.0.1:15489}
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+      SMTP_USER: ""
+      SMTP_PASS: ""
+      LOCAL_ADMIN_PASSWORD: ${LOCAL_ADMIN_PASSWORD:-}
+  nginx:
+    ports:
+      - "127.0.0.1:${LOCAL_HTTP_PORT:-15489}:80"
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${LOCAL_MAIL_PORT:-15490}:8025"

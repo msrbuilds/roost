@@ -93,10 +93,20 @@ export const backupService = {
     },
 
     /**
-     * Download a backup file by opening the pre-signed URL
+     * Download through the authenticated API so private storage remains reachable.
      */
     async downloadBackup(filename: string): Promise<void> {
-        const downloadUrl = await this.getDownloadUrl(filename);
-        window.open(downloadUrl, '_blank');
+        const response = await fetch(`${API_URL}/api/backup/file/${encodeURIComponent(filename)}`, {
+            headers: await getAuthHeaders(),
+        });
+        if (!response.ok) throw new Error('Failed to download backup');
+        const url = URL.createObjectURL(await response.blob());
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.append(link);
+        link.click();
+        link.remove();
+        window.setTimeout(() => URL.revokeObjectURL(url), 1000);
     },
 };

@@ -5,6 +5,8 @@
  */
 
 import { supabase } from './supabase';
+import { getGlobalLeaderboard } from './leaderboard';
+import type { LeaderboardRank } from '../types';
 import type { Profile, Category, UserRole } from '../types/database';
 
 // =============================================================================
@@ -657,7 +659,8 @@ export async function getDashboardStats(): Promise<AdminStats> {
  */
 export async function getUserGrowth(days: number = 30): Promise<UserGrowthData[]> {
     const endDate = new Date();
-    const startDate = new Date(endDate.getTime() - days * 24 * 60 * 60 * 1000);
+    const startDate = new Date(endDate.getTime() - (days - 1) * 24 * 60 * 60 * 1000);
+    startDate.setUTCHours(0, 0, 0, 0);
 
     const { data, error } = await supabase
         .from('profiles')
@@ -691,7 +694,8 @@ export async function getUserGrowth(days: number = 30): Promise<UserGrowthData[]
  */
 export async function getActivityStats(days: number = 30): Promise<ActivityStatsData[]> {
     const endDate = new Date();
-    const startDate = new Date(endDate.getTime() - days * 24 * 60 * 60 * 1000);
+    const startDate = new Date(endDate.getTime() - (days - 1) * 24 * 60 * 60 * 1000);
+    startDate.setUTCHours(0, 0, 0, 0);
 
     const [postsResult, commentsResult] = await Promise.all([
         supabase
@@ -705,6 +709,9 @@ export async function getActivityStats(days: number = 30): Promise<ActivityStats
             .gte('created_at', startDate.toISOString())
             .lte('created_at', endDate.toISOString()),
     ]);
+
+    if (postsResult.error) throw postsResult.error;
+    if (commentsResult.error) throw commentsResult.error;
 
     // Group by date
     const statsByDate: Record<string, { posts: number; comments: number }> = {};
@@ -741,27 +748,8 @@ export async function getActivityStats(days: number = 30): Promise<ActivityStats
 /**
  * Get top contributors from leaderboard
  */
-export async function getTopContributors(limit: number = 5): Promise<unknown[]> {
-    // Calculate current 30-day period (same as leaderboard service)
-    const periodEnd = new Date();
-    const periodStart = new Date();
-    periodStart.setDate(periodStart.getDate() - 29);
-
-    const periodStartDate = periodStart.toISOString().split('T')[0];
-    const periodEndDate = periodEnd.toISOString().split('T')[0];
-
-    const { data, error } = await supabase
-        .from('leaderboard_entries')
-        .select(`
-      *,
-      user:profiles!leaderboard_entries_user_id_fkey(id, username, display_name, avatar_url)
-    `)
-        .is('group_id', null)
-        .eq('period_start', periodStartDate)
-        .eq('period_end', periodEndDate)
-        .order('total_points', { ascending: false })
-        .limit(limit);
-
-    if (error) throw error;
-    return data || [];
+export async function getTopContributors(limit: number = 5): Promise<(LeaderboardRank & { user: NonNullable<LeaderboardRank['user']> })[]> {
+    // Share the rolling-period calculation with the member leaderboard.
+    const { entries } = await getGlobalLeaderboard(30, limit);
+    return entries.filter((entry): entry is LeaderboardRank & { user: NonNullable<LeaderboardRank['user']> } => Boolean(entry.user));
 }

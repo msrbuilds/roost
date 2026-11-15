@@ -239,7 +239,7 @@ export default function AdminBackups() {
                         <div className="text-sm text-blue-800 dark:text-blue-300">
                             <p className="font-medium">Automatic Backups</p>
                             <p className="mt-1 opacity-80">
-                                Backups are automatically created before each deployment. The system keeps the last 30 backups.
+                                Configure the deployment backup hook or a scheduled job for automatic backups. Retention follows your server configuration. Back up uploaded files separately.
                             </p>
                         </div>
                     </div>

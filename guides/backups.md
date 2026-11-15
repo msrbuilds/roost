@@ -55,3 +55,16 @@ Store deployment environment files and recovery instructions securely outside th
 ## Recovering a community
 
 Prepare replacement infrastructure, restore the database and uploaded files, apply the matching environment configuration, and verify the application before changing DNS. Keep the previous infrastructure intact until recovery has been validated whenever it is still available.
+
+## Use the admin backup screen
+
+An authorized administrator can open **Admin Panel > Backups**, select
+**Create Backup Now**, and wait for the success message. The history lists
+stored database dumps and offers authorized downloads.
+
+![Admin backup screen showing a successful backup of the fictional local database.](../website/src/assets/admin/backups.jpg)
+
+This sample uses private storage on the local host. For production, configure
+the offsite destination described above and verify restoration. Also back up
+uploaded files separately. See [Administration](./administration.md) for the
+rest of the management interface.

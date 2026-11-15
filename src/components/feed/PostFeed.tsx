@@ -129,7 +129,10 @@ export default function PostFeed({
                 setPosts(newPosts);
                 setOffset(POSTS_PER_PAGE);
             } else {
-                setPosts((prev) => [...prev, ...newPosts]);
+                setPosts((prev) => {
+                    const existingIds = new Set(prev.map(post => post.id));
+                    return [...prev, ...newPosts.filter(post => !existingIds.has(post.id))];
+                });
                 setOffset((prev) => prev + POSTS_PER_PAGE);
             }
             setHasMore(more);
@@ -232,7 +235,7 @@ export default function PostFeed({
                         }
                         // Own posts: prepend immediately. Others: buffer for "Show X new posts" banner
                         if (post.author_id === user?.id) {
-                            setPosts((prev) => [post, ...prev]);
+                            setPosts((prev) => prev.some(existing => existing.id === post.id) ? prev : [post, ...prev]);
                         } else {
                             setPendingPosts((prev) => {
                                 // Deduplicate

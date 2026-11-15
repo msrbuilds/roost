@@ -3,9 +3,13 @@ import { Image } from 'astro:assets';
 import community from '../assets/demo/feed.jpg';
 import Icon from './Icon.astro';
 import { liveDemo } from '../data/site';
+import AdminPreview from './AdminPreview.astro';
+import CalendarMobilePreview from './CalendarMobilePreview.astro';
 ---
 <section class="container product-tour">
   <div class="section-heading"><div><span class="small-label">A CLOSER LOOK</span><h2>This is where your<br /><em>community comes to life.</em></h2></div><a class="text-link" href={liveDemo}>Try Live Demo <Icon name="external" size={17} /></a></div>
-  <figure><Image src={community} alt="The live Roost demo feed, with a pinned welcome post, followed members, and the contributor leaderboard." width={1440} widths={[640, 1000, 1440]} sizes="(max-width: 800px) 95vw, 1200px" format="webp" loading="lazy" /><figcaption>Community feed · captured from the read-only live demo</figcaption></figure>
+  <figure><Image src={community} alt="The Roost community feed, with a pinned welcome post, followed members, and the contributor leaderboard." width={1440} widths={[640, 1000, 1440]} sizes="(max-width: 800px) 95vw, 1200px" format="webp" loading="lazy" /><figcaption>Community feed · sample community</figcaption></figure>
   <div class="tour-footer"><span>Conversations are just the beginning.</span><a class="text-link" href="/features/#product-tour">Explore the full product tour <Icon name="arrow" size={18} /></a></div>
+  <CalendarMobilePreview compact />
+  <AdminPreview />
 </section>

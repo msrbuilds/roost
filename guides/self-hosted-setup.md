@@ -271,3 +271,13 @@ docker compose up --build -d
 # Review schema changes before upgrading an existing database.
 # schema.sql is the consolidated fresh-install schema, not an in-place migration.
 ```
+
+## Explore your installed community
+
+After creating your owner account, open **Admin Panel** to manage the community.
+
+![Roost admin dashboard after installing a fictional sample community.](../website/src/assets/admin/dashboard.jpg)
+
+Continue with [Using Roost](./using-roost.md) for member workflows and
+[Administration](./administration.md) for user management, moderation, branding,
+feature access, and backups.

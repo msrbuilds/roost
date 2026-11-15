@@ -1,3 +1,4 @@
+import { MemberAvatar } from '../../components/common/MemberAvatar';
 import { useEffect, useState, useCallback } from 'react';
 import {
     Search,
@@ -209,11 +210,7 @@ export default function AdminUsers() {
                                         <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-surface-800">
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-3">
-                                                    <img
-                                                        src={user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.display_name)}`}
-                                                        alt={user.display_name}
-                                                        className="w-10 h-10 rounded-full object-cover"
-                                                    />
+                                                    <MemberAvatar src={user.avatar_url} name={user.display_name} className="w-10 h-10 rounded-full object-cover" />
                                                     <div>
                                                         <p className="font-medium text-gray-900 dark:text-gray-100">{user.display_name}</p>
                                                         <p className="text-sm text-gray-500 dark:text-gray-400">@{user.username}</p>

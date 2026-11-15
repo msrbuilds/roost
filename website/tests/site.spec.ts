@@ -159,16 +159,21 @@ test('live demo calls to action and the real screenshot tour work with pointer a
       for (const link of await demoLinks.all()) await expect(link).toHaveAttribute('href', 'https://roost-demo.msrbuilds.com');
     }
     const tabs = page.getByRole('tablist', { name: 'Product screenshots' }).getByRole('tab');
-    await expect(tabs).toHaveCount(9);
+    await expect(tabs).toHaveCount(10);
     for (const tab of await tabs.all()) {
       await tab.click();
       await expect(tab).toHaveAttribute('aria-selected', 'true');
       const panel = page.getByRole('tabpanel');
       await expect(panel).toHaveCount(1);
       await expect(panel).toHaveAttribute('aria-labelledby', (await tab.getAttribute('id'))!);
-      const screenshot = panel.locator('img');
-      await screenshot.scrollIntoViewIfNeeded();
-      await expect.poll(() => screenshot.evaluate((element: HTMLImageElement) => element.complete && element.naturalWidth > 0)).toBe(true);
+      await expect(panel.locator('img')).toHaveCount((await tab.getAttribute('id')) === 'tour-tab-calendar' ? 3 : 1);
+      for (const screenshot of await panel.locator('img').all()) {
+        await screenshot.scrollIntoViewIfNeeded();
+        await expect.poll(() => screenshot.evaluate((element: HTMLImageElement) => element.complete && element.naturalWidth > 0)).toBe(true);
+      }
+      if (process.env.ROOST_SCREENSHOT_DIR && (await tab.getAttribute('id')) === 'tour-tab-calendar') {
+        await panel.screenshot({ path: join(process.env.ROOST_SCREENSHOT_DIR, `features-events-${width}.png`) });
+      }
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     }
     await tabs.last().focus();
@@ -326,5 +331,27 @@ test('single-line docs commands stay compact and copy their complete contents', 
     const multiline = page.locator('.docs-content .code-block').filter({ hasText: 'git clone https://github.com/msrbuilds/roost.git' }).first();
     await expect(multiline).not.toHaveClass(/code-block-inline/);
     await expect(multiline.locator('.code-toolbar')).toBeVisible();
+  }
+});
+
+
+test('illustrated member and admin guides load responsive full-size screenshots', async ({ page, request }) => {
+  test.setTimeout(120000);
+  for (const width of [390, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const guide of ['using-roost', 'administration', 'self-hosted-setup', 'backups']) {
+      await page.goto(`/docs/${guide}/`);
+      const pictures = page.locator('.docs-content img');
+      expect(await pictures.count()).toBeGreaterThan(0);
+      for (const picture of await pictures.all()) {
+        await picture.scrollIntoViewIfNeeded();
+        await expect.poll(() => picture.evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth > 0)).toBe(true);
+        const link = picture.locator('..');
+        await expect(link).toHaveClass('docs-screenshot');
+        await expect(link).toHaveAttribute('target', '_blank');
+        expect((await request.get((await link.getAttribute('href'))!)).ok()).toBe(true);
+        expect(await picture.evaluate((image) => image.getBoundingClientRect().right <= innerWidth)).toBe(true);
+      }
+    }
   }
 });

@@ -1280,7 +1280,16 @@ input {
   margin: 32px 0;
 }
 .docs-content img {
+  display: block;
+  max-width: 100%;
   height: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.docs-content .docs-screenshot {
+  display: block;
+  margin-block: 24px;
+  cursor: zoom-in;
 }
 .docs-toc {
   position: sticky;

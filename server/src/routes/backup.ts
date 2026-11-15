@@ -1,7 +1,9 @@
 import { Router, Request, Response } from 'express';
-import { performBackup, listBackups, getBackupDownloadUrl } from '../services/backup.js';
+import { performBackup, listBackups, getBackupDownloadUrl, getBackupFile } from '../services/backup.js';
 import { supabaseAdmin } from '../lib/supabase.js';
 import crypto from 'crypto';
+import { pipeline } from 'node:stream/promises';
+import { Readable } from 'node:stream';
 
 const router = Router();
 
@@ -168,8 +170,8 @@ router.get('/download/:filename', requireAdmin, async (req: Request, res: Respon
   try {
     const filename = req.params.filename as string;
 
-    if (!filename) {
-      return res.status(400).json({ error: 'Filename is required' });
+    if (!/^backup-[A-Za-z0-9-]+\.sql\.gz$/.test(filename)) {
+      return res.status(400).json({ error: 'Invalid backup filename' });
     }
 
     console.log(`[Backup API] Download requested for: ${filename}`);
@@ -182,6 +184,28 @@ router.get('/download/:filename', requireAdmin, async (req: Request, res: Respon
       error: 'Failed to generate download URL',
       message: error instanceof Error ? error.message : 'Unknown error',
     });
+  }
+});
+
+// Keep private storage endpoints and storage credentials out of browser downloads.
+router.get('/file/:filename', requireAdmin, async (req: Request, res: Response) => {
+  const filename = req.params.filename as string;
+  if (!/^backup-[A-Za-z0-9-]+\.sql\.gz$/.test(filename)) {
+    return res.status(400).json({ error: 'Invalid backup filename' });
+  }
+  try {
+    const object = await getBackupFile(filename);
+    if (!(object.Body instanceof Readable)) throw new Error('Storage returned an unreadable backup');
+    res.setHeader('Content-Type', 'application/gzip');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    if (object.ContentLength !== undefined) res.setHeader('Content-Length', String(object.ContentLength));
+    await pipeline(object.Body, res);
+  } catch (error) {
+    console.error('[Backup API] File download failed:', error);
+    if (!res.headersSent) res.status(500).json({ error: 'Failed to download backup' });
+    else res.destroy();
   }
 });
 

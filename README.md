@@ -164,3 +164,32 @@ npm run test:e2e
 ## License
 
 MIT
+
+## Local documentation installation
+
+For a writable sample community with an owner account, use the loopback-only
+Compose override. This is a separate development installation with its own
+volumes, private storage, and Mailpit inbox. Do not use these settings publicly.
+Docker Desktop with Linux containers and Docker Compose v2 is required.
+
+```bash
+node scripts/create-screenshot-env.cjs
+docker compose --env-file .env.screenshots.local -p roost-screenshots -f docker-compose.dokploy.yml -f docker-compose.local.yml up -d --build
+docker compose --env-file .env.screenshots.local -p roost-screenshots -f docker-compose.dokploy.yml -f docker-compose.local.yml exec -T -e ROOST_SCREENSHOT_SEED=true backend node scripts/seed-screenshots.cjs
+```
+
+Open http://127.0.0.1:15489. The fictional member account is
+`demo@roost.example` / `ExploreRoost2026!`. The owner is `owner@roost.example`;
+its random password is `LOCAL_ADMIN_PASSWORD` in the ignored
+`.env.screenshots.local` file. The generator refuses to overwrite that file.
+Email stays in the private inbox at http://127.0.0.1:15490. Stripe is disabled.
+The fixture seed refuses non-local origins and databases with non-fixture users.
+
+To stop this installation without deleting its data:
+
+```bash
+docker compose --env-file .env.screenshots.local -p roost-screenshots -f docker-compose.dokploy.yml -f docker-compose.local.yml stop
+```
+
+Member and administration walkthroughs are in [Using Roost](guides/using-roost.md)
+and [Administration](guides/administration.md).

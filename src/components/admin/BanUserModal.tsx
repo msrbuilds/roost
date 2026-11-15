@@ -1,3 +1,4 @@
+import { MemberAvatar } from '../common/MemberAvatar';
 import { useState } from 'react';
 import { X, AlertTriangle } from 'lucide-react';
 import { BAN_DURATIONS, banUser } from '../../services';
@@ -64,11 +65,7 @@ export default function BanUserModal({
 
                 {/* User info */}
                 <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-surface-800 rounded-lg mb-6">
-                    <img
-                        src={user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.display_name)}`}
-                        alt={user.display_name}
-                        className="w-10 h-10 rounded-full object-cover"
-                    />
+                    <MemberAvatar src={user.avatar_url} name={user.display_name} className="w-10 h-10 rounded-full object-cover" />
                     <div>
                         <p className="font-medium text-gray-900 dark:text-gray-100">{user.display_name}</p>
                         <p className="text-sm text-gray-500 dark:text-gray-400">@{user.username}</p>

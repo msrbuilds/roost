@@ -3,6 +3,8 @@ export const liveDemo = "https://roost-demo.msrbuilds.com";
 export const version = "0.0.2";
 
 export const guides = [
+  { id: "using-roost", title: "Using Roost", group: "Using your community", description: "A visual guide to conversations, classrooms, events, and member settings." },
+  { id: "administration", title: "Administration", group: "Using your community", description: "Manage users, moderation, branding, optional modules, and backups." },
   {
     id: "self-hosted-setup",
     title: "Getting started",

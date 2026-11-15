@@ -1,5 +1,18 @@
 const menuButton = document.querySelector<HTMLButtonElement>(".menu-trigger");
 
+// Keep illustrated guides readable on small screens without duplicating assets.
+for (const screenshot of document.querySelectorAll<HTMLImageElement>(".docs-content img")) {
+  if (screenshot.closest('a')) continue;
+  const link = document.createElement('a');
+  link.href = screenshot.currentSrc || screenshot.src;
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+  link.className = 'docs-screenshot';
+  link.setAttribute('aria-label', `Open full-size screenshot: ${screenshot.alt}`);
+  screenshot.before(link);
+  link.append(screenshot);
+}
+
 for (const tour of document.querySelectorAll<HTMLElement>("[data-screenshot-tour]")) {
   const tabs = [...tour.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
   const panels = [...tour.querySelectorAll<HTMLElement>('[role="tabpanel"]')];
