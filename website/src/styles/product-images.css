@@ -183,7 +183,7 @@
 
 .admin-preview { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 32px; align-items: center; margin-top: 40px; padding-top: 32px; border-top: 1px solid var(--line); }
 .admin-preview h3 { font-size: clamp(28px, 3vw, 40px); line-height: 1.12; margin: 14px 0; }
-.admin-preview p { color: var(--muted); line-height: 1.65; }
+.admin-preview p { color: var(--muted); font-size: 14px; line-height: 1.75; }
 .admin-preview figure { margin: 0; }
 .admin-preview figcaption { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; font-size: 12px; }
 .admin-guide-link { padding: 0 24px 20px; }

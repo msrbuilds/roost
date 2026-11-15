@@ -352,6 +352,26 @@ test('navigation closes with Escape and resets when switching to desktop', async
   await expect(docsToggle).toBeFocused();
 });
 
+test('guide navigation keeps previous and next directions at the first and last guide', async ({ page }) => {
+  for (const width of [390, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(`/docs/${guides[0].id}/`);
+    const pager = page.getByRole('navigation', { name: 'Previous and next guide' });
+    await expect(pager.locator('[rel="prev"]')).toHaveCount(0);
+    const next = pager.getByRole('link', { name: /Next/ });
+    await expect(next).toHaveCSS('text-align', 'right');
+    await next.click();
+    await expect(page).toHaveURL(new RegExp(`/docs/${guides[1].id}/$`));
+    await page.goto(`/docs/${guides.at(-1)!.id}/`);
+    await expect(pager.locator('[rel="next"]')).toHaveCount(0);
+    const previous = pager.getByRole('link', { name: /Previous/ });
+    await expect(previous).toHaveCSS('text-align', 'left');
+    await previous.focus();
+    await page.keyboard.press('Enter');
+    await expect(page).toHaveURL(new RegExp(`/docs/${guides.at(-2)!.id}/$`));
+  }
+});
+
 test('keyboard search handles no results and restores focus', async ({ page }) => {
   await page.goto('/features/');
   const trigger = page.getByRole('button', { name: /^Search documentation/ });
