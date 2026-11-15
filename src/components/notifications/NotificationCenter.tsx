@@ -131,10 +131,14 @@ export default function NotificationCenter({ isOpen, onClose, onNavigate, onUnre
   const handleNotificationClick = async (notification: Notification) => {
     // Mark as read if not already
     if (!notification.is_read && !APP_CONFIG.demo.enabled) {
-      await markAsRead(notification.id);
-      // Update the unread badge count in parent
-      const newUnread = notifications.filter(n => !n.is_read && n.id !== notification.id).length;
-      onUnreadCountChange?.(newUnread);
+      try {
+        await markAsRead(notification.id);
+        // Update the unread badge count in parent
+        const newUnread = notifications.filter(n => !n.is_read && n.id !== notification.id).length;
+        onUnreadCountChange?.(newUnread);
+      } catch (error) {
+        console.error('Unable to mark notification as read:', error);
+      }
     }
 
     // Navigate to link if provided
@@ -230,7 +234,6 @@ export default function NotificationCenter({ isOpen, onClose, onNavigate, onUnre
                 <NotificationItem
                   key={notification.id}
                   notification={notification}
-                  onRead={markAsRead}
                   onClick={() => handleNotificationClick(notification)}
                 />
               ))}

@@ -18,7 +18,7 @@ test.describe('shared demo feature details', () => {
       test.setTimeout(240000);
       await page.setViewportSize({ width, height: 1000 });
       const errors: string[] = [];
-      page.on('pageerror', error => errors.push(error.message));
+      page.on('pageerror', error => errors.push(`${page.url()}: ${error.message} ${error.stack || ''}`));
       await login(page);
 
       if (width < 768) await page.getByRole('button', { name: 'Open search', exact: true }).click();
@@ -54,7 +54,8 @@ test.describe('shared demo feature details', () => {
       await page.goto('/explore');
       await page.getByRole('button', { name: 'View post', exact: true }).first().click();
       await expect(page).toHaveURL(/\/post\//);
-      await expect(page.locator('main h1, main h3').first()).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Welcome to a community that feels like home', exact: true })).toBeVisible();
+      await page.getByRole('button', { name: 'Comment', exact: true }).click();
       await expect(page.getByText('Comments are read-only in this demo.')).toBeVisible();
       await fits(page);
 
@@ -69,7 +70,7 @@ test.describe('shared demo feature details', () => {
 
       await page.goto('/roadmap');
       await page.getByPlaceholder('Search requests...').fill('qzxunmatched937');
-      await expect(page.getByText('A home for every learning journey', { exact: true })).toHaveCount(0);
+      await expect(page.getByRole('heading', { name: 'No requests found', exact: true })).toBeVisible();
       await page.getByPlaceholder('Search requests...').fill('');
       await page.getByText('A home for every learning journey', { exact: true }).first().click();
       await expect(page).toHaveURL(/\/roadmap\/[a-f0-9-]+/);
@@ -101,7 +102,7 @@ test.describe('shared demo feature details', () => {
       await page.setViewportSize({ width, height: 1000 });
       const errors: string[] = [];
       const denied: string[] = [];
-      page.on('pageerror', error => errors.push(error.message));
+      page.on('pageerror', error => errors.push(`${page.url()}: ${error.message} ${error.stack || ''}`));
       page.on('response', response => {
         if (response.url().startsWith('https://roost-demo.msrbuilds.com/') && response.status() === 403) denied.push(response.url());
       });
@@ -153,6 +154,15 @@ test.describe('shared demo feature details', () => {
       for (const view of ['Week', 'Day', 'Agenda', 'Month']) {
         await page.getByRole('button', { name: view, exact: true }).click();
         await fits(page);
+        if (view === 'Agenda') {
+          const event = page.getByRole('button', { name: 'Community co-working · example event', exact: true });
+          await expect(event).toBeVisible();
+          expect(await page.locator('.rbc-agenda-content').evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
+          await event.click();
+          await expect(page.getByRole('dialog', { name: 'Community co-working · example event' })).toBeVisible();
+          await page.keyboard.press('Escape');
+          await expect(page.getByRole('dialog')).toHaveCount(0);
+        }
       }
       const request = page.waitForRequest(request => {
         const url = new URL(request.url());
@@ -170,10 +180,10 @@ test.describe('shared demo feature details', () => {
         for (const view of ['Month', 'Week', 'Day', 'Agenda']) {
           await page.getByRole('button', { name: view, exact: true }).click();
           await fits(page);
+          if (view === 'Agenda') expect(await page.locator('.rbc-agenda-content').evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
         }
       }
-      expect(errors).toEqual([]);
-      expect(denied).toEqual([]);
+      expect({ errors, denied }).toEqual({ errors: [], denied: [] });
     });
   }
 });

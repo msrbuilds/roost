@@ -288,7 +288,7 @@ export default function CalendarView({ events, onCreateEvent, onRefresh, onRange
                 events={calendarEvents}
                 startAccessor="start"
                 endAccessor="end"
-                style={{ height: '600px' }}
+                style={{ height: currentView === 'agenda' ? 'auto' : '600px', minHeight: currentView === 'agenda' ? '220px' : undefined }}
                 onSelectEvent={handleSelectEvent}
                 onSelectSlot={handleSelectSlot}
                 selectable={!APP_CONFIG.demo.enabled}

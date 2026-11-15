@@ -5,7 +5,6 @@ import { getNotificationIconInfo } from '../../services/notification';
 
 interface NotificationItemProps {
   notification: Notification;
-  onRead: (id: string) => void;
   onClick: () => void;
 }
 
@@ -22,20 +21,13 @@ const iconMap = {
   Reply
 };
 
-export default function NotificationItem({ notification, onRead, onClick }: NotificationItemProps) {
+export default function NotificationItem({ notification, onClick }: NotificationItemProps) {
   const { icon: iconName, color } = getNotificationIconInfo(notification.type);
   const Icon = iconMap[iconName as keyof typeof iconMap] || Bell;
 
-  const handleClick = () => {
-    if (!notification.is_read) {
-      onRead(notification.id);
-    }
-    onClick();
-  };
-
   return (
     <button
-      onClick={handleClick}
+      onClick={onClick}
       className={`w-full flex items-start gap-3 p-3 hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors text-left ${!notification.is_read ? 'bg-primary-50/30 dark:bg-primary-900/20' : ''
         }`}
     >
