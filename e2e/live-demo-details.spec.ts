@@ -159,6 +159,11 @@ test.describe('shared demo feature details', () => {
       for (const view of ['Week', 'Day', 'Agenda', 'Month']) {
         await page.getByRole('button', { name: view, exact: true }).click();
         await fits(page);
+        if (view === 'Week') {
+          for (const label of await page.locator('.rbc-time-header .rbc-header button').all()) {
+            expect(await label.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
+          }
+        }
         if (view === 'Agenda') {
           const event = page.getByRole('button', { name: 'Community co-working \u00b7 example event', exact: true });
           await liveExpect(event).toBeVisible();
