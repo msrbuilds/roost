@@ -1,14 +1,14 @@
 ---
 import ScreenshotSlider from './ScreenshotSlider.astro';
-import week from '../assets/demo/calendar-tablet-week.jpg';
-import agenda from '../assets/demo/calendar-tablet-agenda.jpg';
+import week from '../assets/demo/calendar-desktop-week.jpg';
+import agenda from '../assets/demo/calendar-desktop-agenda.jpg';
 const { compact = false } = Astro.props;
 const screens = [
-  { label: 'Week view', image: week, alt: 'Roost calendar on a tablet with seven readable day columns and a community co-working event.', description: 'Plan the week with a clear view of upcoming community events.' },
-  { label: 'Agenda view', image: agenda, alt: 'Roost tablet calendar with an agenda, group filters, and event details including RSVP options.', description: 'Switch to the agenda for event details and quick RSVPs.' },
+  { label: 'Week view', image: week, alt: 'Roost desktop week calendar with day columns, a community co-working event, and upcoming event details.', description: 'Plan the week with a clear view of upcoming community events.' },
+  { label: 'Agenda view', image: agenda, alt: 'Roost desktop agenda with a sample community event, group filters, and upcoming event details.', description: 'Switch to the agenda for event details and quick RSVPs.' },
 ];
 ---
 <div class:list={['calendar-preview', { 'calendar-preview-compact': compact }]}>
-  <div class="calendar-preview-copy"><span class="small-label">EVENTS ON ANY SCREEN</span><h3>Keep your community in sync.</h3><p>Browse the week ahead or switch to a compact agenda. Your community's next gathering is easy to find, from desktop to tablet to phone.</p><span class="calendar-preview-note">Two views. One shared calendar.</span></div>
-  <ScreenshotSlider id={compact ? 'home-calendar' : 'feature-calendar'} label="Calendar on a tablet" screens={screens} tablet />
+  <div class="calendar-preview-copy"><span class="small-label">A PLACE TO COME TOGETHER</span><h3>Make time for<br /><em>your community.</em></h3><p>Plan meetups, workshops, and community calls in one shared calendar. Browse the week ahead or switch to a simple agenda.</p></div>
+  <ScreenshotSlider id={compact ? 'home-calendar' : 'feature-calendar'} label="Community events showcase" screens={screens} tablet />
 </div>

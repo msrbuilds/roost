@@ -3,7 +3,35 @@ import { join } from 'node:path';
 import { readFileSync } from 'node:fs';
 import { guides } from '../src/data/site';
 
-test('showcase and tablet sliders navigate, wrap, and load every screenshot', async ({ page, request }) => {
+test('technology icons clear hero content and the calendar stays compact', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  for (const width of [320, 390, 768, 1024, 1280, 1440]) {
+    await page.setViewportSize({ width, height: 1000 });
+    await page.goto('/');
+    const icons = page.locator('.hero-tech');
+    await expect(icons).toHaveCount(6);
+    expect(await icons.evaluateAll(elements => {
+      const content = [...document.querySelectorAll('.hero-copy h1, .hero-description, .hero-copy .button-row, .hero-proof, .hero-cost-note')].map(el => el.getBoundingClientRect());
+      return elements.every(el => {
+        const icon = el.getBoundingClientRect();
+        return content.every(text => icon.right <= text.left || icon.left >= text.right || icon.bottom <= text.top || icon.top >= text.bottom);
+      });
+    }), `technology icons clear hero text and actions at ${width}px`).toBe(true);
+    for (const image of await icons.locator('img').all()) {
+      await expect.poll(() => image.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
+    }
+    const calendar = page.locator('.calendar-preview');
+    await calendar.scrollIntoViewIfNeeded();
+    const image = calendar.locator('img:visible');
+    await expect.poll(() => image.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth / img.naturalHeight > 1.5)).toBe(true);
+    const frame = await calendar.locator('.showcase-frame').boundingBox();
+    expect(frame!.width / frame!.height).toBeGreaterThan(1.4);
+    if (width >= 1024) expect((await calendar.boundingBox())!.height).toBeLessThan(650);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  }
+});
+
+test('showcase and landscape sliders navigate, wrap, and load every screenshot', async ({ page, request }) => {
   test.setTimeout(90000);
   for (const width of [320, 390, 768, 1440]) {
     await page.setViewportSize({ width, height: 1000 });

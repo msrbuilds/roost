@@ -10,13 +10,13 @@ interface Props {
 const { id, label, screens, tablet = false } = Astro.props;
 ---
 <div class:list={['showcase-slider', { 'showcase-tablet': tablet }]} data-showcase-slider role="region" aria-roledescription="carousel" aria-label={label}>
-  <div class="showcase-topline"><span>{tablet ? 'ROOST / ON THE GO' : 'A LOOK INSIDE ROOST'}</span><button type="button" data-slider-play disabled aria-label="Pause screenshot slideshow">Pause <span aria-hidden="true">Ⅱ</span></button></div>
+  <div class="showcase-topline"><span>{tablet ? 'ROOST / COMMUNITY EVENTS' : 'A LOOK INSIDE ROOST'}</span><button type="button" data-slider-play disabled aria-label="Pause screenshot slideshow">Pause <span aria-hidden="true">Ⅱ</span></button></div>
   <div class="showcase-frame">
     <div class="showcase-camera" aria-hidden="true"></div>
     <div class="showcase-stage">
       {screens.map((screen, index) => <div class="showcase-slide" role="tabpanel" id={`${id}-panel-${index}`} aria-labelledby={`${id}-tab-${index}`} hidden={index !== 0}>
         <a href={screen.image.src} target="_blank" rel="noopener noreferrer" aria-label={`Open full-size ${screen.label.toLowerCase()} screenshot`}>
-          <Image src={screen.image} alt={screen.alt} width={tablet ? 768 : 1440} widths={tablet ? [390, 768, 960] : [640, 1000, 1440]} sizes={tablet ? '(max-width: 800px) 80vw, 440px' : '(max-width: 800px) 90vw, 1200px'} format="webp" loading={id === 'hero-showcase' && index === 0 ? 'eager' : 'lazy'} fetchpriority={id === 'hero-showcase' && index === 0 ? 'high' : 'auto'} />
+          <Image src={screen.image} alt={screen.alt} width={1440} widths={[640, 1000, 1440]} sizes={tablet ? '(max-width: 800px) 90vw, 680px' : '(max-width: 800px) 90vw, 1200px'} format="webp" loading={id === 'hero-showcase' && index === 0 ? 'eager' : 'lazy'} fetchpriority={id === 'hero-showcase' && index === 0 ? 'high' : 'auto'} />
         </a>
       </div>)}
     </div>

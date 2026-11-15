@@ -18,3 +18,5 @@ saved captures, and run the website build and browser suite. Keep credentials,
 real member information, private keys, and browser chrome out of captures.
 
 Tablet calendar captures added 2026-11-15: `calendar-tablet-week.jpg` and `calendar-tablet-agenda.jpg`. Captured from the full local installation with fictional sample data and the owner account, at a 960 × 1280 content viewport (3:4 tablet). Both images preserve the actual interface.
+
+Landscape calendar captures added 2026-11-16: `calendar-desktop-week.jpg` and `calendar-desktop-agenda.jpg`. Captured from the same full local sample installation at a 1440px-wide desktop content viewport, for the compact landscape calendar showcase.

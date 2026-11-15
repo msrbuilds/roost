@@ -1,0 +1,13 @@
+---
+const technologies = [
+  { id: 'react', name: 'React' },
+  { id: 'typescript', name: 'TypeScript' },
+  { id: 'supabase', name: 'Supabase' },
+  { id: 'nodejs', name: 'Node.js' },
+  { id: 'tailwindcss', name: 'Tailwind CSS' },
+  { id: 'docker', name: 'Docker' },
+];
+---
+<ul class="hero-technologies" aria-label="Built with open-source technologies">
+  {technologies.map(technology => <li class={`hero-tech hero-tech-${technology.id}`}><img src={`/technology/${technology.id}.svg`} alt="" width="36" height="36" /><span>{technology.name}</span></li>)}
+</ul>

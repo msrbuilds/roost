@@ -5,6 +5,7 @@ import CommunityPreview from '../components/CommunityPreview.astro';
 import ProductTour from '../components/ProductTour.astro';
 import Comparison from '../components/Comparison.astro';
 import AlternativesMarquee from '../components/AlternativesMarquee.astro';
+import HeroTechnology from '../components/HeroTechnology.astro';
 import { features, repository, liveDemo } from '../data/site';
 const faqs = [
   ['Is Roost really free?', 'Yes. Roost is free, open-source software under the MIT license. There is no Roost license fee or per-member charge. You pay your own infrastructure providers for hosting, storage, email, and any other services you choose.'],
@@ -24,6 +25,7 @@ const faqs = [
         <div class="button-row product-actions"><a class="button" href="/docs/self-hosted-setup/">Self-host Roost <Icon name="arrow" size={19} /></a><a class="button button-outline" href={liveDemo}>Try Live Demo <Icon name="external" size={17} /></a><a class="text-link hero-source-link" href={repository}>View on GitHub <Icon name="external" size={15} /></a></div>
         <div class="hero-proof"><span><Icon name="check" size={15} /> MIT licensed</span><span><Icon name="check" size={15} /> Your infrastructure</span><span><Icon name="check" size={15} /> No per-member fees</span></div>
         <p class="hero-cost-note">Free software. Hosting, storage, and email costs are yours.</p>
+        <HeroTechnology />
       </div>
       <AlternativesMarquee />
       <CommunityPreview />
