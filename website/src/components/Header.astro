@@ -8,6 +8,7 @@ const path = Astro.url.pathname;
     <a class="brand" href="/" aria-label="Roost home"><img src="/brand.png" alt="" width="36" height="36" /><span>roost<span class="brand-period">.</span></span></a>
     <nav class="desktop-nav" aria-label="Main navigation">
       <a href="/features/" aria-current={path.startsWith('/features') ? 'page' : undefined}>Features</a>
+      <a href="/compare/" aria-current={path.startsWith('/compare') ? 'page' : undefined}>Compare</a>
       <a href="/docs/" aria-current={path.startsWith('/docs') ? 'page' : undefined}>Documentation</a>
       <a href={repository}>GitHub <Icon name="external" size={14} /></a>
     </nav>
@@ -18,6 +19,6 @@ const path = Astro.url.pathname;
     </div>
   </div>
   <nav id="mobile-navigation" class="mobile-navigation" aria-label="Mobile navigation" hidden>
-    <a href="/features/">Features</a><a href="/docs/">Documentation</a><a href={repository}>GitHub ↗</a><a href="/docs/self-hosted-setup/">Get started →</a>
+    <a href="/features/">Features</a><a href="/compare/">Compare</a><a href="/docs/">Documentation</a><a href={repository}>GitHub ↗</a><a href="/docs/self-hosted-setup/">Get started →</a>
   </nav>
 </header>

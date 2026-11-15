@@ -1,0 +1,24 @@
+---
+import Icon from './Icon.astro';
+import { ownershipRows, featureRows, comparisonSources, comparisonDate } from '../data/comparison';
+const { full = false } = Astro.props;
+const groups = full
+  ? [{ title: 'Ownership & operating costs', rows: ownershipRows }, { title: 'The features your community uses', rows: featureRows }]
+  : [{ title: 'Ownership & operating costs', rows: ownershipRows.slice(0, 4) }];
+---
+<section class:list={['container', 'comparison-section', { 'comparison-full': full }]} id="compare" aria-labelledby="comparison-heading">
+  <div class="section-heading"><div><span class="small-label">OPEN SOURCE. CLEAR DIFFERENCES.</span><h2 id="comparison-heading">Compare the features.<br /><em>Choose who runs the platform.</em></h2></div><p>Roost gives you the source and the stack.<br />Skool and Circle provide a managed service.</p></div>
+  {groups.map(group => <div class="comparison-group">
+    <h3>{group.title}</h3>
+    <table class="comparison-table">
+      <caption class="sr-only">{group.title}: Roost, Skool Hobby and Pro, and Circle Professional</caption>
+      <thead><tr><th scope="col">What you get</th><th scope="col" class="roost-column">Roost <span>Self-hosted · open source</span></th><th scope="col">Skool <span>Hobby / Pro</span></th><th scope="col">Circle <span>Professional</span></th></tr></thead>
+      <tbody>{group.rows.map(row => <tr><th scope="row">{row.feature}</th><td class="roost-column" data-platform="Roost">{row.roost}</td><td data-platform="Skool">{row.skool}</td><td data-platform="Circle Professional">{row.circle}</td></tr>)}</tbody>
+    </table>
+  </div>)}
+  <div class="comparison-notes"><p><strong>Free software, with real operating costs.</strong> Roost has no license or per-member fee. You pay for hosting, storage, email, and any payment or video providers you use. Capacity depends on your infrastructure.</p><p>USD prices checked {comparisonDate}. Skool figures use monthly billing; Circle’s displayed rate requires annual billing. Taxes, payment fees, limits, and optional extras may apply. This is a selected-feature comparison, not a claim of full feature parity.</p>
+    {full && <p>*Roost’s Stripe integration requires your own configuration and validation. Paid memberships are disabled by default and in the shared demo. Roost embeds external video rather than providing native video calls. Circle also includes native mobile apps and managed services that Roost does not provide.</p>}
+    <div class="comparison-sources"><span>Official sources:</span>{comparisonSources.map(source => <a href={source.href} target="_blank" rel="noopener noreferrer">{source.label} <Icon name="external" size={12} /></a>)}</div>
+  </div>
+  {!full && <a class="text-link comparison-more" href="/compare/">See the full feature comparison <Icon name="arrow" size={18} /></a>}
+</section>

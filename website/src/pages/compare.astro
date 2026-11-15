@@ -1,0 +1,14 @@
+---
+import Base from '../layouts/Base.astro';
+import Comparison from '../components/Comparison.astro';
+import Icon from '../components/Icon.astro';
+import { liveDemo } from '../data/site';
+---
+<Base title="Roost vs Skool vs Circle — community platform comparison" description="Compare Roost’s open-source, self-hosted community platform with Skool and Circle. Explore features, platform pricing, hosting, and ownership.">
+  <main id="main">
+    <section class="container page-intro"><span class="small-label">ROOST VS SKOOL VS CIRCLE</span><h1>Your community.<br /><em>Your choice of platform.</em></h1><p>Discussions, courses, and events are the starting point. The bigger decision is whether you want to operate your own platform or pay for a hosted service.</p><div class="button-row product-actions"><a class="button" href={liveDemo}>Try Live Demo <Icon name="external" size={17} /></a><a class="text-link" href="/docs/self-hosted-setup/">Explore self-hosting <Icon name="arrow" size={17} /></a></div></section>
+    <Comparison full />
+    <section class="container choice-section"><div><span class="small-label">CHOOSE ROOST WHEN</span><h2>You want the keys.</h2><p>You want source-level customization, your own database, and the freedom to pick your infrastructure. You or your team can handle deployment, updates, email, and backups.</p><a class="text-link" href="/docs/">Read the operating guides <Icon name="arrow" size={17} /></a></div><div><span class="small-label">CHOOSE A HOSTED PLATFORM WHEN</span><h2>You want it managed.</h2><p>You prefer a vendor to run the service and want its native calling, mobile apps, support, or broader business tools. Review the plan limits and current pricing against your needs.</p><a class="text-link" href="#compare">Review the comparison <Icon name="arrow" size={17} /></a></div></section>
+    <section class="container final-cta"><div><span class="small-label">BUILD ON AN OPEN FOUNDATION</span><h2>Bring your people.<br /><em>Keep your independence.</em></h2></div><a class="button button-light" href="/docs/self-hosted-setup/">Self-host Roost <Icon name="arrow" size={18} /></a></section>
+  </main>
+</Base>

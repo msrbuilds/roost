@@ -94,7 +94,7 @@ export const features = [
   {
     icon: "feed",
     eyebrow: "Conversation",
-    title: "Give good ideas a place to land.",
+    title: "Conversations that keep moving.",
     text: "Posts, comments, reactions, and rich text. A shared feed that keeps your community in the conversation.",
     items: [
       "Rich text and media",
@@ -105,7 +105,7 @@ export const features = [
   {
     icon: "learn",
     eyebrow: "Learning",
-    title: "Turn what you know into what they can do.",
+    title: "Courses, without the separate platform.",
     text: "Organize your knowledge into groups, classrooms, modules, and lessons that members can work through.",
     items: [
       "Public and private groups",
@@ -116,7 +116,7 @@ export const features = [
   {
     icon: "people",
     eyebrow: "Connection",
-    title: "Make it feel like people, not profiles.",
+    title: "Connections beyond the feed.",
     text: "Help members find each other, share their work, and keep the connection going beyond the feed.",
     items: [
       "Member directory",
@@ -127,7 +127,7 @@ export const features = [
   {
     icon: "spark",
     eyebrow: "Participation",
-    title: "Give your community something to build.",
+    title: "Make participation part of the product.",
     text: "Showcase projects, collect feature requests, and recognize the members who keep showing up.",
     items: [
       "Project showcases and reviews",
@@ -138,7 +138,7 @@ export const features = [
   {
     icon: "shield",
     eyebrow: "Control",
-    title: "Your space. Your ground rules.",
+    title: "Admin tools that put you in control.",
     text: "Manage roles and moderation, protect private content, and make the community look like your own.",
     items: [
       "Admin and moderator roles",
@@ -149,7 +149,7 @@ export const features = [
   {
     icon: "server",
     eyebrow: "Ownership",
-    title: "A platform you can make your own.",
+    title: "Open source, from the ground up.",
     text: "Read the code, change it, and run it on infrastructure you control. Roost is available under the MIT license.",
     items: [
       "React and TypeScript",

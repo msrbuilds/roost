@@ -20,7 +20,7 @@ test.beforeEach(async ({ page, baseURL }) => {
 
 test('product, features, and docs fit desktop and mobile widths', async ({ page }) => {
   test.setTimeout(90000);
-  const routes = ['/', '/features/', '/docs/', '/privacy/', '/this-page-does-not-exist/', ...guides.map(({ id }) => `/docs/${id}/`)];
+  const routes = ['/', '/features/', '/compare/', '/docs/', '/privacy/', '/this-page-does-not-exist/', ...guides.map(({ id }) => `/docs/${id}/`)];
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   for (const width of [320, 390, 768, 1440]) {
@@ -351,6 +351,38 @@ test('illustrated member and admin guides load responsive full-size screenshots'
         await expect(link).toHaveAttribute('target', '_blank');
         expect((await request.get((await link.getAttribute('href'))!)).ok()).toBe(true);
         expect(await picture.evaluate((image) => image.getBoundingClientRect().right <= innerWidth)).toBe(true);
+      }
+    }
+  }
+});
+
+
+test('comparisons remain readable and preserve price qualifiers on desktop and mobile', async ({ page }) => {
+  test.setTimeout(60000);
+  for (const width of [320, 390, 768, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const route of ['/', '/compare/']) {
+      await page.goto(route);
+      const comparison = page.locator('.comparison-section');
+      await expect(comparison.getByText('$0 license fee', { exact: true })).toBeVisible();
+      await expect(comparison.getByText('$9/mo Hobby · $99/mo Pro', { exact: true })).toBeVisible();
+      await expect(comparison.getByText('$89/mo, billed annually', { exact: true })).toBeVisible();
+      await expect(comparison).toContainText('You pay for hosting, storage, email');
+      await expect(comparison.locator('table')).toHaveCount(route === '/' ? 1 : 2);
+      expect(await comparison.locator('td').evaluateAll(cells => cells.every(cell => {
+        const bounds = cell.getBoundingClientRect();
+        return bounds.left >= 0 && bounds.right <= innerWidth && cell.scrollWidth <= cell.clientWidth + 1;
+      }))).toBe(true);
+      for (const link of await comparison.locator('.comparison-sources a').all()) {
+        expect(await link.getAttribute('href')).toMatch(/^https:\/\/(www\.skool\.com|help\.skool\.com|circle\.so)\//);
+      }
+      if (route === '/compare/') {
+        await expect(comparison).toContainText('External video embed + live chat');
+        await expect(comparison).toContainText('disabled by default');
+      }
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      if (process.env.ROOST_SCREENSHOT_DIR && [390, 1440].includes(width)) {
+        await comparison.screenshot({ path: join(process.env.ROOST_SCREENSHOT_DIR, `comparison-${route === '/' ? 'home' : 'full'}-${width}.png`) });
       }
     }
   }

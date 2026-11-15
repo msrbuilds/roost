@@ -3,8 +3,9 @@ import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import '../styles/global.css';
 import '../styles/product-images.css';
+import '../styles/design.css';
 interface Props { title?: string; description?: string; noindex?: boolean; docs?: boolean; }
-const { title = 'A home for your community', description = 'Roost is a free, open-source community platform with conversations, classrooms, messaging, and events. Self-host it. Make it yours.', noindex = false, docs = false } = Astro.props;
+const { title = 'The open-source alternative to Skool & Circle', description = 'Roost is a free, open-source alternative to Skool and Circle. Self-host discussions, courses, messaging, and events with control over your code and data.', noindex = false, docs = false } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 ---
 <!doctype html>
@@ -13,7 +14,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title} · Roost</title><meta name="description" content={description} />
     <link rel="canonical" href={canonical} /><link rel="icon" href="/favicon.png" type="image/png" />
-    <meta name="theme-color" content="#faf9f5" />{noindex && <meta name="robots" content="noindex,follow" />}
+    <meta name="theme-color" content="#ffffff" />{noindex && <meta name="robots" content="noindex,follow" />}
     <meta property="og:type" content="website" /><meta property="og:title" content={`${title} · Roost`} /><meta property="og:description" content={description} /><meta property="og:url" content={canonical} /><meta property="og:image" content={new URL('/social-card.png', Astro.site)} /><meta property="og:site_name" content="Roost" />
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="sitemap" href="/sitemap-index.xml" />

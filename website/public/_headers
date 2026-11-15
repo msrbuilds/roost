@@ -23,3 +23,6 @@
 
 /privacy/*
   Cache-Control: public, max-age=0, must-revalidate, no-transform
+
+/compare/*
+  Cache-Control: public, max-age=0, must-revalidate, no-transform

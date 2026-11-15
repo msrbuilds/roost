@@ -28,7 +28,7 @@
 .product-preview figcaption {
   font-size: 11px;
   line-height: 1.6;
-  color: #586b5d;
+  color: #526174;
   margin-top: 32px;
 }
 .preview-sticker {
@@ -39,19 +39,19 @@
   right: -12px;
   bottom: -12px;
   transform: rotate(3deg);
-  background: #eee5d5;
-  border: 1px solid #dcd0bb;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
   border-radius: 6px;
   padding: 14px 20px;
-  box-shadow: 0 10px 30px -20px #536151;
+  box-shadow: 0 10px 30px -20px #64748b;
   font-family: Georgia, serif;
   font-size: 14px;
   line-height: 1.5;
-  color: #675a42;
+  color: #1d4ed8;
 }
 .preview-sticker > span {
   font-size: 39px;
-  color: #586b5d;
+  color: #526174;
 }
 .preview-sticker strong {
   font-weight: 400;
@@ -62,9 +62,9 @@
   padding-bottom: 85px;
 }
 .product-tour figure {
-  border: 1px solid #e0e5df;
+  border: 1px solid #d8e1ee;
   border-radius: 12px;
-  background: #e7eee9;
+  background: #f5f7fb;
   padding: 20px 20px 12px;
 }
 .product-tour img {
@@ -72,13 +72,13 @@
   width: 100%;
   height: auto;
   border-radius: 6px;
-  border: 1px solid #d9e0df;
+  border: 1px solid #d8e1ee;
 }
 .product-tour figcaption {
   text-align: center;
   font-size: 11px;
   line-height: 1.6;
-  color: #586b5d;
+  color: #526174;
   padding-top: 13px;
 }
 .feature-tour {
@@ -90,11 +90,11 @@
 .button-outline:hover { background: #e4eef4; }
 .hero-source-link { margin-top: 18px; font-size: 12px; }
 .page-intro .product-actions { margin-top: 26px; }
-.tour-footer { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 22px; font-size: 13px; color: #586b5d; }
-.tour-intro { max-width: 700px; margin: -12px 0 24px; color: #586b5d; font-size: 14px; }
+.tour-footer { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 22px; font-size: 13px; color: #526174; }
+.tour-intro { max-width: 700px; margin: -12px 0 24px; color: #526174; font-size: 14px; }
 .tour-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
-.tour-tabs button { border: 1px solid #cbd6d2; background: white; color: var(--ink); border-radius: 6px; padding: 10px 14px; min-height: 42px; font-size: 12px; font-weight: 600; cursor: pointer; }
-.tour-tabs button:hover { background: #e7eee9; }
+.tour-tabs button { border: 1px solid #cbd5e1; background: white; color: var(--ink); border-radius: 6px; padding: 10px 14px; min-height: 42px; font-size: 12px; font-weight: 600; cursor: pointer; }
+.tour-tabs button:hover { background: #f5f7fb; }
 .tour-tabs button[aria-selected="true"] { background: var(--ink); border-color: var(--ink); color: white; }
 .tour-tabs button:disabled { cursor: wait; }
 .tour-panel { scroll-margin-top: 100px; border-radius: 12px; }
@@ -105,10 +105,10 @@
 .tour-caption-footer { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; }
 .tour-caption-footer > span { font-size: 10px; }
 .tour-caption-footer .text-link { font-size: 11px; }
-.calendar-preview { margin-top: 36px; padding-top: 32px; border-top: 1px solid #d9e0df; }
+.calendar-preview { margin-top: 36px; padding-top: 32px; border-top: 1px solid #d8e1ee; }
 .calendar-preview-copy { max-width: 540px; margin-bottom: 24px; }
 .calendar-preview h3 { margin: 10px 0 12px; font-size: 28px; letter-spacing: -.03em; }
-.calendar-preview-copy p { font-size: 14px; line-height: 1.7; color: #586b5d; }
+.calendar-preview-copy p { font-size: 14px; line-height: 1.7; color: #526174; }
 .calendar-mobile-shots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; max-width: 460px; margin-inline: auto; }
 .calendar-mobile-shots figure { margin: 0; min-width: 0; padding: 8px; }
 .calendar-mobile-shots img { width: 100%; height: auto; aspect-ratio: auto; }
