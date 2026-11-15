@@ -4,6 +4,7 @@ import Icon from '../components/Icon.astro';
 import CommunityPreview from '../components/CommunityPreview.astro';
 import ProductTour from '../components/ProductTour.astro';
 import Comparison from '../components/Comparison.astro';
+import AlternativesMarquee from '../components/AlternativesMarquee.astro';
 import { features, repository, liveDemo } from '../data/site';
 const faqs = [
   ['Is Roost really free?', 'Yes. Roost is free, open-source software under the MIT license. There is no Roost license fee or per-member charge. You pay your own infrastructure providers for hosting, storage, email, and any other services you choose.'],
@@ -24,7 +25,7 @@ const faqs = [
         <div class="hero-proof"><span><Icon name="check" size={15} /> MIT licensed</span><span><Icon name="check" size={15} /> Your infrastructure</span><span><Icon name="check" size={15} /> No per-member fees</span></div>
         <p class="hero-cost-note">Free software. Hosting, storage, and email costs are yours.</p>
       </div>
-      <div class="hero-feature-rail"><span><Icon name="feed" size={17} /> Conversations</span><span><Icon name="learn" size={17} /> Classrooms</span><span><Icon name="people" size={17} /> Member connections</span><a href="/compare/">Compare platforms <Icon name="arrow" size={16} /></a></div>
+      <AlternativesMarquee />
       <CommunityPreview />
     </section>
     <section class="belief-strip"><div class="container"><span>ONE COMMUNITY. YOUR OWN FOUNDATION.</span><div><span>Creators</span> <i>✳</i> <span>Educators</span> <i>✳</i> <span>Builders</span> <i>✳</i> <span>Independent communities</span></div></div></section>

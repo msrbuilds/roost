@@ -1,3 +1,87 @@
+// Carousels stop on interaction; visitors can explicitly restart rotation.
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+for (const marquee of document.querySelectorAll<HTMLElement>('[data-logo-marquee]')) {
+  const pause = marquee.querySelector<HTMLButtonElement>('[data-marquee-pause]')!;
+  let paused = reducedMotion.matches;
+  const render = () => {
+    marquee.toggleAttribute('data-paused', paused || document.hidden || reducedMotion.matches);
+    pause.setAttribute('aria-pressed', String(paused));
+    pause.setAttribute('aria-label', paused ? 'Resume scrolling logos' : 'Pause scrolling logos');
+    pause.textContent = paused ? 'Play ▷' : 'Pause Ⅱ';
+    pause.disabled = reducedMotion.matches;
+  };
+  pause.addEventListener('click', () => { paused = !paused; render(); });
+  reducedMotion.addEventListener('change', () => { paused = reducedMotion.matches; render(); });
+  document.addEventListener('visibilitychange', render);
+  marquee.setAttribute('data-enhanced', '');
+  render();
+}
+for (const slider of document.querySelectorAll<HTMLElement>('[data-showcase-slider]')) {
+  const tabs = [...slider.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+  const panels = [...slider.querySelectorAll<HTMLElement>('[role="tabpanel"]')];
+  const play = slider.querySelector<HTMLButtonElement>('[data-slider-play]')!;
+  const previous = slider.querySelector<HTMLButtonElement>('[data-slider-prev]')!;
+  const next = slider.querySelector<HTMLButtonElement>('[data-slider-next]')!;
+  const description = slider.querySelector<HTMLElement>('[data-slider-description]')!;
+  const status = slider.querySelector<HTMLElement>('[data-slider-status]')!;
+  let index = 0;
+  let playing = !reducedMotion.matches;
+  let inView = false;
+  let hovered = false;
+  let timer: number | undefined;
+  let request = 0;
+  const sync = () => {
+    window.clearTimeout(timer);
+    play.textContent = playing ? 'Pause Ⅱ' : 'Play ▷';
+    play.setAttribute('aria-label', playing ? 'Pause screenshot slideshow' : 'Play screenshot slideshow');
+    play.disabled = reducedMotion.matches;
+    play.title = reducedMotion.matches ? 'Automatic rotation is off because reduced motion is enabled.' : '';
+    if (playing && inView && !hovered && !document.hidden && !reducedMotion.matches) {
+      timer = window.setTimeout(() => { void activate((index + 1) % tabs.length); }, 7000);
+    }
+  };
+  const activate = async (target: number, manual = false, focus = false) => {
+    const currentRequest = ++request;
+    if (manual) { playing = false; sync(); }
+    // Decode before swapping so slow connections keep a complete screenshot visible.
+    const image = panels[target].querySelector<HTMLImageElement>('img')!;
+    image.loading = 'eager';
+    try { await image.decode(); } catch { sync(); return; }
+    if (currentRequest !== request) return;
+    index = target;
+    tabs.forEach((tab, position) => {
+      tab.setAttribute('aria-selected', String(position === index));
+      tab.tabIndex = position === index ? 0 : -1;
+      panels[position].hidden = position !== index;
+    });
+    description.textContent = tabs[index].dataset.description || '';
+    if (manual) status.textContent = `${tabs[index].textContent}, screenshot ${index + 1} of ${tabs.length}`;
+    if (focus) tabs[index].focus();
+    sync();
+  };
+  tabs.forEach((tab, position) => {
+    tab.addEventListener('click', () => { void activate(position, true); });
+    tab.addEventListener('keydown', (event) => {
+      const keys: Record<string, number> = { ArrowRight: (position + 1) % tabs.length, ArrowLeft: (position - 1 + tabs.length) % tabs.length, Home: 0, End: tabs.length - 1 };
+      if (!(event.key in keys)) return;
+      event.preventDefault();
+      void activate(keys[event.key], true, true);
+    });
+  });
+  previous.addEventListener('click', () => { void activate((index - 1 + tabs.length) % tabs.length, true); });
+  next.addEventListener('click', () => { void activate((index + 1) % tabs.length, true); });
+  slider.addEventListener('focusin', (event) => { if (event.target !== play) { playing = false; sync(); } });
+  play.addEventListener('click', () => { playing = !playing; sync(); });
+  slider.addEventListener('mouseenter', () => { hovered = true; sync(); });
+  slider.addEventListener('mouseleave', () => { hovered = false; sync(); });
+  document.addEventListener('visibilitychange', sync);
+  reducedMotion.addEventListener('change', () => { playing = false; sync(); });
+  const observer = new IntersectionObserver(([entry]) => { inView = entry.isIntersecting; sync(); }, { threshold: 0.25 });
+  observer.observe(slider);
+  slider.querySelectorAll<HTMLButtonElement>('button').forEach(button => { button.disabled = false; });
+  sync();
+}
+
 const menuButton = document.querySelector<HTMLButtonElement>(".menu-trigger");
 
 // Keep illustrated guides readable on small screens without duplicating assets.
@@ -14,8 +98,8 @@ for (const screenshot of document.querySelectorAll<HTMLImageElement>(".docs-cont
 }
 
 for (const tour of document.querySelectorAll<HTMLElement>("[data-screenshot-tour]")) {
-  const tabs = [...tour.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
-  const panels = [...tour.querySelectorAll<HTMLElement>('[role="tabpanel"]')];
+  const tabs = [...tour.querySelectorAll<HTMLButtonElement>(':scope > .tour-tabs > [role="tab"]')];
+  const panels = [...tour.querySelectorAll<HTMLElement>(':scope > [role="tabpanel"]')];
   const activate = (index: number, focus = false) => {
     tabs.forEach((tab, position) => {
       tab.setAttribute('aria-selected', String(position === index));

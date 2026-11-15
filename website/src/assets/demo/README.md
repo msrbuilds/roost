@@ -16,3 +16,5 @@ management captures are in ../admin. Guides reference these same source assets.
 When refreshing, wait for content and embedded previews to load, inspect the
 saved captures, and run the website build and browser suite. Keep credentials,
 real member information, private keys, and browser chrome out of captures.
+
+Tablet calendar captures added 2026-11-15: `calendar-tablet-week.jpg` and `calendar-tablet-agenda.jpg`. Captured from the full local installation with fictional sample data and the owner account, at a 960 × 1280 content viewport (3:4 tablet). Both images preserve the actual interface.

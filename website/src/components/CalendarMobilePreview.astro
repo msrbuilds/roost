@@ -1,15 +1,14 @@
 ---
-import { Image } from 'astro:assets';
-import Icon from './Icon.astro';
-import week from '../assets/demo/calendar-mobile-week.jpg';
-import agenda from '../assets/demo/calendar-mobile-agenda.jpg';
+import ScreenshotSlider from './ScreenshotSlider.astro';
+import week from '../assets/demo/calendar-tablet-week.jpg';
+import agenda from '../assets/demo/calendar-tablet-agenda.jpg';
 const { compact = false } = Astro.props;
-const views = [
-  { label: 'Week view', image: week, alt: 'Roost calendar on a phone with fully visible day labels and a compact time column.', linkLabel: 'Open full-size mobile week screenshot' },
-  { label: 'Agenda view', image: agenda, alt: 'Roost calendar on a phone with a compact agenda, readable event dates and times, and group filters.', linkLabel: 'Open full-size mobile agenda screenshot' },
+const screens = [
+  { label: 'Week view', image: week, alt: 'Roost calendar on a tablet with seven readable day columns and a community co-working event.', description: 'Plan the week with a clear view of upcoming community events.' },
+  { label: 'Agenda view', image: agenda, alt: 'Roost tablet calendar with an agenda, group filters, and event details including RSVP options.', description: 'Switch to the agenda for event details and quick RSVPs.' },
 ];
 ---
 <div class:list={['calendar-preview', { 'calendar-preview-compact': compact }]}>
-  <div class="calendar-preview-copy"><span class="small-label">EVENTS ON ANY SCREEN</span><h3>Keep your community in sync.</h3><p>Browse the week ahead or switch to a compact agenda. Your community's next gathering is easy to find, even on a phone.</p></div>
-  <div class="calendar-mobile-shots">{views.map(view => <figure><Image src={view.image} alt={view.alt} width={390} widths={[240, 390]} sizes="(max-width: 800px) 43vw, 220px" format="webp" loading="lazy" /><figcaption><strong>{view.label}</strong><a class="text-link" href={view.image.src} target="_blank" rel="noopener noreferrer" aria-label={view.linkLabel}>Full size <Icon name="external" size={13} /></a></figcaption></figure>)}</div>
+  <div class="calendar-preview-copy"><span class="small-label">EVENTS ON ANY SCREEN</span><h3>Keep your community in sync.</h3><p>Browse the week ahead or switch to a compact agenda. Your community's next gathering is easy to find, from desktop to tablet to phone.</p><span class="calendar-preview-note">Two views. One shared calendar.</span></div>
+  <ScreenshotSlider id={compact ? 'home-calendar' : 'feature-calendar'} label="Calendar on a tablet" screens={screens} tablet />
 </div>

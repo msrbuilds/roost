@@ -4,6 +4,7 @@ import Footer from '../components/Footer.astro';
 import '../styles/global.css';
 import '../styles/product-images.css';
 import '../styles/design.css';
+import '../styles/showcase.css';
 interface Props { title?: string; description?: string; noindex?: boolean; docs?: boolean; }
 const { title = 'The open-source alternative to Skool & Circle', description = 'Roost is a free, open-source alternative to Skool and Circle. Self-host discussions, courses, messaging, and events with control over your code and data.', noindex = false, docs = false } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site);

@@ -3,6 +3,86 @@ import { join } from 'node:path';
 import { readFileSync } from 'node:fs';
 import { guides } from '../src/data/site';
 
+test('showcase and tablet sliders navigate, wrap, and load every screenshot', async ({ page, request }) => {
+  test.setTimeout(90000);
+  for (const width of [320, 390, 768, 1440]) {
+    await page.setViewportSize({ width, height: 1000 });
+    for (const route of ['/', '/features/']) {
+      await page.goto(route);
+      if (route === '/features/') await page.getByRole('tab', { name: 'Events', exact: true }).click();
+      const sliders = page.locator('[data-showcase-slider]:visible');
+      for (const slider of await sliders.all()) {
+        const tabs = slider.getByRole('tab');
+        const count = await tabs.count();
+        for (const tab of await tabs.all()) {
+          await tab.click();
+          await expect(tab).toHaveAttribute('aria-selected', 'true');
+          const panel = slider.getByRole('tabpanel');
+          await expect(panel).toHaveCount(1);
+          await expect.poll(() => panel.locator('img').evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth > 0)).toBe(true);
+          await expect(slider.getByRole('button', { name: 'Play screenshot slideshow' })).toBeVisible();
+        }
+        await slider.getByRole('button', { name: 'Next screenshot' }).click();
+        await expect(tabs.first()).toHaveAttribute('aria-selected', 'true');
+        await slider.getByRole('button', { name: 'Previous screenshot' }).click();
+        await expect(tabs.last()).toHaveAttribute('aria-selected', 'true');
+        await tabs.last().press('Home');
+        await expect(tabs.first()).toBeFocused();
+        await tabs.first().press('End');
+        await expect(tabs.nth(count - 1)).toBeFocused();
+        await tabs.last().press('ArrowRight');
+        await expect(tabs.first()).toBeFocused();
+        const link = slider.getByRole('tabpanel').locator('a');
+        expect((await request.get((await link.getAttribute('href'))!)).ok()).toBe(true);
+      }
+      await expect(page.locator('.showcase-tablet .showcase-frame:visible')).toHaveCount(1);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    }
+  }
+});
+
+test('logo marquee and screenshot rotation can pause and respect reduced motion', async ({ page }) => {
+  await page.goto('/');
+  const marquee = page.locator('[data-logo-marquee]');
+  const pause = marquee.getByRole('button', { name: 'Pause scrolling logos' });
+  await pause.click();
+  await expect(marquee).toHaveAttribute('data-paused', '');
+  await expect(marquee.locator('.alternatives-track')).toHaveCSS('animation-play-state', 'paused');
+  await marquee.getByRole('button', { name: 'Resume scrolling logos' }).click();
+  await expect(marquee).not.toHaveAttribute('data-paused');
+  await expect(marquee.locator('ul:not([aria-hidden]) li')).toHaveCount(6);
+  await expect(marquee.locator('ul[aria-hidden="true"] a, ul[aria-hidden="true"] button')).toHaveCount(0);
+  for (const image of await marquee.locator('img').all()) {
+    await expect.poll(() => image.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
+  }
+  const slider = page.getByRole('region', { name: 'Roost product showcase', exact: true });
+  await slider.getByRole('button', { name: 'Pause screenshot slideshow' }).click();
+  await expect(slider.getByRole('button', { name: 'Play screenshot slideshow' })).toBeVisible();
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(marquee.locator('.alternatives-track')).toHaveCSS('animation-name', 'none');
+  await expect(marquee.locator('[data-marquee-pause]')).toBeDisabled();
+  await expect(slider.getByRole('button', { name: 'Play screenshot slideshow' })).toBeVisible();
+  await page.reload();
+  await expect(slider.getByRole('button', { name: 'Play screenshot slideshow' })).toBeVisible();
+  await slider.getByRole('tab', { name: 'Calendar', exact: true }).click();
+  await expect(slider.getByRole('tabpanel')).toHaveAttribute('id', 'hero-showcase-panel-3');
+});
+
+test('screenshot slides advance only while visible and stop after manual interaction', async ({ page }) => {
+  await page.clock.install();
+  await page.goto('/');
+  const slider = page.getByRole('region', { name: 'Roost product showcase', exact: true });
+  await slider.scrollIntoViewIfNeeded();
+  await page.mouse.move(0, 0);
+  await expect(slider.getByRole('tab').first()).toHaveAttribute('aria-selected', 'true');
+  await page.clock.runFor(8000);
+  await expect(slider.getByRole('tab').nth(1)).toHaveAttribute('aria-selected', 'true');
+  await slider.getByRole('tab', { name: 'Calendar', exact: true }).click();
+  await page.mouse.move(0, 0);
+  await page.clock.runFor(16000);
+  await expect(slider.getByRole('tab', { name: 'Calendar', exact: true })).toHaveAttribute('aria-selected', 'true');
+});
+
 // Exercise the real production policy locally, where astro preview does not
 // apply Cloudflare's _headers file. Deployed-site runs use actual HTTP headers.
 const csp = readFileSync(new URL('../public/_headers', import.meta.url), 'utf8')
@@ -97,6 +177,8 @@ test('copying remains possible when clipboard permission is denied', async ({ pa
 
 test('product screenshots load and missing pages offer recovery links', async ({ page }) => {
   test.setTimeout(180000);
+  // Inspect stationary assets; motion behavior has its own carousel tests.
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   for (const width of [320, 390, 600, 768, 1024, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     for (const route of ['/', '/features/']) {
@@ -107,11 +189,9 @@ test('product screenshots load and missing pages offer recovery links', async ({
       }
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${route} at ${width}px`).toBe(true);
       if (route === '/') {
-        expect(await page.evaluate(() => {
-          const sticker = document.querySelector('.preview-sticker')!.getBoundingClientRect();
-          const caption = document.querySelector('.product-preview figcaption')!.getBoundingClientRect();
-          return caption.top >= sticker.bottom;
-        }), `homepage sticker clears its caption at ${width}px`).toBe(true);
+        const showcase = page.getByRole('region', { name: 'Roost product showcase', exact: true });
+        await expect(showcase.getByRole('tabpanel')).toHaveCount(1);
+        await expect(showcase.locator('.showcase-navigation')).toBeVisible();
       } else {
         await expect(page.locator('main > section').last()).toHaveClass(/final-cta/);
         expect(await page.locator('.feature-detail').evaluateAll((cards) => {
@@ -163,11 +243,11 @@ test('live demo calls to action and the real screenshot tour work with pointer a
     for (const tab of await tabs.all()) {
       await tab.click();
       await expect(tab).toHaveAttribute('aria-selected', 'true');
-      const panel = page.getByRole('tabpanel');
+      const panel = page.locator('.tour-panel:not([hidden])');
       await expect(panel).toHaveCount(1);
       await expect(panel).toHaveAttribute('aria-labelledby', (await tab.getAttribute('id'))!);
       await expect(panel.locator('img')).toHaveCount((await tab.getAttribute('id')) === 'tour-tab-calendar' ? 3 : 1);
-      for (const screenshot of await panel.locator('img').all()) {
+      for (const screenshot of await panel.locator('img:visible').all()) {
         await screenshot.scrollIntoViewIfNeeded();
         await expect.poll(() => screenshot.evaluate((element: HTMLImageElement) => element.complete && element.naturalWidth > 0)).toBe(true);
       }

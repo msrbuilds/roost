@@ -1,0 +1,32 @@
+---
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+interface Props {
+  id: string;
+  label: string;
+  screens: { label: string; image: ImageMetadata; alt: string; description: string }[];
+  tablet?: boolean;
+}
+const { id, label, screens, tablet = false } = Astro.props;
+---
+<div class:list={['showcase-slider', { 'showcase-tablet': tablet }]} data-showcase-slider role="region" aria-roledescription="carousel" aria-label={label}>
+  <div class="showcase-topline"><span>{tablet ? 'ROOST / ON THE GO' : 'A LOOK INSIDE ROOST'}</span><button type="button" data-slider-play disabled aria-label="Pause screenshot slideshow">Pause <span aria-hidden="true">Ⅱ</span></button></div>
+  <div class="showcase-frame">
+    <div class="showcase-camera" aria-hidden="true"></div>
+    <div class="showcase-stage">
+      {screens.map((screen, index) => <div class="showcase-slide" role="tabpanel" id={`${id}-panel-${index}`} aria-labelledby={`${id}-tab-${index}`} hidden={index !== 0}>
+        <a href={screen.image.src} target="_blank" rel="noopener noreferrer" aria-label={`Open full-size ${screen.label.toLowerCase()} screenshot`}>
+          <Image src={screen.image} alt={screen.alt} width={tablet ? 768 : 1440} widths={tablet ? [390, 768, 960] : [640, 1000, 1440]} sizes={tablet ? '(max-width: 800px) 80vw, 440px' : '(max-width: 800px) 90vw, 1200px'} format="webp" loading={id === 'hero-showcase' && index === 0 ? 'eager' : 'lazy'} fetchpriority={id === 'hero-showcase' && index === 0 ? 'high' : 'auto'} />
+        </a>
+      </div>)}
+    </div>
+  </div>
+  <div class="showcase-navigation">
+    <button type="button" data-slider-prev disabled aria-label="Previous screenshot">←</button>
+    <div class="showcase-tabs" role="tablist" aria-label={`${label} views`}>{screens.map((screen, index) => <button type="button" role="tab" id={`${id}-tab-${index}`} aria-controls={`${id}-panel-${index}`} aria-selected={index === 0} tabindex={index === 0 ? 0 : -1} disabled data-description={screen.description}>{screen.label}</button>)}</div>
+    <button type="button" data-slider-next disabled aria-label="Next screenshot">→</button>
+  </div>
+  <p class="showcase-description" data-slider-description>{screens[0].description}</p>
+  {tablet && <p class="showcase-provenance">Select a screenshot to view full size.</p>}
+  <span class="sr-only" data-slider-status role="status"></span>
+</div>
