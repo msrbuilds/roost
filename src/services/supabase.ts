@@ -1,3 +1,4 @@
+import { APP_CONFIG } from '@/config/app';
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
 
@@ -67,7 +68,7 @@ export const auth = {
 
     // Sign out
     async signOut() {
-        const { error } = await supabase.auth.signOut();
+        const { error } = await supabase.auth.signOut(APP_CONFIG.demo.enabled ? { scope: 'local' } : undefined);
         if (error) {
             console.error('Supabase signOut error:', error);
             // Don't throw - we still want to clear local state

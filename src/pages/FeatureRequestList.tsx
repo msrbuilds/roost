@@ -71,6 +71,7 @@ export default function FeatureRequestList() {
     });
 
     const observerTarget = useRef<HTMLDivElement>(null);
+    const requestVersion = useRef(0);
 
     // Load status counts (fetch all without pagination to count)
     useEffect(() => {
@@ -90,6 +91,7 @@ export default function FeatureRequestList() {
     }, []);
 
     const fetchRequests = useCallback(async (reset = false, currentOffset = 0) => {
+        const version = ++requestVersion.current;
         try {
             if (reset) {
                 setIsLoading(true);
@@ -113,6 +115,8 @@ export default function FeatureRequestList() {
                 });
             }
 
+            if (version !== requestVersion.current) return;
+
             if (reset) {
                 setRequests(data);
             } else {
@@ -122,8 +126,10 @@ export default function FeatureRequestList() {
         } catch (err) {
             console.error('Error fetching feature requests:', err);
         } finally {
-            setIsLoading(false);
-            setIsLoadingMore(false);
+            if (version === requestVersion.current) {
+                setIsLoading(false);
+                setIsLoadingMore(false);
+            }
         }
     }, [filters, user]);
 

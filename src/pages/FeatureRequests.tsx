@@ -81,6 +81,7 @@ export default function FeatureRequests() {
     });
 
     const observerTarget = useRef<HTMLDivElement>(null);
+    const requestVersion = useRef(0);
 
     // Load featured items (pinned + in_progress)
     useEffect(() => {
@@ -146,6 +147,7 @@ export default function FeatureRequests() {
     }, []);
 
     const fetchRequests = useCallback(async (reset = false, currentOffset = 0) => {
+        const version = ++requestVersion.current;
         try {
             if (reset) {
                 setIsLoading(true);
@@ -169,6 +171,8 @@ export default function FeatureRequests() {
                 });
             }
 
+            if (version !== requestVersion.current) return;
+
             if (reset) {
                 setRequests(data);
             } else {
@@ -178,8 +182,10 @@ export default function FeatureRequests() {
         } catch (err) {
             console.error('Error fetching feature requests:', err);
         } finally {
-            setIsLoading(false);
-            setIsLoadingMore(false);
+            if (version === requestVersion.current) {
+                setIsLoading(false);
+                setIsLoadingMore(false);
+            }
         }
     }, [filters, user]);
 
