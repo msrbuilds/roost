@@ -1,3 +1,4 @@
+import { APP_CONFIG } from '@/config/app';
 import { Link } from 'react-router-dom';
 import { Users, Lock, Globe, Crown } from 'lucide-react';
 import type { GroupWithDetails } from '@/services/group';
@@ -126,6 +127,8 @@ export default function GroupCard({ group, onJoin, onLeave, userIsPremium = true
             {!group.is_private && canAccess && (
                 <button
                     onClick={handleAction}
+                    disabled={APP_CONFIG.demo.enabled}
+                    title={APP_CONFIG.demo.enabled ? 'Membership changes are disabled in this demo' : undefined}
                     className={`
                         w-full mt-4 py-2 px-4 rounded-lg font-medium text-sm transition-colors
                         ${group.is_member

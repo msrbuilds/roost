@@ -1,3 +1,4 @@
+import { APP_CONFIG } from '@/config/app';
 import { useState, useRef, useEffect, useMemo, memo } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -274,10 +275,11 @@ function PostCard({
                             }
                             {!isAuthor && onFollowToggle && (
                                 <button
+                                    disabled={APP_CONFIG.demo.enabled}
                                     onClick={(e) => {
                                         e.preventDefault();
                                         e.stopPropagation();
-                                        onFollowToggle(post.author.id);
+                                        if (!APP_CONFIG.demo.enabled) onFollowToggle(post.author.id);
                                     }}
                                     className={`ml-0.5 px-2.5 py-0.5 rounded-full text-xs font-medium transition-all ${
                                         isFollowingAuthor
@@ -462,14 +464,14 @@ function PostCard({
                                 : 'text-surface-500 border-surface-200 dark:border-surface-700 hover:bg-surface-50 dark:hover:bg-surface-800'
                             }
                         `}
-                        disabled={isReacting}
+                        disabled={isReacting || APP_CONFIG.demo.enabled}
                     >
                         <ReactionIcon className="w-5 h-5" />
                         <span>{reactionCounts.total > 0 ? reactionCounts.total : 'React'}</span>
                     </button>
 
                     {/* Reaction picker popup */}
-                    {showReactions && (
+                    {showReactions && !APP_CONFIG.demo.enabled && (
                         <div className="absolute bottom-full left-0 mb-0 pb-2">
                             <div className="flex gap-1 bg-white dark:bg-surface-800 rounded-full shadow-xl border border-surface-200 dark:border-surface-700 p-2">
                                 {Object.entries(reactionIcons).map(([type, { icon: Icon, label, color, bgColor }]) => {

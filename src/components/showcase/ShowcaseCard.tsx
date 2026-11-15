@@ -1,3 +1,4 @@
+import { APP_CONFIG } from '@/config/app';
 import { Link } from 'react-router-dom';
 import { ChevronUp, Star, MessageSquare } from 'lucide-react';
 import type { ShowcaseCardData } from '@/types/showcase';
@@ -121,7 +122,7 @@ export default function ShowcaseCard({ showcase, onVote, isVoting }: ShowcaseCar
                 {/* Vote button - right side, vertically centered */}
                 <button
                     onClick={handleVote}
-                    disabled={isVoting}
+                    disabled={isVoting || APP_CONFIG.demo.enabled}
                     className={`
                         flex flex-col items-center justify-center w-14 h-14 rounded-lg border transition-all flex-shrink-0
                         ${showcase.user_has_voted

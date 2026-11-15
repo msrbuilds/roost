@@ -1,3 +1,4 @@
+import { APP_CONFIG } from '@/config/app';
 import { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import DOMPurify from 'dompurify';
@@ -97,7 +98,7 @@ export default function FeatureRequestDetailView({
                 {/* Vote button */}
                 <button
                     onClick={onVote}
-                    disabled={isVoting}
+                    disabled={isVoting || APP_CONFIG.demo.enabled}
                     className={`flex flex-col items-center justify-center px-3 py-2 rounded-xl border-2 transition-colors flex-shrink-0 min-w-[60px] ${
                         request.user_has_voted
                             ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'

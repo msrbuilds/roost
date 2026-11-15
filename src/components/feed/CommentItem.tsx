@@ -1,3 +1,4 @@
+import { APP_CONFIG } from '@/config/app';
 import { useState, useRef, useEffect, useMemo, memo } from 'react';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
@@ -84,7 +85,7 @@ function CommentItem({
     const [voteCounts, setVoteCounts] = useState<VoteCounts>(comment.vote_counts || { upvotes: 0, downvotes: 0, score: 0 });
     const [isVoting, setIsVoting] = useState(false);
 
-    const isAuthor = user?.id === comment.author_id;
+    const isAuthor = !APP_CONFIG.demo.enabled && user?.id === comment.author_id;
     const hasReplies = comment.replies && comment.replies.length > 0;
     const canReply = depth < MAX_DEPTH;
 
@@ -386,7 +387,7 @@ function CommentItem({
                                 onTouchStart={handleTouchStart}
                                 onTouchEnd={handleTouchEnd}
                                 onTouchCancel={handleTouchEnd}
-                                disabled={isReacting}
+                                disabled={isReacting || APP_CONFIG.demo.enabled}
                                 className={`flex items-center gap-1 text-xs transition-colors
                                     ${currentReaction
                                         ? `${reactionIcons[currentReaction].color}`
@@ -398,7 +399,7 @@ function CommentItem({
                             </button>
 
                             {/* Reaction picker popup */}
-                            {showReactions && (
+                            {showReactions && !APP_CONFIG.demo.enabled && (
                                 <div className="absolute bottom-full left-0 mb-0 pb-1 z-20">
                                     <div className="flex gap-0.5 bg-white dark:bg-surface-800 rounded-full shadow-xl border border-surface-200 dark:border-surface-700 p-1.5">
                                         {(Object.entries(reactionIcons) as [ReactionType, typeof reactionIcons[ReactionType]][]).map(([type, { icon: Icon, label, color, bgColor }]) => {
@@ -431,7 +432,7 @@ function CommentItem({
                         <div className="flex items-center gap-0">
                             <button
                                 onClick={() => handleVote('up')}
-                                disabled={isVoting}
+                                disabled={isVoting || APP_CONFIG.demo.enabled}
                                 className={`p-0.5 rounded transition-colors ${
                                     currentVote === 'up'
                                         ? 'text-green-500'
@@ -452,7 +453,7 @@ function CommentItem({
                             )}
                             <button
                                 onClick={() => handleVote('down')}
-                                disabled={isVoting}
+                                disabled={isVoting || APP_CONFIG.demo.enabled}
                                 className={`p-0.5 rounded transition-colors ${
                                     currentVote === 'down'
                                         ? 'text-red-500'
@@ -466,6 +467,7 @@ function CommentItem({
 
                         {canReply && (
                             <button
+                                disabled={APP_CONFIG.demo.enabled}
                                 onClick={() => setIsReplying(!isReplying)}
                                 className="flex items-center gap-1 text-xs text-surface-500 hover:text-surface-700 dark:hover:text-surface-300 transition-colors"
                             >

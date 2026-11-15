@@ -15,14 +15,14 @@ export default function Messages() {
   const [isMobileView, setIsMobileView] = useState(window.innerWidth < 768);
 
   // Handle window resize for mobile responsiveness
-  useState(() => {
+  useEffect(() => {
     const handleResize = () => {
       setIsMobileView(window.innerWidth < 768);
     };
 
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  });
+  }, []);
 
   // Load conversation from URL parameter
   useEffect(() => {
@@ -115,7 +115,7 @@ export default function Messages() {
   };
 
   return (
-    <div className="h-[calc(100vh-4rem)] flex">
+    <div className="flex flex-1 min-h-0">
       {/* Conversation list - hide on mobile when chat is selected */}
       <div className={`${isMobileView && selectedConversation ? 'hidden' : 'block'} w-full md:w-80 lg:w-96 flex-shrink-0`}>
         <ConversationList
@@ -126,7 +126,7 @@ export default function Messages() {
       </div>
 
       {/* Chat view - hide on mobile when no conversation selected */}
-      <div className={`${isMobileView && !selectedConversation ? 'hidden' : 'flex-1'} flex-1`}>
+      <div className={`${isMobileView && !selectedConversation ? 'hidden' : 'flex-1'} flex-1 min-w-0`}>
         {selectedConversation ? (
           <ChatView
             conversation={selectedConversation}

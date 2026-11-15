@@ -128,7 +128,7 @@ function App() {
                         <Route path="/settings" element={<Settings />} />
                         <Route path="/guide" element={<Guide />} />
                         <Route path="/showcase" element={<FeatureRoute feature="showcase"><Showcase /></FeatureRoute>} />
-                        <Route path="/showcase/submit" element={<FeatureRoute feature="showcase"><ShowcaseSubmit /></FeatureRoute>} />
+                        <Route path="/showcase/submit" element={<FeatureRoute feature="showcase">{APP_CONFIG.demo.enabled ? <Navigate to="/showcase" replace /> : <ShowcaseSubmit />}</FeatureRoute>} />
                         <Route path="/showcase/:id" element={<FeatureRoute feature="showcase"><ShowcaseDetail /></FeatureRoute>} />
                         <Route path="/post/:postId" element={<PostDetail />} />
                         <Route path="/roadmap" element={<FeatureRoute feature="roadmap"><FeatureRequests /></FeatureRoute>} />

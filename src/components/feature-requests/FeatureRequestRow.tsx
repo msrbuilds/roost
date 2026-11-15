@@ -1,3 +1,4 @@
+import { APP_CONFIG } from '@/config/app';
 import { ChevronUp, MessageSquare, Star } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import type { FeatureRequestCardData } from '@/types/feature-request';
@@ -39,7 +40,7 @@ export default function FeatureRequestRow({
                     e.stopPropagation();
                     onVote(request.id);
                 }}
-                disabled={isVoting}
+                disabled={isVoting || APP_CONFIG.demo.enabled}
                 className={`flex flex-col items-center justify-center px-2 py-1.5 rounded-lg border transition-colors flex-shrink-0 min-w-[48px] ${
                     request.user_has_voted
                         ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'

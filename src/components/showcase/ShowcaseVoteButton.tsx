@@ -1,3 +1,4 @@
+import { APP_CONFIG } from '@/config/app';
 import { useState } from 'react';
 import { ChevronUp } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -57,7 +58,7 @@ export default function ShowcaseVoteButton({
         return (
             <button
                 onClick={handleVote}
-                disabled={!user || isVoting}
+                disabled={!user || isVoting || APP_CONFIG.demo.enabled}
                 className={`
                     flex items-center w-full justify-center gap-2 px-8 py-3 rounded-lg font-medium transition-all whitespace-nowrap
                     ${localHasVoted
@@ -92,7 +93,7 @@ export default function ShowcaseVoteButton({
     return (
         <button
             onClick={handleVote}
-            disabled={!user || isVoting}
+            disabled={!user || isVoting || APP_CONFIG.demo.enabled}
             className={`
                 flex items-center w-full gap-2 rounded-lg border font-medium transition-all
                 ${sizeClasses[size]}

@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { APP_CONFIG } from '@/config/app';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Plus, Filter } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { CalendarView } from '../components/calendar';
@@ -13,6 +14,12 @@ export default function Calendar() {
     const [events, setEvents] = useState<EventWithDetails[]>([]);
     const [upcomingEvents, setUpcomingEvents] = useState<EventWithDetails[]>([]);
     const [loading, setLoading] = useState(true);
+    const [hasLoaded, setHasLoaded] = useState(false);
+    const eventRequest = useRef(0);
+    const [visibleRange, setVisibleRange] = useState(() => {
+        const now = new Date();
+        return { start: new Date(now.getFullYear(), now.getMonth(), 1), end: new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999) };
+    });
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [selectedGroup, setSelectedGroup] = useState<string | undefined>();
     const [selectedSlot, setSelectedSlot] = useState<{ start: Date, end: Date } | null>(null);
@@ -25,14 +32,10 @@ export default function Calendar() {
     }, [user]);
 
     const loadEvents = useCallback(async () => {
+        const requestId = ++eventRequest.current;
         try {
             setLoading(true);
-            // Load events for current month view
-            const now = new Date();
-            const start = new Date(now.getFullYear(), now.getMonth(), 1);
-            const end = new Date(now.getFullYear(), now.getMonth() + 2, 0);
-
-            const data = await getEventsInRange(start, end, selectedGroup);
+            const data = await getEventsInRange(visibleRange.start, visibleRange.end, selectedGroup);
 
             // Enhance events with attendee counts and user RSVP status
             const enhancedEvents = await Promise.all(
@@ -50,13 +53,16 @@ export default function Calendar() {
                 })
             );
 
-            setEvents(enhancedEvents);
+            if (requestId === eventRequest.current) setEvents(enhancedEvents);
         } catch (err) {
             console.error('Error loading events:', err);
         } finally {
-            setLoading(false);
+            if (requestId === eventRequest.current) {
+                setLoading(false);
+                setHasLoaded(true);
+            }
         }
-    }, [selectedGroup, user]);
+    }, [selectedGroup, user, visibleRange]);
 
     const loadUpcoming = useCallback(async () => {
         try {
@@ -108,7 +114,7 @@ export default function Calendar() {
         Promise.all([loadEvents(), loadUpcoming()]);
     };
 
-    if (loading) {
+    if (loading && !hasLoaded) {
         return (
             <div className="flex items-center justify-center min-h-screen">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600" />
@@ -119,12 +125,14 @@ export default function Calendar() {
     return (
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             {/* Header */}
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
                 <div>
                     <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Calendar</h1>
                     <p className="text-gray-600 dark:text-gray-400 mt-1">Community events and activities</p>
                 </div>
                 <button
+                    disabled={APP_CONFIG.demo.enabled}
+                    title={APP_CONFIG.demo.enabled ? 'Events are read-only in this demo' : undefined}
                     onClick={() => {
                         setSelectedSlot(null);
                         setIsCreateOpen(true);
@@ -141,6 +149,7 @@ export default function Calendar() {
                 <div className="lg:col-span-2">
                     <CalendarView
                         events={events}
+                        onRangeChange={setVisibleRange}
                         onCreateEvent={(start, end) => {
                             setSelectedSlot({ start, end });
                             setIsCreateOpen(true);
@@ -160,8 +169,8 @@ export default function Calendar() {
                             <h2 className="font-semibold text-gray-900 dark:text-gray-100">Filters</h2>
                         </div>
                         <div>
-                            <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Group</label>
-                            <select
+                            <label htmlFor="calendar-group" className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Group</label>
+                            <select id="calendar-group"
                                 value={selectedGroup || ''}
                                 onChange={(e) => setSelectedGroup(e.target.value || undefined)}
                                 className="w-full px-3 py-2 border border-gray-300 dark:border-surface-600 bg-white dark:bg-surface-800 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-purple-500"

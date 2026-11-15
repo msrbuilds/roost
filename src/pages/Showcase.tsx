@@ -1,3 +1,4 @@
+import { APP_CONFIG } from '@/config/app';
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Plus, Loader2, Rocket, Clock, CheckCircle, XCircle, Star, FolderOpen, X, SlidersHorizontal } from 'lucide-react';
@@ -242,13 +243,13 @@ export default function Showcase() {
                                     </span>
                                 </button>
                             )}
-                            <Link
+                            {!APP_CONFIG.demo.enabled && <Link
                                 to="/showcase/submit"
                                 className="inline-flex items-center gap-2 px-3 sm:px-4 py-2.5 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors"
                             >
                                 <Plus className="w-5 h-5" />
                                 <span className="hidden sm:inline">Submit Project</span>
-                            </Link>
+                            </Link>}
                         </div>
                     </div>
 
@@ -313,14 +314,14 @@ export default function Showcase() {
                                             );
                                         })}
                                     </div>
-                                    <Link
+                                    {!APP_CONFIG.demo.enabled && <Link
                                         to="/showcase/submit"
                                         onClick={() => setIsSubmissionsSidebarOpen(false)}
                                         className="mt-4 w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors"
                                     >
                                         <Plus className="w-4 h-4" />
                                         Submit New Project
-                                    </Link>
+                                    </Link>}
                                 </div>
                             </aside>
                         </>
@@ -368,13 +369,13 @@ export default function Showcase() {
                                     ? 'Try adjusting your filters'
                                     : 'Be the first to submit a project!'}
                             </p>
-                            <Link
+                            {!APP_CONFIG.demo.enabled && <Link
                                 to="/showcase/submit"
                                 className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors"
                             >
                                 <Plus className="w-5 h-5" />
                                 Submit Project
-                            </Link>
+                            </Link>}
                         </div>
                     ) : (
                         <>

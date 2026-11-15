@@ -3,52 +3,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSidebar } from '@/contexts/SidebarContext';
 import { APP_CONFIG } from '@/config/app';
 import { useSiteSettings } from '@/contexts/SiteSettingsContext';
-import {
-    Home,
-    Users,
-    BookOpen,
-    Calendar,
-    Trophy,
-    HelpCircle,
-    MessageSquare,
-    Settings,
-    Shield,
-    LogOut,
-    ChevronLeft,
-    ChevronRight,
-    Rocket,
-    Key,
-    Crown,
-    Lightbulb,
-    Compass,
-    Radio,
-    LucideIcon,
-} from 'lucide-react';
-
-// Navigation item type
-interface NavItem {
-    name: string;
-    href: string;
-    icon: LucideIcon;
-    premiumOnly?: boolean;
-    featureKey?: 'live_room' | 'activations' | 'roadmap' | 'showcase';
-}
-
-// Main navigation items (featureKey items are filtered by admin settings)
-const allNavItems: NavItem[] = [
-    { name: 'Home', href: '/', icon: Home },
-    { name: 'Explore', href: '/explore', icon: Compass },
-    { name: 'Classrooms', href: '/classrooms', icon: BookOpen },
-    { name: 'Showcase', href: '/showcase', icon: Rocket, featureKey: 'showcase' },
-    { name: 'Calendar', href: '/calendar', icon: Calendar, premiumOnly: true },
-    { name: 'Members', href: '/members', icon: Users },
-    { name: 'Leaderboard', href: '/leaderboard', icon: Trophy },
-    { name: 'Messages', href: '/messages', icon: MessageSquare, premiumOnly: true },
-    { name: 'Live Room', href: '/live', icon: Radio, premiumOnly: true, featureKey: 'live_room' },
-    { name: 'Activations', href: '/activations', icon: Key, premiumOnly: true, featureKey: 'activations' },
-    { name: 'Roadmap & Issues', href: '/roadmap', icon: Lightbulb, featureKey: 'roadmap' },
-    { name: 'Guide', href: '/guide', icon: HelpCircle },
-];
+import { Settings, Shield, LogOut, ChevronLeft, ChevronRight, Crown } from 'lucide-react';
+import { getNavigationItems } from './items';
 
 export default function SideNav() {
     const { user, profile, signOut, isPremium } = useAuth();
@@ -56,16 +12,7 @@ export default function SideNav() {
     const { isCollapsed, toggleSidebar } = useSidebar();
     const { settings: siteSettings, getFeatureAccess } = useSiteSettings();
 
-    // Filter nav items based on feature module settings
-    const navItems = allNavItems.filter(item => {
-        if (!item.featureKey) return true;
-        const access = getFeatureAccess(item.featureKey);
-        if (access === 'disabled') return false;
-        // Override premiumOnly based on admin setting
-        if (access === 'all') item.premiumOnly = false;
-        else if (access === 'premium_only') item.premiumOnly = true;
-        return true;
-    });
+    const navItems = getNavigationItems(getFeatureAccess);
 
     const handleSignOut = async () => {
         try {

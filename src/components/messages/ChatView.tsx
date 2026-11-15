@@ -214,6 +214,7 @@ export default function ChatView({ conversation, onBack }: ChatViewProps) {
       <div className="flex items-center gap-3 p-4 bg-white dark:bg-surface-900 border-b border-surface-200 dark:border-surface-700">
         {onBack && (
           <button
+            aria-label="Back to conversations"
             onClick={onBack}
             className="md:hidden p-2 -ml-2 text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 rounded-lg"
           >

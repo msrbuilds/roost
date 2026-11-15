@@ -1,3 +1,4 @@
+import { APP_CONFIG } from '@/config/app';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import {
@@ -339,6 +340,7 @@ export default function FeatureRequestList() {
 
                 {/* Submit button */}
                 <button
+                    disabled={APP_CONFIG.demo.enabled}
                     onClick={() => setShowSubmitModal(true)}
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 transition-colors"
                 >
@@ -366,7 +368,8 @@ export default function FeatureRequestList() {
                     </p>
                     {!filters.search && !filters.type && !filters.status && (
                         <button
-                            onClick={() => setShowSubmitModal(true)}
+                            disabled={APP_CONFIG.demo.enabled}
+                    onClick={() => setShowSubmitModal(true)}
                             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 transition-colors"
                         >
                             <Plus className="w-4 h-4" />

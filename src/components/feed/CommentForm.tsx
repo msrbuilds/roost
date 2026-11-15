@@ -1,3 +1,4 @@
+import { APP_CONFIG } from '@/config/app';
 import { useState, useRef, useCallback, lazy, Suspense } from 'react';
 import { Send, Loader2, Smile } from 'lucide-react';
 import type { EmojiClickData } from 'emoji-picker-react';
@@ -129,6 +130,8 @@ export default function CommentForm({
             }, 0);
         }
     };
+
+    if (APP_CONFIG.demo.enabled) return <p className="py-3 text-sm text-surface-500 dark:text-surface-400">Comments are read-only in this demo.</p>;
 
     return (
         <form onSubmit={handleSubmit} className={`${isReply ? 'pl-12' : ''}`}>

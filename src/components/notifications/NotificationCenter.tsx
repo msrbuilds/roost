@@ -1,3 +1,4 @@
+import { APP_CONFIG } from '@/config/app';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, Bell, CheckCheck, X } from 'lucide-react';
@@ -129,7 +130,7 @@ export default function NotificationCenter({ isOpen, onClose, onNavigate, onUnre
 
   const handleNotificationClick = async (notification: Notification) => {
     // Mark as read if not already
-    if (!notification.is_read) {
+    if (!notification.is_read && !APP_CONFIG.demo.enabled) {
       await markAsRead(notification.id);
       // Update the unread badge count in parent
       const newUnread = notifications.filter(n => !n.is_read && n.id !== notification.id).length;
@@ -184,6 +185,8 @@ export default function NotificationCenter({ isOpen, onClose, onNavigate, onUnre
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllRead}
+                disabled={APP_CONFIG.demo.enabled}
+                title={APP_CONFIG.demo.enabled ? 'Read-only demo' : undefined}
                 className="text-xs text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium flex items-center gap-1"
               >
                 <CheckCheck className="w-4 h-4" />
@@ -192,6 +195,7 @@ export default function NotificationCenter({ isOpen, onClose, onNavigate, onUnre
             )}
             <button
               onClick={onClose}
+              aria-label="Close notifications"
               className="p-1 text-surface-400 dark:text-surface-500 hover:text-surface-600 dark:hover:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-800 rounded-lg transition-colors"
             >
               <X className="w-5 h-5" />

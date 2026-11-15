@@ -1,3 +1,4 @@
+import { APP_CONFIG } from '@/config/app';
 import { useState } from 'react';
 import { Star, Send, Loader2, Edit2, Trash2, MessageSquare } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -85,8 +86,8 @@ function ReviewItem({
     const [replyContent, setReplyContent] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const isAuthor = currentUserId === review.author_id;
-    const isMaker = currentUserId === makerId;
+    const isAuthor = !APP_CONFIG.demo.enabled && currentUserId === review.author_id;
+    const isMaker = !APP_CONFIG.demo.enabled && currentUserId === makerId;
 
     const handleSaveEdit = async () => {
         if (!editContent.trim()) return;
@@ -291,7 +292,7 @@ export default function ShowcaseReviews({
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const userHasReviewed = reviews.some((r) => r.author_id === user?.id);
-    const canReview = user && !userHasReviewed && user.id !== makerId;
+    const canReview = !APP_CONFIG.demo.enabled && user && !userHasReviewed && user.id !== makerId;
 
     const handleSubmitReview = async (e: React.FormEvent) => {
         e.preventDefault();

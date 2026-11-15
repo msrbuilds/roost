@@ -1,3 +1,4 @@
+import { APP_CONFIG } from '@/config/app';
 import { Link } from 'react-router-dom';
 import { Settings, Users, Lock, Globe, LogOut, UserPlus } from 'lucide-react';
 import type { GroupWithDetails } from '@/services/group';
@@ -67,7 +68,7 @@ export default function GroupHeader({
                             {group.user_role !== 'admin' && (
                                 <button
                                     onClick={onLeave}
-                                    disabled={isLeaving}
+                                    disabled={isLeaving || APP_CONFIG.demo.enabled}
                                     className="flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-100 dark:bg-surface-800 text-surface-700 dark:text-surface-300 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition-colors text-sm font-medium disabled:opacity-50"
                                 >
                                     <LogOut className="w-4 h-4" />
@@ -79,7 +80,7 @@ export default function GroupHeader({
                         !group.is_private && (
                             <button
                                 onClick={onJoin}
-                                disabled={isJoining}
+                                disabled={isJoining || APP_CONFIG.demo.enabled}
                                 className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors text-sm font-medium disabled:opacity-50"
                             >
                                 <UserPlus className="w-4 h-4" />

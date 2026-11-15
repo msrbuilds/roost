@@ -72,6 +72,7 @@ export default function EventDetails({
                         )}
                     </div>
                     <button
+                        aria-label="Close event details"
                         onClick={onClose}
                         className="p-2 hover:bg-gray-100 dark:hover:bg-surface-800 rounded-lg transition-colors text-gray-600 dark:text-gray-400"
                     >

@@ -1,3 +1,4 @@
+import { APP_CONFIG } from '@/config/app';
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { updateProfile, isUsernameAvailable, isValidUsername, isValidWebsite } from '@/services/profile';
@@ -80,7 +81,7 @@ export default function Settings() {
 
     // Fetch 2FA status
     const fetch2FAStatus = useCallback(async () => {
-        if (!user) return;
+        if (!user || APP_CONFIG.demo.enabled) { setIs2FALoading(false); return; }
 
         try {
             setIs2FALoading(true);
@@ -364,6 +365,8 @@ export default function Settings() {
                 </p>
             </div>
 
+            {APP_CONFIG.demo.enabled && <p className="mb-6 text-sm text-surface-600 dark:text-surface-300">Settings are read-only in this shared demo. Explore the tabs to preview profile, security, and notification options.</p>}
+
             {/* Main Layout */}
             <div className="flex flex-col lg:flex-row gap-8">
                 {/* Sidebar Navigation */}
@@ -393,7 +396,7 @@ export default function Settings() {
                 </div>
 
                 {/* Content Area */}
-                <div className="flex-1 min-w-0">
+                <fieldset disabled={APP_CONFIG.demo.enabled} className="flex-1 min-w-0 m-0 border-0 p-0">
                     {/* Profile Tab */}
                     {activeTab === 'profile' && (
                         <div className="card shadow-none p-6 sm:p-8">
@@ -773,6 +776,7 @@ export default function Settings() {
                                 </ul>
                             </div>
 
+                            {APP_CONFIG.features.stripe && !APP_CONFIG.demo.enabled ? <>
                             <button
                                 onClick={async () => {
                                     try {
@@ -789,6 +793,7 @@ export default function Settings() {
                             <p className="text-sm text-surface-500 dark:text-surface-400 mt-3">
                                 Manage your subscription via Stripe. Changes may take a few minutes to reflect here.
                             </p>
+                            </> : <p className="mt-6 text-sm text-surface-500 dark:text-surface-400">Paid billing is not enabled for this community.</p>}
                         </div>
                     )}
 
@@ -926,7 +931,7 @@ export default function Settings() {
                             )}
                         </div>
                     )}
-                </div>
+                </fieldset>
             </div>
 
             {/* Change Password Modal */}

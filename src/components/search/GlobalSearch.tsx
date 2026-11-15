@@ -176,6 +176,7 @@ export default function GlobalSearch({
                     <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400 animate-spin" />
                 ) : query.length > 0 ? (
                     <button
+                        aria-label="Clear search"
                         onClick={handleClear}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
                     >

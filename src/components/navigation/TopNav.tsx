@@ -8,11 +8,6 @@ import {
     Search,
     Bell,
     MessageSquare,
-    Home,
-    Users,
-    BookOpen,
-    Calendar,
-    Trophy,
     HelpCircle,
     Menu,
     X,
@@ -23,10 +18,7 @@ import {
     Shield,
     Moon,
     Sun,
-    Rocket,
-    Compass,
     Crown,
-    LucideIcon,
 } from 'lucide-react';
 import { supabase } from '@/services/supabase';
 import { APP_CONFIG } from '@/config/app';
@@ -38,33 +30,15 @@ import NotificationBadge from '@/components/notifications/NotificationBadge';
 import GlobalSearch from '@/components/search/GlobalSearch';
 import { ProBadge } from '@/components/common/ProBadge';
 
-// Navigation item type
-interface NavTab {
-    name: string;
-    href: string;
-    icon: LucideIcon;
-    premiumOnly?: boolean;
-}
-
-// Mobile navigation tabs (matches SideNav items)
-const navTabs: NavTab[] = [
-    { name: 'Community', href: '/', icon: Home },
-    { name: 'Explore', href: '/explore', icon: Compass },
-    { name: 'Classrooms', href: '/classrooms', icon: BookOpen },
-    { name: 'Showcase', href: '/showcase', icon: Rocket },
-    { name: 'Calendar', href: '/calendar', icon: Calendar, premiumOnly: true },
-    { name: 'Members', href: '/members', icon: Users },
-    { name: 'Leaderboard', href: '/leaderboard', icon: Trophy },
-    { name: 'Messages', href: '/messages', icon: MessageSquare, premiumOnly: true },
-    { name: 'Guide', href: '/guide', icon: HelpCircle },
-];
+import { getNavigationItems } from './items';
 
 function TopNav() {
     const { user, profile, signOut, isPremium } = useAuth();
     const { isCollapsed } = useSidebar();
     const { resolvedTheme, setTheme } = useTheme();
-    const { settings: siteSettings } = useSiteSettings();
+    const { settings: siteSettings, getFeatureAccess } = useSiteSettings();
     const location = useLocation();
+    const navTabs = getNavigationItems(getFeatureAccess);
     const { isLive } = useLiveStatus();
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -80,6 +54,19 @@ function TopNav() {
             console.error('Error signing out:', error);
         }
     };
+
+    useEffect(() => {
+        const closeMenus = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                setIsMobileMenuOpen(false);
+                setIsSearchOpen(false);
+                setIsProfileMenuOpen(false);
+                setIsNotificationCenterOpen(false);
+            }
+        };
+        document.addEventListener('keydown', closeMenus);
+        return () => document.removeEventListener('keydown', closeMenus);
+    }, []);
 
     // Fetch unread counts
     const fetchUnreadCounts = useCallback(async () => {
@@ -158,6 +145,8 @@ function TopNav() {
                     <div className="flex items-center gap-1">
                         {/* Search button - Mobile */}
                         <button
+                            aria-label={isSearchOpen ? 'Close search' : 'Open search'}
+                            aria-expanded={isSearchOpen}
                             onClick={() => setIsSearchOpen(!isSearchOpen)}
                             className="md:hidden p-2 rounded-lg text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800"
                         >
@@ -186,6 +175,8 @@ function TopNav() {
                         {/* Notifications */}
                         <div className="relative">
                             <button
+                                aria-label="Notifications"
+                                aria-expanded={isNotificationCenterOpen}
                                 onClick={() => setIsNotificationCenterOpen(!isNotificationCenterOpen)}
                                 className="p-2 rounded-lg text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 relative"
                             >
@@ -233,6 +224,8 @@ function TopNav() {
                         {/* Profile dropdown */}
                         <div className="relative">
                             <button
+                                aria-label="Account menu"
+                                aria-expanded={isProfileMenuOpen}
                                 onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
                                 className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800"
                             >
@@ -321,6 +314,9 @@ function TopNav() {
 
                         {/* Mobile menu button */}
                         <button
+                            aria-label={isMobileMenuOpen ? 'Close navigation' : 'Open navigation'}
+                            aria-expanded={isMobileMenuOpen}
+                            aria-controls="mobile-navigation"
                             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                             className="lg:hidden p-2 rounded-lg text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800"
                         >
@@ -347,7 +343,7 @@ function TopNav() {
 
                 {/* Mobile navigation menu */}
                 {isMobileMenuOpen && (
-                    <nav className="lg:hidden py-3 border-t border-surface-100 dark:border-surface-700">
+                    <nav id="mobile-navigation" aria-label="Mobile navigation" className="lg:hidden max-h-[calc(100dvh-4rem)] overflow-y-auto py-3 border-t border-surface-100 dark:border-surface-700">
                         <div className="flex flex-col gap-1">
                             {navTabs.map((tab) => {
                                 const isActive = location.pathname === tab.href;

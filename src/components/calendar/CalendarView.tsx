@@ -1,3 +1,4 @@
+import { APP_CONFIG } from '@/config/app';
 import { Calendar as BigCalendar, dateFnsLocalizer } from 'react-big-calendar';
 import type { View } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
@@ -23,9 +24,10 @@ interface CalendarViewProps {
     events: EventWithDetails[];
     onCreateEvent?: (start: Date, end: Date) => void;
     onRefresh?: () => void;
+    onRangeChange?: (range: { start: Date; end: Date }) => void;
 }
 
-export default function CalendarView({ events, onCreateEvent, onRefresh }: CalendarViewProps) {
+export default function CalendarView({ events, onCreateEvent, onRefresh, onRangeChange }: CalendarViewProps) {
     const { user } = useAuth();
     const [selectedEvent, setSelectedEvent] = useState<EventWithDetails | null>(null);
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
@@ -114,6 +116,15 @@ export default function CalendarView({ events, onCreateEvent, onRefresh }: Calen
     return (
         <div className="h-full bg-white dark:bg-surface-900 rounded-lg shadow-sm dark:shadow-none dark:border dark:border-surface-700 p-4 calendar-container">
             <style>{`
+                .calendar-container .rbc-toolbar { gap: 8px; }
+                .calendar-container .rbc-btn-group { display: flex; flex-wrap: wrap; }
+                .calendar-container .rbc-toolbar button { padding: 6px 8px; }
+                @media (max-width: 480px) {
+                    .calendar-container .rbc-toolbar { flex-direction: column; }
+                    .calendar-container .rbc-toolbar .rbc-btn-group { width: 100%; }
+                    .calendar-container .rbc-toolbar button { flex: 1; padding: 6px 4px; font-size: 12px; }
+                    .calendar-container .rbc-header { font-size: 11px; }
+                }
                 /* Dark mode styles for react-big-calendar */
                 .dark .calendar-container .rbc-calendar {
                     color: #fafafa;
@@ -270,11 +281,18 @@ export default function CalendarView({ events, onCreateEvent, onRefresh }: Calen
                 style={{ height: '600px' }}
                 onSelectEvent={handleSelectEvent}
                 onSelectSlot={handleSelectSlot}
-                selectable
+                selectable={!APP_CONFIG.demo.enabled}
                 view={currentView}
                 onView={setCurrentView}
                 date={currentDate}
                 onNavigate={setCurrentDate}
+                onRangeChange={(range) => {
+                    const start = Array.isArray(range) ? range[0] : range.start;
+                    const last = Array.isArray(range) ? range[range.length - 1] : range.end;
+                    const end = new Date(last);
+                    end.setHours(23, 59, 59, 999);
+                    onRangeChange?.({ start, end });
+                }}
                 eventPropGetter={eventStyleGetter}
                 views={['month', 'week', 'day', 'agenda']}
             />

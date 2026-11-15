@@ -1,3 +1,4 @@
+import { APP_CONFIG } from '@/config/app';
 import { useState, useCallback } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import {
@@ -44,7 +45,7 @@ function CommentItem({
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showMenu, setShowMenu] = useState(false);
 
-    const isAuthor = user?.id === comment.author_id;
+    const isAuthor = !APP_CONFIG.demo.enabled && user?.id === comment.author_id;
     const canDelete = isAuthor || isPlatformAdmin;
     const canEdit = isAuthor;
 
@@ -184,7 +185,8 @@ function CommentItem({
                 {/* Reply button */}
                 {!isEditing && depth < 2 && (
                     <button
-                        onClick={() => setIsReplying(!isReplying)}
+                        disabled={APP_CONFIG.demo.enabled}
+                            onClick={() => setIsReplying(!isReplying)}
                         className="flex items-center gap-1 mt-1.5 text-xs text-surface-400 hover:text-surface-600 dark:hover:text-surface-300 transition-colors"
                     >
                         <Reply className="w-3 h-3" />
@@ -283,7 +285,7 @@ export default function FeatureRequestComments({
             </h3>
 
             {/* New comment form */}
-            {user && (
+            {user && !APP_CONFIG.demo.enabled && (
                 <div className="flex items-start gap-3 mb-6">
                     <img
                         src={user.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.user_metadata?.display_name || 'U')}&background=random`}

@@ -1,3 +1,4 @@
+import { APP_CONFIG } from '@/config/app';
 import { useState, useRef, KeyboardEvent } from 'react';
 import { Send, Loader2, Image as ImageIcon, X } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
@@ -13,12 +14,14 @@ export default function MessageInput({
   placeholder = 'Type a message...',
   disabled = false
 }: MessageInputProps) {
+  disabled = disabled || APP_CONFIG.demo.enabled;
   const [content, setContent] = useState('');
   const [files, setFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const { getRootProps, getInputProps, open, isDragActive } = useDropzone({
+    disabled,
     onDrop: (acceptedFiles) => {
       setFiles(prev => [...prev, ...acceptedFiles]);
     },
@@ -121,7 +124,7 @@ export default function MessageInput({
             value={content}
             onChange={handleInput}
             onKeyDown={handleKeyDown}
-            placeholder={placeholder}
+            placeholder={APP_CONFIG.demo.enabled ? 'Read-only demo conversation' : placeholder}
             disabled={disabled || isSubmitting}
             rows={1}
             className="flex-1 resize-none bg-surface-50 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 rounded-xl px-4 py-2.5 text-sm text-surface-900 dark:text-surface-100 placeholder-surface-400 dark:placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
@@ -131,6 +134,7 @@ export default function MessageInput({
           {/* Send button */}
           <button
             type="button"
+            aria-label="Send message"
             onClick={handleSubmit}
             disabled={(!content.trim() && files.length === 0) || isSubmitting || disabled}
             className="flex-shrink-0 btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
@@ -146,7 +150,7 @@ export default function MessageInput({
         {/* Helper text */}
         <div className="flex items-center justify-between mt-2">
           <span className="text-xs text-surface-400 dark:text-surface-500">
-            Press Ctrl+Enter to send
+            {APP_CONFIG.demo.enabled ? 'Messages and attachments are read-only in this demo.' : 'Press Ctrl+Enter to send'}
           </span>
           {content.length > 4500 && (
             <span className={`text-xs ${content.length > 5000 ? 'text-error' : 'text-warning'}`}>

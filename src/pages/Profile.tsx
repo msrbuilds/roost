@@ -1,3 +1,4 @@
+import { APP_CONFIG } from '@/config/app';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -513,6 +514,7 @@ export default function ProfilePage() {
                 </div>
                 {authProfile && !isSelf && (
                     <button
+                        disabled={APP_CONFIG.demo.enabled}
                         onClick={() => handleListFollowToggle(user.id, listType)}
                         className={`flex-shrink-0 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
                             isFollowed
@@ -587,7 +589,7 @@ export default function ProfilePage() {
                                     <div className="flex items-center justify-center sm:justify-start gap-2">
                                         <button
                                             onClick={handleFollowToggle}
-                                            disabled={isFollowLoading}
+                                            disabled={isFollowLoading || APP_CONFIG.demo.enabled}
                                             className={isFollowedByMe ? 'btn-secondary' : 'btn-primary'}
                                         >
                                             {isFollowedByMe ? (

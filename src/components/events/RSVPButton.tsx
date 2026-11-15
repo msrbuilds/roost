@@ -1,3 +1,4 @@
+import { APP_CONFIG } from '@/config/app';
 import { useState } from 'react';
 import { Check, X, HelpCircle } from 'lucide-react';
 import type { RSVPStatus } from '../../types/database';
@@ -20,6 +21,7 @@ export default function RSVPButton({
     attendeeCounts,
     disabled = false,
 }: RSVPButtonProps) {
+    disabled = disabled || APP_CONFIG.demo.enabled;
     const [loading, setLoading] = useState(false);
 
     const handleRSVP = async (status: RSVPStatus) => {
