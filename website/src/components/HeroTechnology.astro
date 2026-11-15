@@ -1,4 +1,5 @@
 ---
+import { publicAsset } from '../lib/public-assets';
 const technologies = [
   { id: 'react', name: 'React' },
   { id: 'typescript', name: 'TypeScript' },
@@ -9,5 +10,5 @@ const technologies = [
 ];
 ---
 <ul class="hero-technologies" aria-label="Built with open-source technologies">
-  {technologies.map(technology => <li class={`hero-tech hero-tech-${technology.id}`}><div class="hero-tech-card"><img src={`/technology/${technology.id}.svg`} alt="" width="36" height="36" /><span>{technology.name}</span></div></li>)}
+  {technologies.map(technology => <li class={`hero-tech hero-tech-${technology.id}`}><div class="hero-tech-card"><img src={publicAsset(`/technology/${technology.id}.svg`)} alt="" width="36" height="36" /><span>{technology.name}</span></div></li>)}
 </ul>

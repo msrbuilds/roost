@@ -1,6 +1,22 @@
 import { defineConfig } from "astro/config";
 import sitemap from "@astrojs/sitemap";
 import { unified } from "@astrojs/markdown-remark";
+import { createHash } from "node:crypto";
+import { readFileSync, readdirSync } from "node:fs";
+
+// Mutable public URLs need a new cache key when their content changes.
+const publicAssetVersions = Object.fromEntries(
+  ["technology", "alternatives"].flatMap((directory) =>
+    readdirSync(new URL(`./public/${directory}/`, import.meta.url))
+      .filter((name) => /\.(svg|png)$/.test(name))
+      .map((name) => [
+        `/${directory}/${name}`,
+        createHash("sha256")
+          .update(readFileSync(new URL(`./public/${directory}/${name}`, import.meta.url)))
+          .digest("hex").slice(0, 12),
+      ]),
+  ),
+);
 
 // The docs read the repository guides directly: one maintained source.
 function documentationLinks() {
@@ -47,7 +63,7 @@ export default defineConfig({
   trailingSlash: "always",
   integrations: [sitemap()],
   // The deployed CSP allows same-origin scripts without inline execution.
-  vite: { build: { assetsInlineLimit: 0 } },
+  vite: { define: { __ROOST_PUBLIC_ASSETS__: JSON.stringify(publicAssetVersions) }, build: { assetsInlineLimit: 0 } },
   markdown: {
     processor: unified({ remarkPlugins: [documentationLinks], rehypePlugins: [keyboardTables] }),
     // The older github-dark theme renders comments below AA contrast.
