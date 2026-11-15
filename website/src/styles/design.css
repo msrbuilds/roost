@@ -119,7 +119,8 @@ body:not(.docs-page) main > section.container::after { right: -5px; }
 .final-cta { margin-bottom: 0; padding-block: 56px; border-radius: 0; background: var(--blue); color: #fff; }
 .final-cta h2 { font-size: clamp(32px, 3.8vw, 48px); }
 .final-cta h2 em { color: #fff; }
-.final-cta .small-label { color: #dbeafe; font-size: 10px; }
+.final-cta > div:last-child > span { color: #fff; }
+.final-cta .small-label { color: #fff; font-size: 10px; }
 .final-cta::before, .final-cta::after { display: none; }
 .site-footer { background: #f5f7fb; margin-top: 0; border-top: 0; }
 .footer-top, .footer-bottom { padding-inline: 30px; border-inline: 1px solid var(--line); }
@@ -144,7 +145,7 @@ body:not(.docs-page) main > section.container::after { right: -5px; }
 .comparison-table tbody th { font-size: 12px; font-weight: 600; }
 .comparison-table .roost-column { background: #eff6ff; color: #1d4ed8; font-weight: 600; }
 .comparison-table thead .roost-column { background: var(--blue); color: #fff; }
-.comparison-table thead .roost-column span { color: #dbeafe; }
+.comparison-table thead .roost-column span { color: #fff; }
 .comparison-notes { margin-top: 24px; display: grid; gap: 10px; }
 .comparison-notes p { max-width: 980px; color: var(--muted); font-size: 12px; line-height: 1.8; }
 .comparison-notes strong { color: var(--ink); }
