@@ -65,6 +65,12 @@ test('hero logos float gently and stop for keyboard focus or reduced motion', as
     const first = icons.first();
     const initialTransform = await first.evaluate(item => getComputedStyle(item).transform);
     await expect.poll(() => first.evaluate(item => getComputedStyle(item).transform)).not.toBe(initialTransform);
+    await page.locator('#technology-heading').scrollIntoViewIfNeeded();
+    await expect(first).toHaveCSS('animation-play-state', 'running, paused');
+    await page.locator('.hero-copy h1').scrollIntoViewIfNeeded();
+    await expect.poll(() => first.evaluate(item => item.getAnimations().some(animation =>
+      animation.effect!.getComputedTiming().iterations === Infinity && animation.playState === 'running'
+    ))).toBe(true);
     await page.locator('.hero-copy .button-row > a').first().focus();
     await expect(first).toHaveCSS('animation-play-state', 'running, paused');
     await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -77,8 +83,8 @@ test('hero logos float gently and stop for keyboard focus or reduced motion', as
 });
 
 test('the full stack and integrations remain readable and link to setup guides', async ({ page, request }) => {
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  for (const width of [320, 390, 768, 1440]) {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  for (const width of [320, 390, 600, 768, 1000, 1024, 1440]) {
     await page.setViewportSize({ width, height: 1000 });
     await page.goto('/');
     const section = page.locator('#technology');
@@ -86,6 +92,12 @@ test('the full stack and integrations remain readable and link to setup guides',
     await expect(section.locator('.tech-node')).toHaveCount(12);
     await expect(section.getByText('OPTIONAL · OFF BY DEFAULT', { exact: true })).toBeVisible();
     await expect(section).toContainText('Optional caching');
+    const columns = width <= 600 ? 3 : width <= 1000 ? 4 : 6;
+    expect(await section.locator('.tech-node').evaluateAll(nodes => nodes.map(node => getComputedStyle(node).animationDelay)))
+      .toEqual(Array.from({ length: 12 }, (_, index) => `${Math.round((index % columns) * 6) / 100}s`));
+    for (const link of await section.locator('.tech-integration .text-link').all()) {
+      expect((await link.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    }
     for (const img of await section.locator('img').all()) {
       await img.scrollIntoViewIfNeeded();
       await expect.poll(() => img.evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth > 0)).toBe(true);
@@ -107,6 +119,22 @@ test('the full stack and integrations remain readable and link to setup guides',
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await expect(last).toHaveCSS('opacity', '1');
   await expect(last).toHaveCSS('animation-name', 'none');
+});
+
+test('stack motion responds when the visitor changes their motion preference', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 900 });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/');
+  const flow = page.locator('.tech-flow');
+  await flow.scrollIntoViewIfNeeded();
+  await expect(flow).toHaveAttribute('data-tech-active', '');
+  const signal = flow.locator('.tech-flow-connector').first();
+  await expect.poll(() => signal.evaluate(el => getComputedStyle(el, '::after').animationName)).toBe('none');
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await expect.poll(() => signal.evaluate(el => getComputedStyle(el, '::after').animationPlayState)).toBe('running');
+  await page.locator('.tech-integration .text-link').first().focus();
+  await expect.poll(() => signal.evaluate(el => getComputedStyle(el, '::after').animationPlayState)).toBe('paused');
+  await expect(page.locator('.tech-integration').first()).toHaveCSS('opacity', '1');
 });
 
 test('the technology section stays visible without JavaScript', async ({ browser, baseURL }) => {

@@ -1,15 +1,26 @@
 // Carousels stop on interaction; visitors can explicitly restart rotation.
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+for (const hero of document.querySelectorAll<HTMLElement>('.hero-technologies')) {
+  let inView = false;
+  const sync = () => hero.toggleAttribute('data-motion-paused', !inView || document.hidden);
+  const observer = new IntersectionObserver(([entry]) => { inView = entry.isIntersecting; sync(); });
+  observer.observe(hero);
+  document.addEventListener('visibilitychange', sync);
+  sync();
+}
 for (const stack of document.querySelectorAll<HTMLElement>('[data-technology-stack]')) {
   const parts = [...stack.querySelectorAll<HTMLElement>('.tech-reveal')];
   if (reducedMotion.matches) {
     parts.forEach(part => part.setAttribute('data-revealed', ''));
-    continue;
   }
+  const flow = stack.querySelector<HTMLElement>('.tech-flow');
+  let flowInView = false;
+  const sync = () => flow?.toggleAttribute('data-tech-active', flowInView && !document.hidden);
+  document.addEventListener('visibilitychange', sync);
   const observer = new IntersectionObserver(entries => {
     for (const entry of entries) {
       const part = entry.target as HTMLElement;
-      part.toggleAttribute('data-tech-active', entry.isIntersecting);
+      if (part === flow) { flowInView = entry.isIntersecting; sync(); }
       if (entry.isIntersecting) {
         part.setAttribute('data-revealed', '');
         if (!part.classList.contains('tech-flow')) observer.unobserve(part);

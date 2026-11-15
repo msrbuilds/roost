@@ -59,7 +59,7 @@
 .hero-tech-nodejs { right: 86px; --tilt: -7deg; --enter-delay: 160ms; --float-duration: 11s; --float-turn: -.8deg; }
 .hero-tech-tailwindcss { left: 172px; --tilt: -7deg; --enter-delay: 320ms; --float-duration: 12s; }
 .hero-tech-docker { right: 172px; --tilt: 7deg; --enter-delay: 320ms; --float-duration: 12s; --float-turn: -.8deg; }
-.hero-copy:focus-within .hero-tech { animation-play-state: running, paused; }
+.hero-copy:focus-within .hero-tech, .hero-technologies[data-motion-paused] .hero-tech { animation-play-state: running, paused; }
 @keyframes hero-tech-enter {
   from { opacity: 0; transform: translateY(12px) rotate(calc(var(--tilt) - 3deg)) scale(.94); }
   to { opacity: 1; transform: translateY(0) rotate(var(--tilt)) scale(1); }
