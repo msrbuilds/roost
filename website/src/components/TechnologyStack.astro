@@ -1,0 +1,32 @@
+---
+import Icon from './Icon.astro';
+const stack = [
+  { name: 'React', icon: 'react', role: 'Community interface' },
+  { name: 'TypeScript', icon: 'typescript', role: 'Typed application code' },
+  { name: 'Tailwind CSS', icon: 'tailwindcss', role: 'Responsive styling' },
+  { name: 'Vite', icon: 'vitejs', role: 'Frontend build tools' },
+  { name: 'Node.js', icon: 'nodejs', role: 'Server runtime' },
+  { name: 'Express', icon: 'express', role: 'Application API' },
+  { name: 'Supabase', icon: 'supabase', role: 'Auth and realtime' },
+  { name: 'PostgreSQL', icon: 'postgresql', role: 'Community database' },
+  { name: 'Docker', icon: 'docker', role: 'Container deployment' },
+  { name: 'Redis', icon: 'redis', role: 'Optional caching' },
+  { name: 'Vitest', icon: 'vitest', role: 'Unit tests' },
+  { name: 'Playwright', icon: 'playwright', role: 'Browser tests' },
+];
+const integrations = [
+  { title: 'Files & backups', icon: 'server', label: 'CHOOSE YOUR PROVIDER', providers: ['Amazon S3', 'Cloudflare R2', 'MinIO', 'DigitalOcean Spaces'], text: 'Connect S3-compatible storage for uploads and a separate private backup destination.', href: '/docs/self-hosted-setup/#s3-storage-setup', link: 'Storage setup' },
+  { title: 'Email delivery', icon: 'feed', label: 'CONNECT YOUR EMAIL', providers: ['SMTP', 'Brevo'], text: 'Use SMTP directly, or the included Brevo API adapter, for account emails and password resets.', href: '/docs/brevo/', link: 'Email setup' },
+  { title: 'Video & events', icon: 'learn', label: 'BRING YOUR CONTENT', providers: ['YouTube', 'Vimeo', 'Meeting links'], text: 'Embed videos and lesson recordings, and attach your own meeting links to events.', href: '/docs/using-roost/#learn-in-classrooms', link: 'Explore learning' },
+  { title: 'Membership billing', icon: 'shield', label: 'OPTIONAL · OFF BY DEFAULT', providers: ['Stripe'], text: 'Paid memberships are optional. Configure and test checkout and billing webhooks before enabling them.', href: '/docs/self-hosted-setup/#stripe-setup-paid-memberships', link: 'Billing setup' },
+];
+---
+<section class="section container technology-section" id="technology" data-technology-stack aria-labelledby="technology-heading">
+  <div class="section-heading tech-reveal"><div><span class="small-label">OPEN FROM TOP TO BOTTOM</span><h2 id="technology-heading">A familiar stack.<br /><em>A foundation you control.</em></h2></div><p>Open-source tools at the core.<br />Flexible services around them.<br />Your community, connected your way.</p></div>
+  <div class="tech-flow tech-reveal" aria-hidden="true"><span>INTERFACE</span><i class="tech-flow-connector"></i><span>API & DATA</span><i class="tech-flow-connector"></i><span>YOUR INFRASTRUCTURE</span></div>
+  <ul class="tech-core-grid" aria-label="Core technologies and testing tools">{stack.map(item => <li class="tech-node tech-reveal"><img src={`/technology/${item.icon}.svg`} alt="" width="36" height="36" loading="lazy" /><strong>{item.name}</strong><span>{item.role}</span></li>)}</ul>
+  <div class="tech-integration-heading tech-reveal"><div><span class="small-label">PLUG IN WHAT YOU NEED</span><h3>Your services. Your choice.</h3></div><p>Connect the providers that suit your community. You choose and configure the services you use.</p></div>
+  <div class="tech-integration-grid">{integrations.map(item => <article class="tech-integration tech-reveal"><div class="tech-integration-icon"><Icon name={item.icon} size={22} /></div><span class="tech-integration-label">{item.label}</span><h4>{item.title}</h4><ul aria-label={`${item.title} providers`}>{item.providers.map(provider => <li>{provider}</li>)}</ul><p>{item.text}</p><a class="text-link" href={item.href}>{item.link} <Icon name="arrow" size={15} /></a></article>)}</div>
+  <div class="tech-foundation tech-reveal"><div><span class="small-label">UNDER THE HOOD</span><p>Supabase Auth, Realtime, Storage, PostgREST, Kong, and imgproxy support the bundled backend. Zod, Helmet, and DOMPurify help validate and protect application content.</p></div><div><span class="small-label">READY FOR YOUR INFRASTRUCTURE</span><p>Docker Compose, Nginx, and Traefik or Caddy provide deployment and HTTPS options. Use <a href="/docs/dockploy-vps/">Dokploy</a>, or follow the separate frontend guides for <a href="/docs/vercel/">Vercel</a> and <a href="/docs/netlify/">Netlify</a>.</p></div></div>
+  <div class="tech-section-footer"><p>Roost has no software license fee. Hosting and third-party services have their own costs, limits, and configuration requirements.</p><a class="text-link" href="/docs/self-hosted-setup/">Choose your setup <Icon name="arrow" size={17} /></a></div>
+</section>

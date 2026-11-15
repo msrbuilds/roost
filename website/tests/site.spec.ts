@@ -13,12 +13,30 @@ test('technology icons clear hero content and the calendar stays compact', async
     await expect(icons).toHaveCount(6);
     if (width <= 600) expect(await icons.evaluateAll(items => new Set(items.map(item => Math.round(item.getBoundingClientRect().top))).size)).toBe(1);
     expect(await icons.evaluateAll(elements => {
-      const content = [...document.querySelectorAll('.hero-copy h1, .hero-description, .hero-copy .button-row, .hero-proof, .hero-cost-note')].map(el => el.getBoundingClientRect());
+      const content = [...document.querySelectorAll('.hero-description, .hero-copy .button-row > a, .hero-proof > span, .hero-cost-note')].map(el => el.getBoundingClientRect());
+      const heading = document.createRange();
+      heading.selectNodeContents(document.querySelector('.hero-copy h1')!);
+      content.push(...[...heading.getClientRects()].filter(rect => rect.width > 0 && rect.height > 0));
       return elements.every(el => {
         const icon = el.getBoundingClientRect();
         return content.every(text => icon.right <= text.left || icon.left >= text.right || icon.bottom <= text.top || icon.top >= text.bottom);
       });
     }), `technology icons clear hero text and actions at ${width}px`).toBe(true);
+    if (width >= 1280) {
+      expect(await page.locator('.hero-copy').evaluate(hero => {
+        const actions = hero.querySelector('.button-row')!.getBoundingClientRect();
+        const tailwind = hero.querySelector('.hero-tech-tailwindcss')!.getBoundingClientRect();
+        const docker = hero.querySelector('.hero-tech-docker')!.getBoundingClientRect();
+        const first = hero.querySelector('.button-row > a')!.getBoundingClientRect();
+        const last = hero.querySelector('.button-row > a:last-child')!.getBoundingClientRect();
+        const pairs = [['react', 'typescript'], ['supabase', 'nodejs'], ['tailwindcss', 'docker']].map(pair => pair.map(name => hero.querySelector(`.hero-tech-${name}`)!.getBoundingClientRect()));
+        const mid = hero.getBoundingClientRect().left + hero.getBoundingClientRect().width / 2;
+        const centers = pairs.map(pair => pair.map(rect => ({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 })));
+        const symmetric = centers.every(pair => Math.abs((pair[0].x + pair[1].x) / 2 - mid) < 1 && Math.abs(pair[0].y - pair[1].y) < 1);
+        const evenlySpaced = Math.abs((centers[1][0].y - centers[0][0].y) - (centers[2][0].y - centers[1][0].y)) < 1 && Math.abs((centers[1][0].x - centers[0][0].x) - (centers[2][0].x - centers[1][0].x)) < 1;
+        return symmetric && evenlySpaced && tailwind.right < first.left && first.left - tailwind.right < 100 && docker.left > last.right && docker.left - last.right < 100 && tailwind.top < actions.bottom && tailwind.bottom > actions.top && docker.top < actions.bottom && docker.bottom > actions.top;
+      }), `Tailwind and Docker flank the CTAs at ${width}px`).toBe(true);
+    }
     for (const image of await icons.locator('img').all()) {
       await expect.poll(() => image.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
     }
@@ -30,6 +48,78 @@ test('technology icons clear hero content and the calendar stays compact', async
     expect(frame!.width / frame!.height).toBeGreaterThan(1.4);
     if (width >= 1024) expect((await calendar.boundingBox())!.height).toBeLessThan(650);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  }
+});
+
+test('hero logos float gently and stop for keyboard focus or reduced motion', async ({ page }) => {
+  for (const width of [390, 1440]) {
+    await page.setViewportSize({ width, height: 1000 });
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.goto('/');
+    const icons = page.locator('.hero-tech');
+    await expect.poll(() => icons.evaluateAll(items => items.every(item => getComputedStyle(item).opacity === '1'))).toBe(true);
+    expect(await icons.evaluateAll(items => items.every(item => item.getAnimations().some(animation => {
+      const timing = animation.effect!.getComputedTiming();
+      return timing.iterations === Infinity && Number(timing.duration) >= 8000 && animation.playState === 'running';
+    })))).toBe(true);
+    const first = icons.first();
+    const initialTransform = await first.evaluate(item => getComputedStyle(item).transform);
+    await expect.poll(() => first.evaluate(item => getComputedStyle(item).transform)).not.toBe(initialTransform);
+    await page.locator('.hero-copy .button-row > a').first().focus();
+    await expect(first).toHaveCSS('animation-play-state', 'running, paused');
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    for (const icon of await icons.all()) {
+      await expect(icon).toHaveCSS('animation-name', 'none');
+      await expect(icon).toHaveCSS('opacity', '1');
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  }
+});
+
+test('the full stack and integrations remain readable and link to setup guides', async ({ page, request }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  for (const width of [320, 390, 768, 1440]) {
+    await page.setViewportSize({ width, height: 1000 });
+    await page.goto('/');
+    const section = page.locator('#technology');
+    expect(await section.evaluate(el => el.nextElementSibling?.classList.contains('faq-section'))).toBe(true);
+    await expect(section.locator('.tech-node')).toHaveCount(12);
+    await expect(section.getByText('OPTIONAL · OFF BY DEFAULT', { exact: true })).toBeVisible();
+    await expect(section).toContainText('Optional caching');
+    for (const img of await section.locator('img').all()) {
+      await img.scrollIntoViewIfNeeded();
+      await expect.poll(() => img.evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth > 0)).toBe(true);
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  }
+  for (const link of await page.locator('#technology a').all()) {
+    expect((await request.get((await link.getAttribute('href'))!)).ok()).toBe(true);
+  }
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.goto('/');
+  const first = page.locator('.tech-node').first();
+  await first.scrollIntoViewIfNeeded();
+  await expect(first).toHaveAttribute('data-revealed', '');
+  await expect.poll(() => first.evaluate(el => getComputedStyle(el).opacity)).toBe('1');
+  const last = page.locator('.tech-node').last();
+  await last.scrollIntoViewIfNeeded();
+  await expect(last).toHaveAttribute('data-revealed', '');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(last).toHaveCSS('opacity', '1');
+  await expect(last).toHaveCSS('animation-name', 'none');
+});
+
+test('the technology section stays visible without JavaScript', async ({ browser, baseURL }) => {
+  const context = await browser.newContext({ javaScriptEnabled: false, baseURL, viewport: { width: 390, height: 900 } });
+  try {
+    const page = await context.newPage();
+    await page.goto('/');
+    const section = page.locator('#technology');
+    await expect(section.locator('.tech-node')).toHaveCount(12);
+    for (const node of await section.locator('.tech-node').all()) await expect(node).toHaveCSS('opacity', '1');
+    await expect(section.getByRole('link', { name: 'Choose your setup' })).toBeVisible();
+  } finally {
+    await context.close();
   }
 });
 

@@ -49,19 +49,28 @@
 .calendar-preview h3 em { color: var(--blue); font-style: normal; }
 .calendar-preview-copy p { font-size: 14px; margin: 0; line-height: 1.75; }
 .hero-copy { position: relative; }
-.hero-technologies { position: absolute; inset: 0; margin: 0; padding: 0; list-style: none; pointer-events: none; }
-.hero-tech { position: absolute; width: 76px; height: 82px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; background: #fff; border: 1px solid var(--line); border-radius: 12px; }
+.hero-technologies { position: absolute; inset: 12px -92px 84px; display: grid; grid-template-columns: repeat(2, 76px); grid-template-rows: repeat(3, 82px); justify-content: space-between; align-content: space-between; margin: 0; padding: 0; list-style: none; pointer-events: none; }
+.hero-tech { position: relative; width: 76px; height: 82px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; background: #fff; border: 1px solid var(--line); border-radius: 12px; --float-rise: -6px; --float-turn: .8deg; transform: rotate(var(--tilt)); animation: hero-tech-enter 700ms cubic-bezier(.2, .7, .2, 1) var(--enter-delay) backwards, hero-tech-float var(--float-duration) ease-in-out calc(700ms + var(--enter-delay)) infinite; }
 .hero-tech img { width: 36px; height: 36px; object-fit: contain; }
 .hero-tech span { color: var(--muted); font-size: 9px; font-weight: 550; letter-spacing: -.02em; }
-.hero-tech-react { left: -92px; top: 12px; transform: rotate(-9deg); }
-.hero-tech-typescript { right: -92px; top: 26px; transform: rotate(8deg); }
-.hero-tech-supabase { left: -92px; top: 170px; transform: rotate(7deg); }
-.hero-tech-nodejs { right: -92px; top: 182px; transform: rotate(-8deg); }
-.hero-tech-tailwindcss { left: -92px; bottom: 28px; transform: rotate(-7deg); }
-.hero-tech-docker { right: -92px; bottom: 28px; transform: rotate(7deg); }
+.hero-tech-react { --tilt: -9deg; --enter-delay: 0ms; --float-duration: 10s; }
+.hero-tech-typescript { --tilt: 9deg; --enter-delay: 0ms; --float-duration: 10s; --float-turn: -.8deg; }
+.hero-tech-supabase { left: 86px; --tilt: 7deg; --enter-delay: 160ms; --float-duration: 11s; }
+.hero-tech-nodejs { right: 86px; --tilt: -7deg; --enter-delay: 160ms; --float-duration: 11s; --float-turn: -.8deg; }
+.hero-tech-tailwindcss { left: 172px; --tilt: -7deg; --enter-delay: 320ms; --float-duration: 12s; }
+.hero-tech-docker { right: 172px; --tilt: 7deg; --enter-delay: 320ms; --float-duration: 12s; --float-turn: -.8deg; }
+.hero-copy:focus-within .hero-tech { animation-play-state: running, paused; }
+@keyframes hero-tech-enter {
+  from { opacity: 0; transform: translateY(12px) rotate(calc(var(--tilt) - 3deg)) scale(.94); }
+  to { opacity: 1; transform: translateY(0) rotate(var(--tilt)) scale(1); }
+}
+@keyframes hero-tech-float {
+  0%, 100% { transform: translateY(0) rotate(var(--tilt)); }
+  50% { transform: translateY(var(--float-rise)) rotate(calc(var(--tilt) + var(--float-turn))); }
+}
 @media (max-width: 1279px) {
   .hero-technologies { position: static; display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 25px; }
-  .hero-tech { position: static; width: 64px; height: 68px; transform: none; border-radius: 8px; gap: 6px; }
+  .hero-tech { position: static; width: 64px; height: 68px; --tilt: 0deg; --float-rise: -3px; --float-turn: 0deg; transform: none; border-radius: 8px; gap: 6px; }
   .hero-tech img { width: 28px; height: 28px; }
 }
 @media (max-width: 800px) {

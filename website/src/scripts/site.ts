@@ -1,5 +1,23 @@
 // Carousels stop on interaction; visitors can explicitly restart rotation.
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+for (const stack of document.querySelectorAll<HTMLElement>('[data-technology-stack]')) {
+  const parts = [...stack.querySelectorAll<HTMLElement>('.tech-reveal')];
+  if (reducedMotion.matches) {
+    parts.forEach(part => part.setAttribute('data-revealed', ''));
+    continue;
+  }
+  const observer = new IntersectionObserver(entries => {
+    for (const entry of entries) {
+      const part = entry.target as HTMLElement;
+      part.toggleAttribute('data-tech-active', entry.isIntersecting);
+      if (entry.isIntersecting) {
+        part.setAttribute('data-revealed', '');
+        if (!part.classList.contains('tech-flow')) observer.unobserve(part);
+      }
+    }
+  }, { threshold: .12 });
+  parts.forEach(part => { part.setAttribute('data-motion-ready', ''); observer.observe(part); });
+}
 for (const marquee of document.querySelectorAll<HTMLElement>('[data-logo-marquee]')) {
   const pause = marquee.querySelector<HTMLButtonElement>('[data-marquee-pause]')!;
   let paused = reducedMotion.matches;

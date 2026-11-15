@@ -6,6 +6,7 @@ import ProductTour from '../components/ProductTour.astro';
 import Comparison from '../components/Comparison.astro';
 import AlternativesMarquee from '../components/AlternativesMarquee.astro';
 import HeroTechnology from '../components/HeroTechnology.astro';
+import TechnologyStack from '../components/TechnologyStack.astro';
 import { features, repository, liveDemo } from '../data/site';
 const faqs = [
   ['Is Roost really free?', 'Yes. Roost is free, open-source software under the MIT license. There is no Roost license fee or per-member charge. You pay your own infrastructure providers for hosting, storage, email, and any other services you choose.'],
@@ -44,6 +45,7 @@ const faqs = [
       <div class="steps-grid"><div><span class="step-number">01</span><h3>Pick your setup.</h3><p>A full self-hosted stack or managed Supabase. Choose what fits your infrastructure.</p></div><div><span class="step-number">02</span><h3>Make it yours.</h3><p>Configure your domain, storage, email, and community branding with the installer.</p></div><div><span class="step-number">03</span><h3>Bring your people.</h3><p>Create your admin account, set up your first space, and start the conversation.</p></div></div>
       <div class="install-strip"><div><span class="small-label">START WITH THE SOURCE</span><pre class="install-command"><code>git clone https://github.com/msrbuilds/roost.git</code></pre></div><a href="/docs/install-script/">Then run the installer <Icon name="arrow" size={18} /></a></div>
     </section>
+    <TechnologyStack />
     <section class="faq-section container"><div><span class="small-label">BEFORE YOU SELF-HOST</span><h2>A few things<br />{' '}<em>worth knowing.</em></h2><p>Have another question?<br /><a href={`${repository}/issues`}>Ask on GitHub ↗</a></p></div><div class="faq-list">{faqs.map(([question, answer]) => <details><summary>{question}<span aria-hidden="true">+</span></summary><p>{answer}</p></details>)}</div></section>
     <section class="container final-cta"><div><span class="small-label">YOUR NEXT COMMUNITY. YOUR OWN PLATFORM.</span><h2>Build your community.<br /><em>Own the foundation.</em></h2></div><div><a class="button button-light" href="/docs/self-hosted-setup/">Start your community <Icon name="arrow" size={19} /></a><span>Open source. Self-hosted. MIT licensed.</span></div></section>
   </main>
