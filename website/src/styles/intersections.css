@@ -37,6 +37,8 @@ body:not(.docs-page) :is(.header-inner, .mobile-navigation, main > section.conta
 }
 /* Keep the blue CTA's border marks visible outside its background. */
 .final-cta { overflow: visible; }
+/* The final row's cards own these corners, together with the grid perimeter. */
+body:not(.docs-page) main > section.container.feature-detail-grid::after { content: none; }
 /* This help row continues the documentation directory's outer rails. */
 .docs-help { border-inline: 1px solid var(--line); border-bottom: 1px solid var(--line); padding-inline: 40px; }
 @media (max-width: 800px) {

@@ -73,6 +73,8 @@ body:not(.docs-page) main > section.container { position: relative; border-inlin
 .feature-card h3 { font-size: 24px; max-width: none; }
 .feature-card p, .feature-detail > p { font-size: 13px; line-height: 1.8; color: var(--muted); }
 .feature-detail-grid { margin-top: 0; padding-inline: 0 !important; border-top: 0; }
+/* Edge cards already draw the right and bottom perimeter of this flush grid. */
+body:not(.docs-page) main > section.feature-detail-grid { border-right: 0; border-bottom: 0; }
 .feature-detail h2 { font-family: inherit; font-size: 27px; font-weight: 700; }
 .feature-detail .check-list li { font-size: 12px; }
 .check-list li { color: #475569; }

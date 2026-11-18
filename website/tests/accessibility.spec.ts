@@ -33,6 +33,10 @@ test('search, mobile navigation, and carousel controls retain accessible names a
   const slider = page.getByRole('region', { name: 'Roost product showcase', exact: true });
   await slider.getByRole('button', { name: 'Pause screenshot slideshow', exact: true }).click();
   await audit(page);
+  for (const name of ['Calendar', 'Administration']) {
+    await page.getByRole('tablist', { name: 'Product screenshots' }).getByRole('tab', { name, exact: true }).click();
+    await audit(page);
+  }
   await page.getByRole('button', { name: /^Search documentation/ }).click();
   await audit(page);
   await page.keyboard.press('Escape');

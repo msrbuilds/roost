@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { readFileSync } from 'node:fs';
 import { guides } from '../src/data/site';
 
-test('technology icons clear hero content and the calendar stays compact', async ({ page }) => {
+test('technology icons clear hero content and the feature screenshots stay in landscape', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   for (const width of [320, 390, 500, 768, 1024, 1280, 1440]) {
     await page.setViewportSize({ width, height: 1000 });
@@ -40,13 +40,15 @@ test('technology icons clear hero content and the calendar stays compact', async
     for (const image of await icons.locator('img').all()) {
       await expect.poll(() => image.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
     }
-    const calendar = page.locator('.calendar-preview');
+    await page.getByRole('tablist', { name: 'Product screenshots' }).getByRole('tab', { name: 'Calendar', exact: true }).click();
+    const calendar = page.locator('#tour-panel-calendar');
     await calendar.scrollIntoViewIfNeeded();
     const image = calendar.locator('img:visible');
     await expect.poll(() => image.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth / img.naturalHeight > 1.5)).toBe(true);
-    const frame = await calendar.locator('.showcase-frame').boundingBox();
+    const frame = await image.boundingBox();
     expect(frame!.width / frame!.height).toBeGreaterThan(1.4);
-    if (width >= 1024) expect((await calendar.boundingBox())!.height).toBeLessThan(650);
+    await expect(page.locator('[data-screenshot-tour]')).toHaveCount(1);
+    await expect(page.locator('.calendar-preview, .admin-preview')).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   }
 });
@@ -152,14 +154,14 @@ test('the technology section stays visible without JavaScript', async ({ browser
   }
 });
 
-test('showcase and landscape sliders navigate, wrap, and load every screenshot', async ({ page, request }) => {
+test('hero slideshow navigates and the feature tour has no nested sliders', async ({ page, request }) => {
   test.setTimeout(90000);
   for (const width of [320, 390, 768, 1440]) {
     await page.setViewportSize({ width, height: 1000 });
     for (const route of ['/', '/features/']) {
       await page.goto(route);
-      if (route === '/features/') await page.getByRole('tab', { name: 'Events', exact: true }).click();
       const sliders = page.locator('[data-showcase-slider]:visible');
+      await expect(sliders).toHaveCount(route === '/' ? 1 : 0);
       for (const slider of await sliders.all()) {
         const tabs = slider.getByRole('tab');
         const count = await tabs.count();
@@ -184,7 +186,7 @@ test('showcase and landscape sliders navigate, wrap, and load every screenshot',
         const link = slider.getByRole('tabpanel').locator('a');
         expect((await request.get((await link.getAttribute('href'))!)).ok()).toBe(true);
       }
-      await expect(page.locator('.showcase-tablet .showcase-frame:visible')).toHaveCount(1);
+      await expect(page.locator('.showcase-tablet .showcase-frame:visible')).toHaveCount(0);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     }
   }
@@ -320,6 +322,77 @@ test('product, features, and docs fit desktop and mobile widths', async ({ page 
     await page.screenshot({ path: join(process.env.ROOST_SCREENSHOT_DIR, 'roost-product-desktop.png'), fullPage: true });
     await page.setViewportSize({ width: 390, height: 844 });
     await page.screenshot({ path: join(process.env.ROOST_SCREENSHOT_DIR, 'roost-product-mobile.png'), fullPage: true });
+  }
+});
+
+test('section rails and card grids share single aligned borders at responsive breakpoints', async ({ page }) => {
+  test.setTimeout(90000);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  for (const width of [320, 390, 600, 768, 800, 801, 1000, 1150, 1151, 1440]) {
+    await page.setViewportSize({ width, height: 1000 });
+    for (const route of ['/', '/features/', '/docs/']) {
+      await page.goto(route);
+      const problems = await page.evaluate(() => {
+        const problems: string[] = [];
+        const number = (value: string) => parseFloat(value) || 0;
+        const rail = document.querySelector('.header-inner')!.getBoundingClientRect();
+        document.querySelectorAll('main > section.container, .belief-strip > .container, .ownership-grid, .docs-help, .footer-top, .footer-bottom').forEach(element => {
+          const rect = element.getBoundingClientRect();
+          if (Math.abs(rect.left - rail.left) > .1 || Math.abs(rect.right - rail.right) > .1) problems.push(`${element.className}: outer rails drift`);
+        });
+        document.querySelectorAll('.feature-grid, .feature-detail-grid, .steps-grid, .choice-section, .tech-core-grid, .tech-integration-grid').forEach(grid => {
+          const style = getComputedStyle(grid);
+          const rect = grid.getBoundingClientRect();
+          const cells = [...grid.children].map(element => ({ element, rect: element.getBoundingClientRect(), style: getComputedStyle(element) }));
+          const markers = (cell: typeof cells[number], pseudo: '::before' | '::after') => {
+            const mark = getComputedStyle(cell.element, pseudo);
+            if (mark.content === 'none' || mark.backgroundImage === 'none') problems.push(`${grid.className}: missing intersection squares`);
+            const radius = number(mark.height) / 2;
+            return {
+              left: cell.rect.left + number(cell.style.borderLeftWidth) + number(mark.left) + radius,
+              right: cell.rect.right - number(cell.style.borderRightWidth) - number(mark.right) - radius,
+              y: pseudo === '::before'
+                ? cell.rect.top + number(cell.style.borderTopWidth) + number(mark.top) + radius
+                : cell.rect.bottom - number(cell.style.borderBottomWidth) - number(mark.bottom) - radius,
+            };
+          };
+          const aligned = (a: number, b: number) => {
+            if (Math.abs(a - b) > .1) problems.push(`${grid.className}: intersection squares drift by ${Math.abs(a - b)}px`);
+          };
+          const left = rect.left + number(style.borderLeftWidth);
+          const right = rect.right - number(style.borderRightWidth);
+          const bottom = rect.bottom - number(style.borderBottomWidth);
+          const check = (label: string, thickness: number) => {
+            if (Math.abs(thickness - 1) > .05) problems.push(`${grid.className}: ${label} is ${thickness}px`);
+          };
+          for (const cell of cells) {
+            if (Math.abs(cell.rect.left - left) < .1) check('left perimeter', number(style.borderLeftWidth) + number(cell.style.borderLeftWidth));
+            if (Math.abs(cell.rect.right - right) < .1) check('right perimeter', number(style.borderRightWidth) + number(cell.style.borderRightWidth));
+            if (Math.abs(cell.rect.bottom - bottom) < .1) check('bottom perimeter', number(style.borderBottomWidth) + number(cell.style.borderBottomWidth));
+            const next = cells.find(other => Math.abs(other.rect.top - cell.rect.top) < .1 && Math.abs(other.rect.left - cell.rect.right - number(style.columnGap)) < .1);
+            if (next) {
+              check('column divider', number(cell.style.borderRightWidth) + number(next.style.borderLeftWidth) + number(style.columnGap));
+              aligned(markers(cell, '::before').right, markers(next, '::before').left);
+              aligned(markers(cell, '::after').right, markers(next, '::after').left);
+            }
+            const below = cells.find(other => Math.abs(other.rect.left - cell.rect.left) < .1 && Math.abs(other.rect.top - cell.rect.bottom - number(style.rowGap)) < .1);
+            if (below) {
+              check('row divider', number(cell.style.borderBottomWidth) + number(below.style.borderTopWidth) + number(style.rowGap));
+              aligned(markers(cell, '::after').y, markers(below, '::before').y);
+            }
+          }
+          const parentMark = getComputedStyle(grid, '::after');
+          if (parentMark.content !== 'none' && parentMark.backgroundImage !== 'none') {
+            const parentCorners = markers({ element: grid, rect, style }, '::after');
+            for (const cell of cells.filter(cell => Math.abs(cell.rect.bottom - bottom) < .1)) {
+              aligned(markers(cell, '::after').y, parentCorners.y);
+            }
+          }
+        });
+        return problems;
+      });
+      expect(problems, `${route} at ${width}px`).toEqual([]);
+    }
   }
 });
 
@@ -497,34 +570,41 @@ test('live demo calls to action and the real screenshot tour work with pointer a
       const demoLinks = page.getByRole('link', { name: 'Try Live Demo', exact: true });
       expect(await demoLinks.count()).toBeGreaterThan(0);
       for (const link of await demoLinks.all()) await expect(link).toHaveAttribute('href', 'https://roost-demo.msrbuilds.com');
-    }
-    const tabs = page.getByRole('tablist', { name: 'Product screenshots' }).getByRole('tab');
-    await expect(tabs).toHaveCount(10);
-    for (const tab of await tabs.all()) {
-      await tab.click();
-      await expect(tab).toHaveAttribute('aria-selected', 'true');
-      const panel = page.locator('.tour-panel:not([hidden])');
-      await expect(panel).toHaveCount(1);
-      await expect(panel).toHaveAttribute('aria-labelledby', (await tab.getAttribute('id'))!);
-      await expect(panel.locator('img')).toHaveCount((await tab.getAttribute('id')) === 'tour-tab-calendar' ? 3 : 1);
-      for (const screenshot of await panel.locator('img:visible').all()) {
-        await screenshot.scrollIntoViewIfNeeded();
-        await expect.poll(() => screenshot.evaluate((element: HTMLImageElement) => element.complete && element.naturalWidth > 0)).toBe(true);
+      const tabs = page.getByRole('tablist', { name: 'Product screenshots' }).getByRole('tab');
+      await expect(tabs).toHaveCount(12);
+      for (const tab of await tabs.all()) {
+        await tab.click();
+        await expect(tab).toHaveAttribute('aria-selected', 'true');
+        const panel = page.locator('.tour-panel:not([hidden])');
+        await expect(panel).toHaveCount(1);
+        await expect(panel).toHaveAttribute('aria-labelledby', (await tab.getAttribute('id'))!);
+        await expect(panel.locator('img')).toHaveCount(1);
+        for (const screenshot of await panel.locator('img:visible').all()) {
+          await screenshot.scrollIntoViewIfNeeded();
+          await expect.poll(() => screenshot.evaluate((element: HTMLImageElement) => element.complete && element.naturalWidth > 0)).toBe(true);
+        }
+        const heading = await panel.locator('h3').boundingBox();
+        const screenshot = await panel.locator('img').boundingBox();
+        expect(heading!.y + heading!.height).toBeLessThan(screenshot!.y);
+        expect(screenshot!.width).toBeGreaterThan((await panel.boundingBox())!.width - 4);
+        await expect(panel.getByRole('link', { name: 'Open full-size screenshot', exact: true })).toHaveAttribute('target', '_blank');
+        if (process.env.ROOST_SCREENSHOT_DIR && (await tab.getAttribute('id')) === 'tour-tab-calendar') {
+          await panel.screenshot({ path: join(process.env.ROOST_SCREENSHOT_DIR, `features-events-${width}.png`) });
+        }
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
       }
-      if (process.env.ROOST_SCREENSHOT_DIR && (await tab.getAttribute('id')) === 'tour-tab-calendar') {
-        await panel.screenshot({ path: join(process.env.ROOST_SCREENSHOT_DIR, `features-events-${width}.png`) });
-      }
-      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      await tabs.last().focus();
+      await page.keyboard.press('Home');
+      await expect(tabs.first()).toBeFocused();
+      await page.keyboard.press('ArrowRight');
+      await expect(tabs.nth(1)).toBeFocused();
+      await expect(tabs.nth(1)).toHaveAttribute('aria-selected', 'true');
+      await page.keyboard.press('End');
+      await expect(tabs.last()).toBeFocused();
+      await expect(tabs.last()).toHaveAttribute('aria-selected', 'true');
+      await page.keyboard.press('ArrowRight');
+      await expect(tabs.first()).toBeFocused();
     }
-    await tabs.last().focus();
-    await page.keyboard.press('Home');
-    await expect(tabs.first()).toBeFocused();
-    await page.keyboard.press('ArrowRight');
-    await expect(tabs.nth(1)).toBeFocused();
-    await expect(tabs.nth(1)).toHaveAttribute('aria-selected', 'true');
-    await page.keyboard.press('End');
-    await expect(tabs.last()).toBeFocused();
-    await expect(tabs.last()).toHaveAttribute('aria-selected', 'true');
   }
 });
 
