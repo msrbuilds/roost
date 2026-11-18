@@ -27,10 +27,6 @@ h1 em, h2 em, .admin-preview h3 em { font-family: inherit; font-style: normal; f
 .text-link { text-underline-offset: 4px; }
 .text-link:hover { text-decoration: underline; }
 body:not(.docs-page) main > section.container { position: relative; border-inline: 1px solid var(--line); border-bottom: 1px solid var(--line); padding-inline: 40px; }
-body:not(.docs-page) main > section.container::before,
-body:not(.docs-page) main > section.container::after { content: ""; position: absolute; top: -5px; width: 9px; height: 9px; background: #fff; border: 1px solid #9db7e4; pointer-events: none; z-index: 1; }
-body:not(.docs-page) main > section.container::before { left: -5px; }
-body:not(.docs-page) main > section.container::after { right: -5px; }
 .hero { display: block; padding-block: 68px 0; background-image: linear-gradient(#2563eb06 1px, transparent 1px), linear-gradient(90deg, #2563eb06 1px, transparent 1px); background-size: 64px 64px; }
 .hero-copy { max-width: 1000px; margin-inline: auto; text-align: center; padding: 0 0 44px; }
 .hero .release-pill { margin-bottom: 26px; border-radius: 2px; padding: 9px 12px; background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; font-family: Consolas, monospace; font-size: 10px; }
@@ -121,7 +117,6 @@ body:not(.docs-page) main > section.container::after { right: -5px; }
 .final-cta h2 em { color: #fff; }
 .final-cta > div:last-child > span { color: #fff; }
 .final-cta .small-label { color: #fff; font-size: 10px; }
-.final-cta::before, .final-cta::after { display: none; }
 .site-footer { background: #f5f7fb; margin-top: 0; border-top: 0; padding-top: 0; }
 .footer-top, .footer-bottom { padding-inline: 30px; border-inline: 1px solid var(--line); }
 .footer-top { padding-block: 45px; }

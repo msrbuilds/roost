@@ -1,0 +1,51 @@
+/* Decorative marks belong to the element drawing the border, so adjacent
+   backgrounds (especially the header) cannot cover half of a square. */
+:root {
+  --intersection-square: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='9' viewBox='0 0 9 9'%3E%3Crect x='.5' y='.5' width='8' height='8' fill='white' stroke='%239db7e4'/%3E%3C/svg%3E");
+}
+body:not(.docs-page) :is(.header-inner, .mobile-navigation, main > section.container,
+  .belief-strip > .container, .ownership-grid, .docs-help, .footer-top),
+.alternatives-marquee,
+:is(.feature-grid, .feature-detail-grid, .steps-grid, .choice-section, .tech-core-grid, .tech-integration-grid) > * {
+  position: relative;
+}
+body:not(.docs-page) :is(.header-inner, .mobile-navigation, main > section.container,
+  .belief-strip > .container, .ownership-grid, .docs-help, .footer-top)::after,
+.alternatives-marquee::before, .alternatives-marquee::after,
+:is(.feature-grid, .feature-detail-grid, .steps-grid, .choice-section, .tech-core-grid, .tech-integration-grid) > *::before,
+:is(.feature-grid, .feature-detail-grid, .steps-grid, .choice-section, .tech-core-grid, .tech-integration-grid) > *::after {
+  content: "";
+  position: absolute;
+  inset-inline: -5px;
+  height: 9px;
+  background-image: var(--intersection-square), var(--intersection-square);
+  background-position: left center, right center;
+  background-size: 9px 9px;
+  background-repeat: no-repeat;
+  pointer-events: none;
+  z-index: 2;
+}
+body:not(.docs-page) :is(.header-inner, .mobile-navigation, main > section.container,
+  .belief-strip > .container, .ownership-grid, .docs-help, .footer-top)::after,
+.alternatives-marquee::after,
+:is(.feature-grid, .feature-detail-grid, .steps-grid, .choice-section, .tech-core-grid, .tech-integration-grid) > *::after {
+  bottom: -5px;
+}
+.alternatives-marquee::before,
+:is(.feature-grid, .feature-detail-grid, .steps-grid, .choice-section, .tech-core-grid, .tech-integration-grid) > *::before {
+  top: -5px;
+}
+/* Keep the blue CTA's border marks visible outside its background. */
+.final-cta { overflow: visible; }
+/* This help row continues the documentation directory's outer rails. */
+.docs-help { border-inline: 1px solid var(--line); border-bottom: 1px solid var(--line); padding-inline: 40px; }
+@media (max-width: 800px) {
+  .docs-help { padding-inline: 24px; }
+  body:not(.docs-page) .mobile-navigation {
+    width: calc(100% - 32px);
+    margin-inline: auto;
+    border-inline: 1px solid var(--line);
+    padding-inline: 20px;
+  }
+}
+@media (max-width: 480px) { .docs-help { padding-inline: 20px; } }
