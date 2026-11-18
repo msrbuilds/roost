@@ -1,0 +1,21 @@
+.intro-video-topline { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-bottom: 12px; }
+.intro-video-topline h2 { font-size: 15px; font-weight: 650; letter-spacing: -.02em; }
+.intro-video-topline > span { font: 10px Consolas, monospace; color: var(--muted); letter-spacing: .08em; }
+.intro-video-stage { position: relative; width: 100%; aspect-ratio: 16 / 9; min-height: 202px; border: 1px solid var(--line); background: var(--ink); }
+.intro-video-poster, .intro-video-stage iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.intro-video-poster { padding: 0; color: #fff; background: var(--ink); cursor: pointer; }
+.intro-video-poster:disabled { cursor: wait; }
+.intro-video-poster img { width: 100%; height: 100%; object-fit: contain; }
+.intro-video-play { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: grid; place-items: center; width: 88px; height: 88px; border-radius: 50%; background: var(--blue); border: 2px solid #fff; box-shadow: 0 4px 24px #0f172a55; transition: background .2s; }
+.intro-video-play svg { width: 36px; height: 36px; margin-left: -3px; }
+.intro-video-poster:hover .intro-video-play { background: var(--blue-dark); }
+.intro-video-poster:focus-visible { outline: 3px solid var(--blue); outline-offset: 5px; }
+.intro-video-label { position: absolute; left: 18px; bottom: 18px; padding: 9px 13px; background: #0f172aee; border: 1px solid #ffffff55; border-radius: 3px; font-size: 13px; font-weight: 600; }
+.intro-video-caption { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 20px; padding-block: 12px 4px; color: var(--muted); font-size: 12px; }
+.intro-video-caption .text-link { min-height: 32px; color: var(--blue-dark); }
+@media (max-width: 600px) {
+  .intro-video-play { width: 60px; height: 60px; }
+  .intro-video-play svg { width: 28px; height: 28px; }
+  .intro-video-label { left: 10px; bottom: 10px; padding: 6px 9px; font-size: 11px; }
+  .intro-video-caption { font-size: 11px; }
+}

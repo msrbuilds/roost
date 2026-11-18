@@ -1,5 +1,23 @@
 // Carousels stop on interaction; visitors can explicitly restart rotation.
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+for (const video of document.querySelectorAll<HTMLElement>('[data-intro-video]')) {
+  const play = video.querySelector<HTMLButtonElement>('[data-video-play]')!;
+  const stage = video.querySelector<HTMLElement>('[data-video-stage]')!;
+  const status = video.querySelector<HTMLElement>('[data-video-status]')!;
+  play.addEventListener('click', () => {
+    // No YouTube resources are requested until the visitor chooses to play.
+    const frame = document.createElement('iframe');
+    frame.src = 'https://www.youtube-nocookie.com/embed/XVmHSLuBeNU?autoplay=1&rel=0&playsinline=1';
+    frame.title = 'Roost introduction video';
+    frame.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
+    frame.allowFullscreen = true;
+    frame.referrerPolicy = 'strict-origin-when-cross-origin';
+    status.textContent = 'Video player opened. Use the player controls, or watch on YouTube using the link below.';
+    stage.replaceChildren(frame);
+    frame.focus();
+  }, { once: true });
+  play.disabled = false;
+}
 for (const hero of document.querySelectorAll<HTMLElement>('.hero-technologies')) {
   let inView = false;
   const sync = () => hero.toggleAttribute('data-motion-paused', !inView || document.hidden);

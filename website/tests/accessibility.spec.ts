@@ -26,12 +26,16 @@ for (const width of [412, 1440]) {
   });
 }
 
-test('search, mobile navigation, and carousel controls retain accessible names and states', async ({ page }) => {
+test('search, mobile navigation, and video controls retain accessible names and states', async ({ page }) => {
   test.setTimeout(60000);
   await page.setViewportSize({ width: 390, height: 900 });
+  await page.route('https://www.youtube-nocookie.com/**', route => route.fulfill({
+    contentType: 'text/html',
+    body: '<!doctype html><html lang="en"><head><title>Video player</title></head><body><main aria-label="Video player controls"><button style="min-height:44px;padding:12px">Video controls</button></main></body></html>',
+  }));
   await page.goto('/');
-  const slider = page.getByRole('region', { name: 'Roost product showcase', exact: true });
-  await slider.getByRole('button', { name: 'Pause screenshot slideshow', exact: true }).click();
+  await audit(page);
+  await page.getByRole('button', { name: 'Watch the Roost intro video', exact: true }).click();
   await audit(page);
   for (const name of ['Calendar', 'Administration']) {
     await page.getByRole('tablist', { name: 'Product screenshots' }).getByRole('tab', { name, exact: true }).click();

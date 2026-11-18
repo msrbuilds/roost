@@ -154,50 +154,77 @@ test('the technology section stays visible without JavaScript', async ({ browser
   }
 });
 
-test('hero slideshow navigates and the feature tour has no nested sliders', async ({ page, request }) => {
-  test.setTimeout(90000);
+test('intro video waits for activation and preserves its frame on desktop and mobile', async ({ page }) => {
+  const requests: string[] = [];
+  page.on('request', request => {
+    if (/youtube|ytimg|googlevideo/.test(new URL(request.url()).hostname)) requests.push(request.url());
+  });
+  await page.route('https://www.youtube-nocookie.com/**', route => route.fulfill({
+    contentType: 'text/html',
+    body: '<!doctype html><html lang="en"><head><title>Video player</title></head><body><main aria-label="Video player controls">Roost video player</main></body></html>',
+  }));
   for (const width of [320, 390, 768, 1440]) {
     await page.setViewportSize({ width, height: 1000 });
-    for (const route of ['/', '/features/']) {
-      await page.goto(route);
-      const sliders = page.locator('[data-showcase-slider]:visible');
-      await expect(sliders).toHaveCount(route === '/' ? 1 : 0);
-      for (const slider of await sliders.all()) {
-        const tabs = slider.getByRole('tab');
-        const count = await tabs.count();
-        for (const tab of await tabs.all()) {
-          await tab.click();
-          await expect(tab).toHaveAttribute('aria-selected', 'true');
-          const panel = slider.getByRole('tabpanel');
-          await expect(panel).toHaveCount(1);
-          await expect.poll(() => panel.locator('img').evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth > 0)).toBe(true);
-          await expect(slider.getByRole('button', { name: 'Play screenshot slideshow' })).toBeVisible();
-        }
-        await slider.getByRole('button', { name: 'Next screenshot' }).click();
-        await expect(tabs.first()).toHaveAttribute('aria-selected', 'true');
-        await slider.getByRole('button', { name: 'Previous screenshot' }).click();
-        await expect(tabs.last()).toHaveAttribute('aria-selected', 'true');
-        await tabs.last().press('Home');
-        await expect(tabs.first()).toBeFocused();
-        await tabs.first().press('End');
-        await expect(tabs.nth(count - 1)).toBeFocused();
-        await tabs.last().press('ArrowRight');
-        await expect(tabs.first()).toBeFocused();
-        const link = slider.getByRole('tabpanel').locator('a');
-        expect((await request.get((await link.getAttribute('href'))!)).ok()).toBe(true);
-      }
-      await expect(page.locator('.showcase-tablet .showcase-frame:visible')).toHaveCount(0);
-      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-    }
+    requests.length = 0;
+    await page.goto('/');
+    const video = page.getByRole('region', { name: 'Meet Roost', exact: true });
+    const play = video.getByRole('button', { name: 'Watch the Roost intro video', exact: true });
+    await expect(play).toBeEnabled();
+    await expect.poll(() => play.locator('img').evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
+    await expect(video.locator('iframe')).toHaveCount(0);
+    await expect(page.locator('[data-showcase-slider]')).toHaveCount(0);
+    expect(requests).toEqual([]);
+    const before = await video.locator('[data-video-stage]').boundingBox();
+    await play.press(width < 800 ? 'Space' : 'Enter');
+    const frame = video.locator('iframe');
+    await expect(frame).toBeVisible();
+    await expect(frame).toHaveAttribute('src', 'https://www.youtube-nocookie.com/embed/XVmHSLuBeNU?autoplay=1&rel=0&playsinline=1');
+    await expect(frame).toHaveAttribute('title', 'Roost introduction video');
+    await expect(frame).toHaveAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
+    await expect(frame).toHaveAttribute('allowfullscreen', '');
+    await expect(frame).toBeFocused();
+    const after = await video.locator('[data-video-stage]').boundingBox();
+    expect(Math.abs(after!.width - before!.width)).toBeLessThan(1);
+    expect(Math.abs(after!.height - before!.height)).toBeLessThan(1);
+    const player = await frame.boundingBox();
+    expect(player!.width).toBeGreaterThanOrEqual(200);
+    expect(player!.height).toBeGreaterThanOrEqual(200);
+    expect(requests.some(url => url.includes('/embed/XVmHSLuBeNU'))).toBe(true);
+    await expect(video.getByRole('link', { name: 'Watch on YouTube', exact: true })).toHaveAttribute('href', 'https://www.youtube.com/watch?v=XVmHSLuBeNU');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   }
 });
 
-test('logo marquee and screenshot rotation can pause and respect reduced motion', async ({ page }) => {
+test('intro video offers a direct watch link without JavaScript', async ({ browser, baseURL }) => {
+  const context = await browser.newContext({ baseURL, javaScriptEnabled: false, viewport: { width: 390, height: 900 } });
+  try {
+    const page = await context.newPage();
+    await page.goto('/');
+    const video = page.getByRole('region', { name: 'Meet Roost', exact: true });
+    await expect(video.getByRole('button', { name: 'Watch the Roost intro video', exact: true })).toBeDisabled();
+    await expect(video.locator('iframe')).toHaveCount(0);
+    const link = video.getByRole('link', { name: 'Watch on YouTube', exact: true });
+    await expect(link).toBeVisible();
+    await expect(link).toHaveAttribute('href', 'https://www.youtube.com/watch?v=XVmHSLuBeNU');
+    await expect(link).toHaveAttribute('target', '_blank');
+  } finally { await context.close(); }
+});
+
+test('intro video keeps the watch link available if the embedded player is blocked', async ({ page }) => {
+  await page.route('https://www.youtube-nocookie.com/**', route => route.abort());
+  await page.goto('/');
+  const video = page.getByRole('region', { name: 'Meet Roost', exact: true });
+  await video.getByRole('button', { name: 'Watch the Roost intro video', exact: true }).click();
+  await expect(video.locator('iframe')).toHaveCount(1);
+  await expect(video.getByRole('link', { name: 'Watch on YouTube', exact: true })).toBeVisible();
+  await expect(video.getByRole('status')).toContainText('watch on YouTube');
+});
+
+test('logo marquee can pause and respects reduced motion', async ({ page }) => {
   await page.goto('/');
   const marquee = page.locator('[data-logo-marquee]');
   await expect(marquee.locator('.alternatives-heading button')).toHaveCount(0);
-  const pause = marquee.getByRole('button', { name: 'Pause scrolling logos' });
-  await pause.click();
+  await marquee.getByRole('button', { name: 'Pause scrolling logos' }).click();
   await expect(marquee).toHaveAttribute('data-paused', '');
   await expect(marquee.locator('.alternatives-track')).toHaveCSS('animation-play-state', 'paused');
   await marquee.getByRole('button', { name: 'Resume scrolling logos' }).click();
@@ -207,59 +234,9 @@ test('logo marquee and screenshot rotation can pause and respect reduced motion'
   for (const image of await marquee.locator('img').all()) {
     await expect.poll(() => image.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
   }
-  const slider = page.getByRole('region', { name: 'Roost product showcase', exact: true });
-  await slider.getByRole('button', { name: 'Pause screenshot slideshow' }).click();
-  await expect(slider.getByRole('button', { name: 'Play screenshot slideshow' })).toBeVisible();
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await expect(marquee.locator('.alternatives-track')).toHaveCSS('animation-name', 'none');
   await expect(marquee.locator('[data-marquee-pause]')).toBeDisabled();
-  await expect(slider.getByRole('button', { name: 'Play screenshot slideshow' })).toBeVisible();
-  await page.reload();
-  await expect(slider.getByRole('button', { name: 'Play screenshot slideshow' })).toBeVisible();
-  await slider.getByRole('tab', { name: 'Calendar', exact: true }).click();
-  await expect(slider.getByRole('tabpanel')).toHaveAttribute('id', 'hero-showcase-panel-3');
-});
-
-test('screenshot slides advance only while visible and stop after manual interaction', async ({ page }) => {
-  await page.clock.install();
-  await page.goto('/');
-  const slider = page.getByRole('region', { name: 'Roost product showcase', exact: true });
-  await slider.scrollIntoViewIfNeeded();
-  await page.mouse.move(0, 0);
-  await expect(slider.getByRole('tab').first()).toHaveAttribute('aria-selected', 'true');
-  await page.clock.runFor(8000);
-  await expect(slider.getByRole('tab').nth(1)).toHaveAttribute('aria-selected', 'true');
-  await slider.getByRole('tab', { name: 'Calendar', exact: true }).click();
-  await page.mouse.move(0, 0);
-  await page.clock.runFor(16000);
-  await expect(slider.getByRole('tab', { name: 'Calendar', exact: true })).toHaveAttribute('aria-selected', 'true');
-});
-
-test('pausing while the next screenshot loads keeps the current slide visible', async ({ page }) => {
-  await page.clock.install();
-  let releaseImage!: () => void;
-  const imageGate = new Promise<void>(resolve => { releaseImage = resolve; });
-  let imageRequested = false;
-  await page.route(/\/_astro\/classrooms\..*\.webp$/, async route => {
-    imageRequested = true;
-    await imageGate;
-    await route.continue();
-  });
-  try {
-    await page.goto('/');
-    const slider = page.getByRole('region', { name: 'Roost product showcase', exact: true });
-    await slider.scrollIntoViewIfNeeded();
-    await page.mouse.move(0, 0);
-    await page.clock.runFor(8000);
-    await expect.poll(() => imageRequested).toBe(true);
-    await slider.getByRole('button', { name: 'Pause screenshot slideshow' }).click();
-    releaseImage();
-    await expect.poll(() => slider.locator('#hero-showcase-panel-1 img').evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
-    await expect(slider.getByRole('tab', { name: 'Community', exact: true })).toHaveAttribute('aria-selected', 'true');
-    await expect(slider.getByRole('button', { name: 'Play screenshot slideshow' })).toBeVisible();
-  } finally {
-    releaseImage();
-  }
 });
 
 test('the feature tour keeps its current screenshot until the next one loads', async ({ page }) => {
@@ -522,9 +499,9 @@ test('product screenshots load and missing pages offer recovery links', async ({
       }
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${route} at ${width}px`).toBe(true);
       if (route === '/') {
-        const showcase = page.getByRole('region', { name: 'Roost product showcase', exact: true });
-        await expect(showcase.getByRole('tabpanel')).toHaveCount(1);
-        await expect(showcase.locator('.showcase-navigation')).toBeVisible();
+        const video = page.getByRole('region', { name: 'Meet Roost', exact: true });
+        await expect(video.getByRole('button', { name: 'Watch the Roost intro video', exact: true })).toBeVisible();
+        await expect(video.locator('iframe')).toHaveCount(0);
       } else {
         await expect(page.locator('main > section').last()).toHaveClass(/final-cta/);
         expect(await page.locator('.feature-detail').evaluateAll((cards) => {
