@@ -91,8 +91,12 @@ export default function Calendar() {
     }, [selectedGroup, user]);
 
     useEffect(() => {
-        void Promise.all([loadEvents(), loadUpcoming()]);
-    }, [loadEvents, loadUpcoming]);
+        void loadEvents();
+    }, [loadEvents]);
+
+    useEffect(() => {
+        void loadUpcoming();
+    }, [loadUpcoming]);
 
     const handleCreateEvent = async (data: EventFormData) => {
         if (!user) return;

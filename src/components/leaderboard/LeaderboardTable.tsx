@@ -69,14 +69,12 @@ export default function LeaderboardTable({ groupId, period }: LeaderboardTablePr
         setLeaderboard([]);
         setOffset(0);
         setHasMore(true);
-            void loadLeaderboard(true, 0);
+        void loadLeaderboard(true, 0);
 
         // Subscribe to real-time updates
         const channel = subscribeToLeaderboardChanges(groupId || null, () => {
-            // On real-time update, reload from beginning
-            setLeaderboard([]);
+            // Keep the current rows visible while fresh rankings load.
             setOffset(0);
-            setHasMore(true);
             void loadLeaderboard(false, 0);
         });
 

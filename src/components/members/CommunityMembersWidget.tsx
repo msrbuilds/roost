@@ -9,42 +9,24 @@ export function CommunityMembersWidget() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        let cancelled = false;
         const fetchMembers = async () => {
             setLoading(true);
             try {
-                await searchMembers({
-                    sort: activeTab === 'active' ? 'last_active' : 'newest',
-                    limit: 5,
-                    status: activeTab === 'active' ? 'online' : 'all' // Optimization: for "Active", maybe prioritize online or just sort by last_seen
-                });
-
-                // If "active" tab and no online users, maybe fallback to just last_active sorted?
-                // For now, let's just stick to the requested logic.
-                // Re-reading request: "Active" usually means recently active.
-                // My searchMembers has `sort='last_active'`.
-                // Let's use that.
-
-                // Actually, for "Active" tab, let's fetch sorted by 'last_active'. 
-                // For 'Newest', sort by 'newest'.
-
-                // Let's refine the call based on tab
-                const sortType = activeTab === 'active' ? 'last_active' : 'newest';
-
-                // Make the call
                 const results = await searchMembers({
-                    sort: sortType,
+                    sort: activeTab === 'active' ? 'last_active' : 'newest',
                     limit: 5
                 });
-
-                setMembers(results);
+                if (!cancelled) setMembers(results);
             } catch (error) {
                 console.error('Error fetching widget members:', error);
             } finally {
-                setLoading(false);
+                if (!cancelled) setLoading(false);
             }
         };
 
         fetchMembers();
+        return () => { cancelled = true; };
     }, [activeTab]);
 
     return (
