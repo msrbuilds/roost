@@ -4,6 +4,44 @@ import { test, expect } from '@playwright/test';
 test.describe('public read-only demo', () => {
   test.skip(process.env.ROOST_DEMO_BROWSER_TESTS !== 'true', 'Requires an explicitly selected live demo');
   for (const width of [390, 1440]) {
+    test(`showcase stays stable after loading and clearing search at ${width}px`, async ({ page }) => {
+      test.setTimeout(60000);
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto('/login');
+      await page.getByRole('button', { name: 'Explore the demo', exact: true }).click();
+      await expect(page.getByRole('heading', { name: 'Welcome back, Demo Explorer!' })).toBeVisible({ timeout: 15000 });
+      await page.goto('/showcase');
+      const project = page.getByRole('heading', { name: 'Roost: a place for your people', exact: true });
+      await expect(project).toBeVisible({ timeout: 15000 });
+
+      async function expectStableProject() {
+        const reads: string[] = [];
+        const record = (request: import('@playwright/test').Request) => {
+          if (new URL(request.url()).pathname === '/rest/v1/showcases') reads.push(request.url());
+        };
+        page.on('request', record);
+        // Observe across several debounce intervals, rather than checking a lucky frame.
+        const removed = await project.evaluate(node => new Promise<boolean>(resolve => {
+          let detached = false;
+          const observer = new MutationObserver(() => { detached ||= !node.isConnected; });
+          observer.observe(document.body, { childList: true, subtree: true });
+          setTimeout(() => { observer.disconnect(); resolve(detached); }, 1800);
+        }));
+        page.off('request', record);
+        expect(removed, 'the project must not be replaced with a loading spinner').toBe(false);
+        expect(reads, 'an idle showcase must not repeatedly refetch').toEqual([]);
+      }
+      await expectStableProject();
+      if (width < 768) await page.getByRole('button', { name: 'Filters', exact: true }).click();
+      const search = page.getByPlaceholder('Search projects...');
+      await search.fill('qzxunmatched937');
+      await expect(page.getByRole('heading', { name: 'No projects found', exact: true })).toBeVisible({ timeout: 15000 });
+      await search.fill('');
+      if (width < 768) await page.getByRole('button', { name: 'Hide filters', exact: true }).click();
+      await expect(project).toBeVisible({ timeout: 15000 });
+      await expectStableProject();
+    });
+
     test(`member tour at ${width}px`, async ({ page }) => {
       test.setTimeout(120000);
       await page.setViewportSize({ width, height: 900 });

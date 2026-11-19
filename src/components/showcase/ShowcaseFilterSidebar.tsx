@@ -41,7 +41,7 @@ export default function ShowcaseFilterSidebar({
     // Debounced search
     useEffect(() => {
         const timeout = setTimeout(() => {
-            if (searchInput !== filters.search) {
+            if (searchInput !== (filters.search || '')) {
                 onFiltersChange({ ...filters, search: searchInput || undefined });
             }
         }, 300);
