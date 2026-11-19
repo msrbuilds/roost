@@ -9,7 +9,7 @@ function criticalAssets(html) {
   return [...html.matchAll(/<(?:link|script)\b[^>]*>/g)].flatMap(([tag]) => {
     if (tag.startsWith('<link') && !/\brel="stylesheet"/.test(tag)) return [];
     const asset = tag.match(/\b(?:href|src)="([^"?#]+)(?:[?#][^"]*)?"/);
-    return asset && asset[1].startsWith('/_astro/') ? [asset[1]] : [];
+    return asset && (asset[1].startsWith('/_astro/') || asset[1] === '/analytics.js') ? [asset[1]] : [];
   }).sort();
 }
 const pages = await Promise.all(['/', '/features/', '/docs/'].map(async (route) => {

@@ -1,7 +1,34 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 import { join } from 'node:path';
 import { readFileSync } from 'node:fs';
 import { guides } from '../src/data/site';
+
+test('Analytics initializes once on product pages and docs without blocking the interface', async ({ page }) => {
+  test.setTimeout(60000);
+  let containers = 0;
+  page.on('request', request => {
+    if (request.url() === 'https://www.googletagmanager.com/gtm.js?id=GTM-MNLR38BD') containers++;
+  });
+  for (const width of [390, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const path of ['/', '/features/', '/docs/', '/docs/self-hosted-setup/', '/privacy/']) {
+      const before = containers;
+      await page.goto(path);
+      await expect.poll(() => containers - before).toBe(1);
+      await expect(page.locator('head script[src="/analytics.js"]')).toHaveCount(1);
+      await expect(page.locator('head script[src="https://www.googletagmanager.com/gtm.js?id=GTM-MNLR38BD"]')).toHaveCount(1);
+      expect(await page.evaluate(() => {
+        const analytics = window as typeof window & { dataLayer: IArguments[]; gtag: unknown };
+        return {
+          initialized: analytics.dataLayer.filter(command => command[0] === 'js' && command[1] instanceof Date).length,
+          helper: typeof analytics.gtag,
+          async: document.querySelector<HTMLScriptElement>('script[src*="googletagmanager.com/gtm.js"]')?.async,
+        };
+      })).toEqual({ initialized: 1, helper: 'function', async: true });
+      await expect(page.getByRole('button', { name: /^Search documentation/ })).toBeEnabled();
+    }
+  }
+});
 
 test('technology icons clear hero content and the feature screenshots stay in landscape', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -271,7 +298,7 @@ const csp = readFileSync(new URL('../public/_headers', import.meta.url), 'utf8')
 test.beforeEach(async ({ page, baseURL }) => {
   if (baseURL?.startsWith('http://127.0.0.1:')) {
     await page.route('**/*', async (route) => {
-      if (route.request().resourceType() !== 'document') return route.continue();
+      if (route.request().resourceType() !== 'document') return route.fallback();
       const response = await route.fetch();
       await route.fulfill({ response, headers: { ...response.headers(), 'content-security-policy': csp } });
     });
