@@ -1,0 +1,67 @@
+name: Bug report
+description: Report something that fails or does not match the documented behavior.
+title: "Bug: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting this. Setup and operations notes are in the [documentation](https://roost.msrbuilds.com/docs/). The [live demo](https://roost-demo.msrbuilds.com/) is read-only, so writes and account changes there are expected to fail.
+
+        Do not include passwords, service keys, tokens, or member data.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you expect, and what happened instead?
+      placeholder: The signup confirmation email never arrived, and the page stayed on Confirm Your Email.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Include the URL or screen, and the smallest set of steps that shows the problem.
+      placeholder: |
+        1. Go to ...
+        2. Click ...
+        3. See ...
+    validations:
+      required: true
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Where did this happen?
+      description: Local development is `npm run dev:all`. The public demo is roost-demo.msrbuilds.com.
+      options:
+        - Local development
+        - Docker Compose on a VPS
+        - Self-hosted stack (docker-compose.dokploy.yml)
+        - Public demo
+        - Not sure
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Git commit, release, or "main" if you are not sure. Add the browser for UI bugs.
+      placeholder: main, Firefox 134
+    validations:
+      required: false
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Browser console, API logs, or command output. Remove secrets first.
+      render: Text
+    validations:
+      required: false
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched existing issues and the docs, and this is not already reported.
+          required: true
