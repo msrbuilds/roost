@@ -1,0 +1,39 @@
+name: Feature request
+description: Propose a change to the app, the docs, or the setup flow.
+title: "Feature: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the problem first. Current behavior is documented at <https://roost.msrbuilds.com/docs/>. You can also try the read-only demo at <https://roost-demo.msrbuilds.com/>.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem is this?
+      description: Who runs into it, and what do they have to do today?
+      placeholder: Operators cannot tell from the installer summary which URL the dev server actually uses.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What should change?
+      description: Describe the behavior you want. A sketch is enough.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives
+      description: Other approaches you considered, if any.
+    validations:
+      required: false
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched existing issues, and this is not already requested.
+          required: true

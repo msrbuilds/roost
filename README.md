@@ -254,7 +254,7 @@ Follow [Using Roost](guides/using-roost.md) and [Administration](guides/administ
 
 ## Contributing
 
-Found a bug or have an idea? [Open an issue](https://github.com/msrbuilds/roost/issues). Pull requests for fixes, documentation, and improvements are welcome. Include clear reproduction steps or a description of the change, and run the relevant checks before submitting.
+Found a bug or have an idea? [Open an issue](https://github.com/msrbuilds/roost/issues). Pull requests for fixes, documentation, and improvements are welcome. Include clear reproduction steps or a description of the change, and run the relevant checks before submitting. Setup, checks, and pull request expectations are in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
