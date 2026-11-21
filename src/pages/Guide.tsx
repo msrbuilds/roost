@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { APP_CONFIG } from '@/config/app';
 import {
     BookOpen,
@@ -287,6 +287,14 @@ function Lightbox({
     selectedImage: string | null;
     onClose: () => void;
 }) {
+    useEffect(() => {
+        if (!selectedImage) return;
+        const closeWithEscape = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') onClose();
+        };
+        document.addEventListener('keydown', closeWithEscape);
+        return () => document.removeEventListener('keydown', closeWithEscape);
+    }, [selectedImage, onClose]);
     if (!selectedImage) return null;
 
     return (
@@ -296,6 +304,7 @@ function Lightbox({
         >
             <button
                 onClick={onClose}
+                aria-label="Close screenshot preview"
                 className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
             >
                 <X className="w-6 h-6 text-white" />

@@ -1,10 +1,9 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import DOMPurify, { type Config } from 'dompurify';
 import type { EmojiClickData } from 'emoji-picker-react';
-import { Theme } from 'emoji-picker-react';
 import { Bold, Italic, Link, List, ListOrdered, Smile, Underline } from 'lucide-react';
 
-const EmojiPicker = lazy(() => import('emoji-picker-react'));
+import EmojiPopover from '@/components/common/EmojiPopover';
 
 interface RichTextEditorProps {
     value: string;
@@ -23,6 +22,7 @@ const SANITIZE_OPTIONS: Config = {
 
 export default function RichTextEditor({ value, onChange, placeholder, className = '', initialValue }: RichTextEditorProps) {
     const editorRef = useRef<HTMLDivElement>(null);
+    const emojiButtonRef = useRef<HTMLButtonElement>(null);
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
     useEffect(() => {
@@ -74,25 +74,18 @@ export default function RichTextEditor({ value, onChange, placeholder, className
 
     return (
         <div className={`rich-text-editor ${className} relative rounded-xl border border-surface-200 dark:border-surface-700 overflow-hidden`}>
-            <div className="flex items-center gap-1 p-2 pr-12 bg-surface-50 dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700">
+            <div className="flex flex-wrap items-center gap-1 p-2 pr-12 bg-surface-50 dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700">
                 {tools.map(({ label, icon: Icon, action }) => (
                     <button key={label} type="button" onClick={action} className="p-2 rounded hover:bg-surface-200 dark:hover:bg-surface-700" title={label} aria-label={label}>
                         <Icon className="w-4 h-4" />
                     </button>
                 ))}
             </div>
-            <button type="button" onClick={() => setShowEmojiPicker(!showEmojiPicker)} className="absolute top-2 right-2 z-10 p-2 rounded hover:bg-surface-200 dark:hover:bg-surface-700" title="Add emoji" aria-label="Add emoji">
+            <button ref={emojiButtonRef} type="button" onClick={() => setShowEmojiPicker(!showEmojiPicker)} className="absolute top-2 right-2 z-10 p-2 rounded hover:bg-surface-200 dark:hover:bg-surface-700" title="Add emoji" aria-label="Add emoji">
                 <Smile className="w-5 h-5 text-surface-500 dark:text-surface-400" />
             </button>
             {showEmojiPicker && (
-                <>
-                    <button type="button" aria-label="Close emoji picker" className="fixed inset-0 z-20 cursor-default" onClick={() => setShowEmojiPicker(false)} />
-                    <div className="absolute top-12 right-2 z-30">
-                        <Suspense fallback={<div className="w-[350px] h-[400px] animate-pulse bg-surface-100 dark:bg-surface-800 rounded-lg" />}>
-                            <EmojiPicker onEmojiClick={handleEmojiClick} autoFocusSearch={false} theme={document.documentElement.classList.contains('dark') ? Theme.DARK : Theme.LIGHT} />
-                        </Suspense>
-                    </div>
-                </>
+                <EmojiPopover anchorRef={emojiButtonRef} onClose={() => setShowEmojiPicker(false)} onEmojiClick={handleEmojiClick} />
             )}
             <div ref={editorRef} contentEditable role="textbox" aria-multiline="true" aria-label={placeholder || 'Post content'} data-placeholder={placeholder}
                 onInput={emitChange} onBlur={emitChange}

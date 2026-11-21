@@ -178,9 +178,9 @@ export default function NotificationCenter({ isOpen, onClose, onNavigate, onUnre
       />
 
       {/* Desktop: Dropdown | Mobile: Slide-in panel from right */}
-      <div className="
+      <div role="dialog" aria-label="Notifications" className="
         fixed inset-y-0 right-0 w-full max-w-sm bg-white dark:bg-surface-900 shadow-elevated dark:shadow-elevated-dark border-l border-surface-200 dark:border-surface-700 z-50 flex flex-col animate-slide-in-right
-        md:absolute md:inset-y-auto md:right-0 md:top-full md:mt-2 md:w-96 md:max-h-[600px] md:rounded-lg md:border md:animate-none
+        md:absolute md:inset-y-auto md:right-0 md:top-full md:mt-2 md:w-96 md:max-h-[min(600px,calc(100dvh-6rem))] md:rounded-lg md:border md:animate-none
       ">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-surface-200 dark:border-surface-700">

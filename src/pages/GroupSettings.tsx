@@ -112,7 +112,7 @@ export default function GroupSettings() {
         return (
             <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="text-center py-12">
-                    <h2 className="text-xl font-semibold text-surface-900 mb-2">
+                    <h2 className="text-xl font-semibold text-surface-900 dark:text-surface-100 mb-2">
                         {error || 'Classroom not found'}
                     </h2>
                     <button
@@ -136,11 +136,11 @@ export default function GroupSettings() {
                     onClick={() => navigate(`/classrooms/${group.slug}`)}
                     className="p-2 hover:bg-surface-100 rounded-lg transition-colors"
                 >
-                    <ArrowLeft className="w-5 h-5 text-surface-600" />
+                    <ArrowLeft className="w-5 h-5 text-surface-600 dark:text-surface-400" />
                 </button>
                 <div>
-                    <h1 className="text-2xl font-bold text-surface-900">Classroom Settings</h1>
-                    <p className="text-surface-500">{group.name}</p>
+                    <h1 className="text-2xl font-bold text-surface-900 dark:text-surface-100">Classroom Settings</h1>
+                    <p className="text-surface-500 dark:text-surface-400">{group.name}</p>
                 </div>
             </div>
 
@@ -404,7 +404,7 @@ export default function GroupSettings() {
                             </h2>
                         </div>
                         <div className="p-6">
-                            <div className="flex items-start justify-between gap-4">
+                            <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
                                 <div>
                                     <h3 className="font-medium text-surface-900 dark:text-surface-100">Delete this classroom</h3>
                                     <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">
@@ -434,26 +434,27 @@ export default function GroupSettings() {
 
             {/* Delete Confirmation Modal */}
             {showDeleteConfirm && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl w-full max-w-md p-6">
-                        <div className="flex items-center gap-3 text-red-600 mb-4">
+                <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
+                    <div role="dialog" aria-modal="true" aria-label="Delete Classroom" className="bg-white dark:bg-surface-900 rounded-xl w-full max-w-md max-h-[90dvh] overflow-y-auto p-6">
+                        <div className="flex items-center gap-3 text-red-600 dark:text-red-400 mb-4">
                             <AlertTriangle className="w-6 h-6" />
                             <h2 className="text-xl font-semibold">Delete Classroom</h2>
                         </div>
-                        <p className="text-surface-600 mb-4">
+                        <p className="text-surface-600 dark:text-surface-300 mb-4">
                             This action cannot be undone. This will permanently delete the
                             <strong> {group.name} </strong>
                             classroom and all of its content.
                         </p>
-                        <p className="text-surface-600 mb-4">
+                        <p className="text-surface-600 dark:text-surface-300 mb-4">
                             Please type <strong>{group.name}</strong> to confirm.
                         </p>
                         <input
+                            aria-label="Classroom name to confirm deletion"
                             type="text"
                             value={deleteConfirmText}
                             onChange={(e) => setDeleteConfirmText(e.target.value)}
                             placeholder={group.name}
-                            className="w-full px-4 py-2.5 border border-surface-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent mb-4"
+                            className="input focus:ring-red-500 mb-4"
                         />
                         <div className="flex gap-3">
                             <button
@@ -461,7 +462,7 @@ export default function GroupSettings() {
                                     setShowDeleteConfirm(false);
                                     setDeleteConfirmText('');
                                 }}
-                                className="flex-1 px-4 py-2.5 border border-surface-200 rounded-lg text-surface-700 font-medium hover:bg-surface-50 transition-colors"
+                                className="flex-1 px-4 py-2.5 border border-surface-200 dark:border-surface-700 rounded-lg text-surface-700 dark:text-surface-300 font-medium hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
                             >
                                 Cancel
                             </button>

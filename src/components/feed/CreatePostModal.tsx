@@ -211,13 +211,14 @@ export default function CreatePostModal({
                 onClick={onClose}
             />
 
-            <div className="relative bg-white dark:bg-surface-900 rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden animate-fade-in flex flex-col">
+            <div role="dialog" aria-modal="true" aria-label={editingPost ? "Edit Post" : "Create Post"} className="relative bg-white dark:bg-surface-900 rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden animate-fade-in flex flex-col">
                 <div className="flex items-center justify-between p-4 border-b border-surface-200 dark:border-surface-700">
                     <h2 className="text-lg font-semibold text-surface-900 dark:text-surface-50">
                         {editingPost ? 'Edit Post' : 'Create Post'}
                     </h2>
                     <button
                         onClick={onClose}
+                        aria-label="Close post dialog"
                         className="p-2 hover:bg-surface-100 dark:hover:bg-surface-800 rounded-full transition-colors"
                     >
                         <X className="w-5 h-5 text-surface-500 dark:text-surface-400" />

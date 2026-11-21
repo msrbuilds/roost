@@ -435,13 +435,14 @@ export default function Activations() {
             {/* Request Modal */}
             {showRequestModal && selectedProduct && (
                 <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white dark:bg-surface-900 rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+                    <div role="dialog" aria-modal="true" aria-label="Request Activation" className="bg-white dark:bg-surface-900 rounded-xl w-full max-w-md max-h-[90dvh] overflow-y-auto">
                         <div className="p-6 border-b border-surface-200 dark:border-surface-700">
                             <div className="flex items-center justify-between">
                                 <h2 className="text-lg font-semibold text-surface-900 dark:text-surface-100">
                                     Request Activation
                                 </h2>
                                 <button
+                                    aria-label="Close activation request"
                                     onClick={() => {
                                         setShowRequestModal(false);
                                         setSelectedProduct(null);

@@ -14,12 +14,12 @@ interface ReactorListModalProps {
 }
 
 const reactionConfig: Record<ReactionType, { icon: typeof ThumbsUp; label: string; color: string; activeColor: string }> = {
-    like: { icon: ThumbsUp, label: 'Like', color: 'text-blue-500', activeColor: 'border-blue-500 text-blue-600 bg-blue-50 dark:bg-blue-900/30' },
-    love: { icon: Heart, label: 'Love', color: 'text-red-500', activeColor: 'border-red-500 text-red-600 bg-red-50 dark:bg-red-900/30' },
-    fire: { icon: Flame, label: 'Fire', color: 'text-orange-500', activeColor: 'border-orange-500 text-orange-600 bg-orange-50 dark:bg-orange-900/30' },
-    clap: { icon: Hand, label: 'Clap', color: 'text-yellow-500', activeColor: 'border-yellow-500 text-yellow-600 bg-yellow-50 dark:bg-yellow-900/30' },
-    think: { icon: Brain, label: 'Think', color: 'text-purple-500', activeColor: 'border-purple-500 text-purple-600 bg-purple-50 dark:bg-purple-900/30' },
-    haha: { icon: Laugh, label: 'Haha', color: 'text-green-500', activeColor: 'border-green-500 text-green-600 bg-green-50 dark:bg-green-900/30' },
+    like: { icon: ThumbsUp, label: 'Like', color: 'text-blue-500', activeColor: 'border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30' },
+    love: { icon: Heart, label: 'Love', color: 'text-red-500', activeColor: 'border-red-500 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30' },
+    fire: { icon: Flame, label: 'Fire', color: 'text-orange-500', activeColor: 'border-orange-500 text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30' },
+    clap: { icon: Hand, label: 'Clap', color: 'text-yellow-500', activeColor: 'border-yellow-500 text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/30' },
+    think: { icon: Brain, label: 'Think', color: 'text-purple-500', activeColor: 'border-purple-500 text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30' },
+    haha: { icon: Laugh, label: 'Haha', color: 'text-green-500', activeColor: 'border-green-500 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30' },
 };
 
 type TabType = 'all' | ReactionType;
@@ -88,7 +88,7 @@ export default function ReactorListModal({
             />
 
             {/* Modal */}
-            <div className="relative bg-white dark:bg-surface-900 rounded-2xl border border-surface-200 dark:border-surface-700 max-w-md w-full max-h-[70vh] flex flex-col animate-fade-in">
+            <div role="dialog" aria-modal="true" aria-label="Reactions" className="relative bg-white dark:bg-surface-900 rounded-2xl border border-surface-200 dark:border-surface-700 max-w-md w-full max-h-[70vh] flex flex-col animate-fade-in">
                 {/* Header */}
                 <div className="flex items-center justify-between px-5 pt-5 pb-3">
                     <h3 className="text-lg font-semibold text-surface-900 dark:text-surface-50">
@@ -96,6 +96,7 @@ export default function ReactorListModal({
                     </h3>
                     <button
                         onClick={onClose}
+                        aria-label="Close reactions"
                         className="p-1.5 hover:bg-surface-100 dark:hover:bg-surface-800 rounded-full transition-colors"
                     >
                         <X className="w-5 h-5 text-surface-500" />
@@ -113,13 +114,14 @@ export default function ReactorListModal({
                             <button
                                 key={tab.key}
                                 onClick={() => setActiveTab(tab.key)}
+                                aria-label={`${tab.label} reactions (${tab.count})`}
                                 className={`
                                     flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium
                                     border transition-all whitespace-nowrap
                                     ${isActive
                                         ? config
                                             ? config.activeColor
-                                            : 'border-primary-500 text-primary-600 bg-primary-50 dark:bg-primary-900/30'
+                                            : 'border-primary-500 text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30'
                                         : 'border-surface-200 dark:border-surface-700 text-surface-500 hover:bg-surface-50 dark:hover:bg-surface-800'
                                     }
                                 `}

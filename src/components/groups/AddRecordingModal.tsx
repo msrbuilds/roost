@@ -142,33 +142,34 @@ export default function AddRecordingModal({
     const isValidUrl = videoInfo !== null;
 
     return createPortal(
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
+            <div role="dialog" aria-modal="true" aria-label={isEditing ? 'Edit Recording' : 'Add Recording'} className="bg-white dark:bg-surface-900 rounded-xl w-full max-w-2xl max-h-[90dvh] overflow-y-auto">
                 {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-surface-100">
-                    <h2 className="text-xl font-semibold text-surface-900">
+                <div className="flex items-center justify-between p-6 border-b border-surface-100 dark:border-surface-700">
+                    <h2 className="text-xl font-semibold text-surface-900 dark:text-surface-100">
                         {isEditing ? 'Edit Recording' : 'Add Recording'}
                     </h2>
                     <button
                         onClick={handleClose}
+                        aria-label="Close recording dialog"
                         disabled={isSubmitting}
-                        className="p-2 hover:bg-surface-100 rounded-lg transition-colors disabled:opacity-50"
+                        className="p-2 hover:bg-surface-100 dark:hover:bg-surface-800 rounded-lg transition-colors disabled:opacity-50"
                     >
-                        <X className="w-5 h-5 text-surface-500" />
+                        <X className="w-5 h-5 text-surface-500 dark:text-surface-400" />
                     </button>
                 </div>
 
                 {/* Form */}
                 <form onSubmit={handleSubmit} className="p-6 space-y-6">
                     {error && (
-                        <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                        <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-400 text-sm">
                             {error}
                         </div>
                     )}
 
                     {/* Video URL */}
                     <div>
-                        <label htmlFor="videoUrl" className="block text-sm font-medium text-surface-700 mb-2">
+                        <label htmlFor="videoUrl" className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
                             Video URL *
                         </label>
                         <input
@@ -177,10 +178,10 @@ export default function AddRecordingModal({
                             value={videoUrl}
                             onChange={(e) => setVideoUrl(e.target.value)}
                             placeholder="https://youtube.com/watch?v=... or https://vimeo.com/..."
-                            className="w-full px-4 py-2.5 border border-surface-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                            className="input"
                             required
                         />
-                        <p className="mt-1 text-xs text-surface-500">
+                        <p className="mt-1 text-xs text-surface-500 dark:text-surface-400">
                             Supported: YouTube and Vimeo
                         </p>
                     </div>
@@ -188,14 +189,14 @@ export default function AddRecordingModal({
                     {/* Video Preview */}
                     {videoUrl && isValidUrl && (
                         <div className="space-y-2">
-                            <label className="block text-sm font-medium text-surface-700">Preview</label>
+                            <label className="block text-sm font-medium text-surface-700 dark:text-surface-300">Preview</label>
                             <VideoEmbed url={videoUrl} />
                         </div>
                     )}
 
                     {/* Title */}
                     <div>
-                        <label htmlFor="title" className="block text-sm font-medium text-surface-700 mb-2">
+                        <label htmlFor="title" className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
                             Title *
                         </label>
                         <input
@@ -204,7 +205,7 @@ export default function AddRecordingModal({
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
                             placeholder="e.g., Introduction to React Hooks"
-                            className="w-full px-4 py-2.5 border border-surface-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                            className="input"
                             required
                             minLength={3}
                             maxLength={200}
@@ -213,7 +214,7 @@ export default function AddRecordingModal({
 
                     {/* Description */}
                     <div>
-                        <label htmlFor="description" className="block text-sm font-medium text-surface-700 mb-2">
+                        <label htmlFor="description" className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
                             Description (optional)
                         </label>
                         <textarea
@@ -222,10 +223,10 @@ export default function AddRecordingModal({
                             onChange={(e) => setDescription(e.target.value)}
                             placeholder="Describe what this video covers..."
                             rows={4}
-                            className="w-full px-4 py-2.5 border border-surface-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+                            className="input resize-none"
                             maxLength={1000}
                         />
-                        <p className="mt-1 text-xs text-surface-500 text-right">
+                        <p className="mt-1 text-xs text-surface-500 dark:text-surface-400 text-right">
                             {description.length}/1000
                         </p>
                     </div>
@@ -236,7 +237,7 @@ export default function AddRecordingModal({
                             type="button"
                             onClick={handleClose}
                             disabled={isSubmitting}
-                            className="flex-1 px-4 py-2.5 border border-surface-200 rounded-lg text-surface-700 font-medium hover:bg-surface-50 transition-colors disabled:opacity-50"
+                            className="flex-1 px-4 py-2.5 border border-surface-200 dark:border-surface-700 rounded-lg text-surface-700 dark:text-surface-300 font-medium hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors disabled:opacity-50"
                         >
                             Cancel
                         </button>

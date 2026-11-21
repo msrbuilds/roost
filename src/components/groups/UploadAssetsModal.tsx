@@ -122,12 +122,13 @@ export default function UploadAssetsModal({
 
     return createPortal(
         <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
-            <div className="bg-white dark:bg-surface-900 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div role="dialog" aria-modal="true" aria-label="Upload Course Materials" className="bg-white dark:bg-surface-900 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-surface-100 dark:border-surface-700">
                     <h2 className="text-xl font-semibold text-surface-900 dark:text-surface-50">Upload Course Materials</h2>
                     <button
                         onClick={onClose}
+                        aria-label="Close course materials dialog"
                         disabled={isUploading}
                         className="p-2 hover:bg-surface-100 dark:hover:bg-surface-800 rounded-lg transition-colors disabled:opacity-50"
                     >
