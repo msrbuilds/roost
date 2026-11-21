@@ -347,8 +347,9 @@ export default function FeatureRequestList() {
                 {/* Submit button */}
                 <button
                     disabled={APP_CONFIG.demo.enabled}
+                    title={APP_CONFIG.demo.enabled ? 'Read-only demo' : undefined}
                     onClick={() => setShowSubmitModal(true)}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 transition-colors"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     <Plus className="w-4 h-4" />
                     <span className="hidden sm:inline">Submit Request</span>
@@ -375,8 +376,9 @@ export default function FeatureRequestList() {
                     {!filters.search && !filters.type && !filters.status && (
                         <button
                             disabled={APP_CONFIG.demo.enabled}
+                            title={APP_CONFIG.demo.enabled ? 'Read-only demo' : undefined}
                             onClick={() => setShowSubmitModal(true)}
-                            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 transition-colors"
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <Plus className="w-4 h-4" />
                             Submit Request

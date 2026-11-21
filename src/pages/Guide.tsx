@@ -254,7 +254,7 @@ function StepCard({
     return (
         <div className="bg-surface-50 dark:bg-surface-800/50 rounded-xl p-6 border border-surface-200 dark:border-surface-700">
             <div className="flex items-start gap-4">
-                <div className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center flex-shrink-0">
+                <div className="w-8 h-8 bg-primary-700 rounded-full flex items-center justify-center flex-shrink-0">
                     <span className="text-white font-semibold text-sm">{index + 1}</span>
                 </div>
                 <div className="flex-1">

@@ -241,7 +241,7 @@ export default function LeaderboardTable({ groupId, period }: LeaderboardTablePr
                                                     </p>
                                                 )}
                                                 {entry.user?.location && (
-                                                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                                                         {entry.user.location}
                                                     </p>
                                                 )}

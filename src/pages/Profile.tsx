@@ -678,7 +678,7 @@ export default function ProfilePage() {
                                 </div>
                                 <div className="text-sm text-surface-500 dark:text-surface-400">Points</div>
                                 {userRank && (
-                                    <div className="text-xs text-surface-400 dark:text-surface-500 mt-1">
+                                    <div className="text-xs text-surface-500 dark:text-surface-400 mt-1">
                                         Rank #{userRank.rank}
                                     </div>
                                 )}
@@ -703,7 +703,7 @@ export default function ProfilePage() {
                         >
                             {tab.label}
                             {tab.count !== undefined && (
-                                <span className="ml-1.5 text-xs text-surface-400 dark:text-surface-500">
+                                <span className="ml-1.5 text-xs text-surface-500 dark:text-surface-400">
                                     {tab.count}
                                 </span>
                             )}
@@ -746,7 +746,7 @@ export default function ProfilePage() {
                                                 <span className="text-sm">Loading more posts...</span>
                                             </div>
                                         ) : (
-                                            <span className="text-sm text-surface-400 dark:text-surface-500">
+                                            <span className="text-sm text-surface-500 dark:text-surface-400">
                                                 Scroll for more
                                             </span>
                                         )}
@@ -790,7 +790,7 @@ export default function ProfilePage() {
                                                 <span className="text-sm">Loading more...</span>
                                             </div>
                                         ) : (
-                                            <span className="text-sm text-surface-400 dark:text-surface-500">
+                                            <span className="text-sm text-surface-500 dark:text-surface-400">
                                                 Scroll for more
                                             </span>
                                         )}
@@ -827,7 +827,7 @@ export default function ProfilePage() {
                                                 <span className="text-sm">Loading more...</span>
                                             </div>
                                         ) : (
-                                            <span className="text-sm text-surface-400 dark:text-surface-500">
+                                            <span className="text-sm text-surface-500 dark:text-surface-400">
                                                 Scroll for more
                                             </span>
                                         )}

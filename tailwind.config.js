@@ -11,17 +11,17 @@ export default {
             colors: {
                 // Primary brand colors
                 primary: {
-                    50: 'var(--color-primary-50, #f0f9ff)',
-                    100: 'var(--color-primary-100, #e0f2fe)',
-                    200: 'var(--color-primary-200, #bae6fd)',
-                    300: 'var(--color-primary-300, #7dd3fc)',
-                    400: 'var(--color-primary-400, #38bdf8)',
-                    500: 'var(--color-primary-500, #0ea5e9)',
-                    600: 'var(--color-primary-600, #0284c7)',
-                    700: 'var(--color-primary-700, #0369a1)',
-                    800: 'var(--color-primary-800, #075985)',
-                    900: 'var(--color-primary-900, #0c4a6e)',
-                    950: 'var(--color-primary-950, #082f49)',
+                    50: 'rgb(var(--color-primary-50-rgb, 240 249 255) / <alpha-value>)',
+                    100: 'rgb(var(--color-primary-100-rgb, 224 242 254) / <alpha-value>)',
+                    200: 'rgb(var(--color-primary-200-rgb, 186 230 253) / <alpha-value>)',
+                    300: 'rgb(var(--color-primary-300-rgb, 125 211 252) / <alpha-value>)',
+                    400: 'rgb(var(--color-primary-400-rgb, 56 189 248) / <alpha-value>)',
+                    500: 'rgb(var(--color-primary-500-rgb, 14 165 233) / <alpha-value>)',
+                    600: 'rgb(var(--color-primary-600-rgb, 2 132 199) / <alpha-value>)',
+                    700: 'rgb(var(--color-primary-700-rgb, 3 105 161) / <alpha-value>)',
+                    800: 'rgb(var(--color-primary-800-rgb, 7 89 133) / <alpha-value>)',
+                    900: 'rgb(var(--color-primary-900-rgb, 12 74 110) / <alpha-value>)',
+                    950: 'rgb(var(--color-primary-950-rgb, 8 47 73) / <alpha-value>)',
                 },
                 // Neutral grays (matching Skool's clean aesthetic)
                 surface: {

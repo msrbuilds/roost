@@ -148,7 +148,7 @@ export default function LeaderboardCard({
             {leaderboard.length > 0 && (
                 <div className="px-4 py-3 bg-gray-50 dark:bg-surface-800 border-t border-gray-200 dark:border-surface-700">
                     <a
-                        href={groupId ? `/groups/${groupId}/leaderboard` : '/leaderboard'}
+                        href={groupId ? `/classrooms/${groupId}/leaderboard` : '/leaderboard'}
                         className="text-sm text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-medium flex items-center justify-center gap-1 group"
                     >
                         View Full Leaderboard

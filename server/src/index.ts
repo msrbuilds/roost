@@ -23,6 +23,8 @@ import {
   authRateLimiter,
 } from './middleware/redis-rate-limit.js';
 import { enforceAccountStatus } from './middleware/auth-assurance.js';
+import { supabaseAdmin } from './lib/supabase.js';
+import { startDemoMaintenance } from './services/demo-maintenance.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -163,6 +165,7 @@ async function startServer() {
   // Initialize Redis connection
   await initRedis();
   console.log(`[Cache] Redis available: ${isRedisAvailable()}`);
+  const stopDemoMaintenance = startDemoMaintenance(supabaseAdmin, process.env);
 
   const server = app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
@@ -173,6 +176,7 @@ async function startServer() {
   // Graceful shutdown handler
   async function gracefulShutdown(signal: string) {
     console.log(`${signal} received, shutting down gracefully...`);
+    stopDemoMaintenance();
     server.close(async () => {
       console.log('HTTP server closed');
       await closeRedis();

@@ -55,7 +55,7 @@ export default function ConversationItem({ conversation, isSelected, onClick }: 
             </h3>
             {otherUser.membership_type === 'premium' && <ProBadge size="xs" />}
           </div>
-          <span className="text-xs text-surface-400 dark:text-surface-500 flex-shrink-0 ml-2">
+          <span className="text-xs text-surface-500 dark:text-surface-400 flex-shrink-0 ml-2">
             {formatDistanceToNow(new Date(lastMessageAt), { addSuffix: true })}
           </span>
         </div>
