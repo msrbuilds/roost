@@ -173,6 +173,6 @@ This means Traefik cannot query your Docker socket API.
 
 ## Next Guides
 
-- [Dockploy (VPS)](./dockploy-vps.md)
+- [Dokploy (VPS)](./dockploy-vps.md)
 - [Netlify](./netlify.md)
 - [Vercel](./vercel.md)

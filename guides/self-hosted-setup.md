@@ -30,7 +30,7 @@ bash install.sh
 The interactive installer will guide you through configuring:
 - Community name and branding
 - Database provider (Supabase Cloud or Supabase Self-hosted)
-- Deployment target (Docker VPS, Dockploy VPS, Vercel, Netlify, or Local)
+- Deployment target (Docker VPS, Dokploy VPS, Vercel, Netlify, or Local)
 - Required file storage and account email, plus optional Redis and Stripe
 
 ### 2. Set Up the Database
@@ -96,7 +96,7 @@ The Docker setup includes:
 
 Detailed VPS guides:
 - [Docker (VPS)](./docker-vps.md)
-- [Dockploy (VPS)](./dockploy-vps.md)
+- [Dokploy (VPS)](./dockploy-vps.md)
 
 ### Vercel + VPS
 

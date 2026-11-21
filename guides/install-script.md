@@ -60,7 +60,7 @@ For Supabase Self-hosted, installer can auto-generate JWT/anon/service keys (rec
 
 ```text
 1) Docker (Self-hosted VPS)
-2) Dockploy (Self-hosted VPS)
+2) Dokploy (Self-hosted VPS)
 3) Vercel (Frontend + separate backend)
 4) Netlify (Frontend + separate backend)
 5) Local Development Only
@@ -68,10 +68,10 @@ For Supabase Self-hosted, installer can auto-generate JWT/anon/service keys (rec
 
 Important:
 
-- Docker and Dockploy targets verify Docker runtime.
+- Docker and Dokploy targets verify Docker runtime.
 - Docker target requires a real domain + Let’s Encrypt email for built-in SSL.
-- Dockploy target is Supabase self-hosted by design.
-- Dockploy target auto-generates required Supabase secrets/keys into `.env.dokploy`.
+- Dokploy target is Supabase self-hosted by design.
+- Dokploy target auto-generates required Supabase secrets/keys into `.env.dokploy`.
 
 ---
 
@@ -107,7 +107,7 @@ Always generated:
 Deployment-specific:
 
 - `Docker`: `.env` (compose runtime env)
-- `Dockploy`: `.env.dokploy`
+- `Dokploy`: `.env.dokploy`
 - `Vercel`: `vercel.json`
 - `Netlify`: `netlify.toml`
 
@@ -140,9 +140,9 @@ If checks report blocking issues, fix them and re-run `bash install.sh`.
 docker compose up -d --build
 ```
 
-### Dockploy
+### Dokploy
 
-Use `.env.dokploy` values in Dockploy environment UI (or run manually with `docker-compose.dokploy.yml`).
+Use `.env.dokploy` values in Dokploy environment UI (or run manually with `docker-compose.dokploy.yml`).
 
 ### Vercel / Netlify
 
