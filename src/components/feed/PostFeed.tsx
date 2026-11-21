@@ -602,7 +602,7 @@ export default function PostFeed({
                                 </div>
                             ) : (
                                 <div className="card p-12 text-center shadow-none">
-                                    <div className="w-16 h-16 bg-surface-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <div className="w-16 h-16 bg-surface-100 dark:bg-surface-800 rounded-full flex items-center justify-center mx-auto mb-4">
                                         <svg
                                             className="w-8 h-8 text-surface-400"
                                             fill="none"
@@ -617,8 +617,8 @@ export default function PostFeed({
                                             />
                                         </svg>
                                     </div>
-                                    <h3 className="text-lg font-medium text-surface-900 mb-2">No posts yet</h3>
-                                    <p className="text-surface-500 mb-4">
+                                    <h3 className="text-lg font-medium text-surface-900 dark:text-surface-100 mb-2">No posts yet</h3>
+                                    <p className="text-surface-500 dark:text-surface-400 mb-4">
                                         Be the first to share something with the community!
                                     </p>
                                 </div>

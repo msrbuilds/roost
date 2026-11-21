@@ -38,6 +38,13 @@ embeds [Traversy Media's public HTML crash course](https://www.youtube.com/watch
 Do not upload private or real member data to this instance. Container volumes
 persist between deployments; recreating them discards the sample community.
 
+The Compose demo flag also enables a guarded backend date refresh at startup
+and every six hours. It keeps the example event in the coming days and the
+sample point activity inside the rolling leaderboard windows. Only timestamps
+are updated, and the job refuses to run unless the hostname identifies a demo
+and the database contains exactly the five fictional seeded accounts. Normal
+community installations and writable documentation fixtures are unaffected.
+
 Run the public integration checks from the repository using Node 22 or later:
 
 ```sh

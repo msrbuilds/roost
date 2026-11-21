@@ -1,40 +1,64 @@
-import { useCallback, useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Trophy } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import { ArrowLeft, Loader2, Trophy } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { LeaderboardTable } from '../components/leaderboard';
 import { getUserRank } from '../services';
 import type { UserRankInfo } from '../types';
 import UserRankBadge from '../components/leaderboard/UserRankBadge';
+import { getGroupById, getGroupBySlug, type GroupWithDetails } from '../services/group';
 
 export default function Leaderboard() {
     const { slug } = useParams<{ slug?: string }>();
-    const navigate = useNavigate();
     const { user } = useAuth();
 
     // State
     const [period, setPeriod] = useState<7 | 30 | 365>(30);
     const [userRank, setUserRank] = useState<UserRankInfo | null>(null);
 
-    // Determine if this is a group leaderboard
-    const groupId = slug; // If slug exists, it's a group leaderboard
-
-    const loadUserRank = useCallback(async () => {
-        if (!user) return;
-
-        try {
-            const rank = await getUserRank(user.id, groupId, period);
-            setUserRank(rank);
-        } catch (err) {
-            console.error('Error loading user rank:', err);
-        }
-    }, [user, groupId, period]);
+    const [group, setGroup] = useState<GroupWithDetails | null>(null);
+    const [groupLoading, setGroupLoading] = useState(Boolean(slug));
+    const [groupError, setGroupError] = useState('');
+    const groupId = group?.id;
+    const userId = user?.id;
 
     useEffect(() => {
-        if (user) {
-            void loadUserRank();
+        let active = true;
+        setGroup(null);
+        setGroupError('');
+        setGroupLoading(Boolean(slug));
+        if (slug) {
+            const lookup = /^[0-9a-f-]{36}$/i.test(slug) ? getGroupById : getGroupBySlug;
+            lookup(slug, userId).then(result => {
+                if (!active) return;
+                setGroup(result);
+                if (!result) setGroupError('Classroom not found');
+            }).catch(() => {
+                if (active) setGroupError('Unable to load this classroom');
+            }).finally(() => { if (active) setGroupLoading(false); });
         }
-    }, [user, loadUserRank]);
+        return () => { active = false; };
+    }, [slug, userId]);
+
+    useEffect(() => {
+        let active = true;
+        setUserRank(null);
+        if (userId && (!slug || groupId)) {
+            getUserRank(userId, groupId, period).then(rank => {
+                if (active) setUserRank(rank);
+            }).catch(error => console.error('Error loading user rank:', error));
+        }
+        return () => { active = false; };
+    }, [userId, groupId, slug, period]);
+
+    if (slug && (groupLoading || !group || groupError)) {
+        return <div className="max-w-5xl mx-auto p-8 text-center text-surface-700 dark:text-surface-300">
+            {groupLoading ? <Loader2 aria-label="Loading classroom leaderboard" className="w-8 h-8 mx-auto animate-spin text-primary-600 dark:text-primary-400" /> : <>
+                <h1 className="text-xl font-semibold mb-4">{groupError || 'Classroom not found'}</h1>
+                <Link to="/classrooms" className="btn btn-secondary">Back to Classrooms</Link>
+            </>}
+        </div>;
+    }
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-surface-950 py-8">
@@ -42,13 +66,13 @@ export default function Leaderboard() {
                 {/* Header */}
                 <div className="mb-8">
                     {groupId && (
-                        <button
-                            onClick={() => navigate(`/groups/${groupId}`)}
+                        <Link
+                            to={`/classrooms/${group!.slug}`}
                             className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 mb-4 transition-colors"
                         >
                             <ArrowLeft size={20} />
-                            <span>Back to Group</span>
-                        </button>
+                            <span>Back to Classroom</span>
+                        </Link>
                     )}
 
                     <div className="flex items-center justify-between">

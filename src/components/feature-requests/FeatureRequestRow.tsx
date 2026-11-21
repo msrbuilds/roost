@@ -83,7 +83,7 @@ export default function FeatureRequestRow({
                     </span>
 
                     {/* Author */}
-                    <div className="flex items-center gap-1.5 text-[11px] text-surface-400 dark:text-surface-500">
+                    <div className="flex items-center gap-1.5 text-[11px] text-surface-500 dark:text-surface-400">
                         {request.author.avatar_url ? (
                             <img src={request.author.avatar_url} alt="" className="w-4 h-4 rounded-full object-cover" />
                         ) : (
@@ -97,13 +97,13 @@ export default function FeatureRequestRow({
                     <div className="flex-1" />
 
                     {/* Comment count */}
-                    <span className="inline-flex items-center gap-1 text-[11px] text-surface-400 dark:text-surface-500">
+                    <span className="inline-flex items-center gap-1 text-[11px] text-surface-500 dark:text-surface-400">
                         <MessageSquare className="w-3 h-3" />
                         {request.comment_count}
                     </span>
 
                     {/* Date */}
-                    <span className="text-[11px] text-surface-400 dark:text-surface-500">
+                    <span className="text-[11px] text-surface-500 dark:text-surface-400">
                         {formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}
                     </span>
                 </div>

@@ -126,9 +126,11 @@ test.describe('shared demo feature details', () => {
         await page.getByRole('button', { name: 'Collapse sidebar', exact: true }).click();
         await page.getByRole('button', { name: 'Expand sidebar', exact: true }).click();
       }
+      const beganDark = await page.locator('html').evaluate(html => html.classList.contains('dark'));
+      if (beganDark) await page.getByRole('button', { name: 'Switch to light mode', exact: true }).click();
       await page.getByRole('button', { name: 'Switch to dark mode', exact: true }).click();
       await liveExpect(page.locator('html')).toHaveClass(/dark/);
-      await page.getByRole('button', { name: 'Switch to light mode', exact: true }).click();
+      if (!beganDark) await page.getByRole('button', { name: 'Switch to light mode', exact: true }).click();
 
       await page.getByRole('button', { name: 'Notifications', exact: true }).click();
       await liveExpect(page.getByRole('button', { name: 'Mark all read', exact: true })).toBeDisabled();

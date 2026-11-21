@@ -93,7 +93,7 @@ export function Members() {
                 <div className="flex gap-4 text-surface-500 dark:text-surface-400 text-sm">
                     <p>Total Members: <span className="font-medium text-surface-900 dark:text-surface-100">{totalCount}</span></p>
                     <p>•</p>
-                    <p>Online Now: <span className="font-medium text-green-500">{onlineCount}</span></p>
+                    <p>Online Now: <span className="font-medium text-green-700 dark:text-green-400">{onlineCount}</span></p>
                 </div>
             </div>
 

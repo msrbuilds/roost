@@ -319,6 +319,7 @@ services:
       SUPABASE_URL: http://kong:8000
       SUPABASE_SECRET_KEY: ${SERVICE_ROLE_KEY:?SERVICE_ROLE_KEY is required}
       FRONTEND_URL: https://${ROOST_DOMAIN:?ROOST_DOMAIN is required}
+      ROOST_DEMO_MODE: ${VITE_DEMO_MODE:-false}
       ALLOWED_ORIGINS: https://${ROOST_DOMAIN:?ROOST_DOMAIN is required}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}

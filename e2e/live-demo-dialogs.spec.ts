@@ -42,8 +42,6 @@ test.describe('shared demo dialogs and global search', () => {
             await expect(notifications).toHaveCount(0);
 
             await page.setViewportSize({ width, height: 800 });
-            // The shared demo's example event is seeded on November 18.
-            await page.clock.setFixedTime(new Date('2026-11-18T12:00:00Z'));
             await page.goto('/calendar');
             await page.getByRole('button', { name: 'Agenda', exact: true }).click();
             await liveExpect(page.getByRole('button', { name: 'Community co-working · example event', exact: true })).toBeVisible();
