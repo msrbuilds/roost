@@ -163,7 +163,7 @@ export default function Leaderboard() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="flex items-start gap-3">
                             <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
-                                <span className="text-blue-600 dark:text-blue-400 font-bold">+10</span>
+                                <span className="text-blue-700 dark:text-blue-400 font-bold">+10</span>
                             </div>
                             <div>
                                 <p className="font-medium text-gray-900 dark:text-gray-100">Create a Post</p>
@@ -173,7 +173,7 @@ export default function Leaderboard() {
 
                         <div className="flex items-start gap-3">
                             <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
-                                <span className="text-green-600 dark:text-green-400 font-bold">+5</span>
+                                <span className="text-green-700 dark:text-green-400 font-bold">+5</span>
                             </div>
                             <div>
                                 <p className="font-medium text-gray-900 dark:text-gray-100">Write a Comment</p>
@@ -183,7 +183,7 @@ export default function Leaderboard() {
 
                         <div className="flex items-start gap-3">
                             <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0">
-                                <span className="text-purple-600 dark:text-purple-400 font-bold">+1</span>
+                                <span className="text-purple-700 dark:text-purple-400 font-bold">+1</span>
                             </div>
                             <div>
                                 <p className="font-medium text-gray-900 dark:text-gray-100">React to Content</p>
@@ -193,7 +193,7 @@ export default function Leaderboard() {
 
                         <div className="flex items-start gap-3">
                             <div className="w-10 h-10 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center flex-shrink-0">
-                                <span className="text-yellow-600 dark:text-yellow-400 font-bold">+2</span>
+                                <span className="text-yellow-700 dark:text-yellow-400 font-bold">+2</span>
                             </div>
                             <div>
                                 <p className="font-medium text-gray-900 dark:text-gray-100">Receive a Reaction</p>
@@ -203,7 +203,7 @@ export default function Leaderboard() {
 
                         <div className="flex items-start gap-3">
                             <div className="w-10 h-10 rounded-full bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center flex-shrink-0">
-                                <span className="text-pink-600 dark:text-pink-400 font-bold">+15</span>
+                                <span className="text-pink-700 dark:text-pink-400 font-bold">+15</span>
                             </div>
                             <div>
                                 <p className="font-medium text-gray-900 dark:text-gray-100">Attend an Event</p>
@@ -213,7 +213,7 @@ export default function Leaderboard() {
 
                         <div className="flex items-start gap-3">
                             <div className="w-10 h-10 rounded-full bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center flex-shrink-0">
-                                <span className="text-teal-600 dark:text-teal-400 font-bold">+20</span>
+                                <span className="text-teal-700 dark:text-teal-400 font-bold">+20</span>
                             </div>
                             <div>
                                 <p className="font-medium text-gray-900 dark:text-gray-100">Complete Your Profile</p>
