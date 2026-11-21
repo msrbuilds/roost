@@ -46,7 +46,7 @@ export default function BanUserModal({
             />
 
             {/* Modal */}
-            <div className="relative bg-white dark:bg-surface-900 rounded-xl shadow-xl max-w-md w-full p-6">
+            <div role="dialog" aria-modal="true" aria-label="Ban User" className="relative bg-white dark:bg-surface-900 rounded-xl shadow-xl max-w-md w-full max-h-[90dvh] overflow-y-auto p-6">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-3">
@@ -57,6 +57,7 @@ export default function BanUserModal({
                     </div>
                     <button
                         onClick={onClose}
+                        aria-label="Close ban user dialog"
                         className="p-2 hover:bg-gray-100 dark:hover:bg-surface-800 rounded-lg transition-colors"
                     >
                         <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />

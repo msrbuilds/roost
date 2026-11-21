@@ -75,7 +75,7 @@ export default function TwoFactorDisableModal({ isOpen, onClose, onSuccess }: Tw
 
             {/* Modal */}
             <div
-                className="relative w-full max-w-md mx-4 bg-white dark:bg-surface-900 rounded-xl shadow-xl"
+                className="relative w-full max-w-md mx-4 bg-white dark:bg-surface-900 rounded-xl shadow-xl max-h-[90dvh] overflow-y-auto"
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="two-factor-disable-title"

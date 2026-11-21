@@ -110,7 +110,7 @@ export default function EventForm({ isOpen, onClose, onSubmit, initialData, grou
             />
 
             {/* Modal */}
-            <div className="fixed inset-4 md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-full md:max-w-2xl md:max-h-[90vh] bg-white dark:bg-surface-900 rounded-lg shadow-2xl z-50 flex flex-col">
+            <div role="dialog" aria-modal="true" aria-label={initialData ? "Edit Event" : "Create New Event"} className="fixed inset-4 md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-full md:max-w-2xl md:max-h-[90vh] bg-white dark:bg-surface-900 rounded-lg shadow-2xl z-50 flex flex-col">
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-surface-700">
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
@@ -118,6 +118,7 @@ export default function EventForm({ isOpen, onClose, onSubmit, initialData, grou
                     </h2>
                     <button
                         onClick={onClose}
+                        aria-label="Close event form"
                         className="p-2 hover:bg-gray-100 dark:hover:bg-surface-800 rounded-lg transition-colors text-gray-600 dark:text-gray-400"
                     >
                         <X size={24} />

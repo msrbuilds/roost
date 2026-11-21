@@ -1,10 +1,8 @@
 import { APP_CONFIG } from '@/config/app';
-import { useState, useRef, useCallback, lazy, Suspense } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { Send, Loader2, Smile } from 'lucide-react';
 import type { EmojiClickData } from 'emoji-picker-react';
-import { Theme } from 'emoji-picker-react';
-
-const EmojiPicker = lazy(() => import('emoji-picker-react'));
+import EmojiPopover from '@/components/common/EmojiPopover';
 import MentionDropdown from './MentionDropdown';
 import type { SearchResultUser } from '@/services/search';
 
@@ -32,6 +30,7 @@ export default function CommentForm({
     const [mentionQuery, setMentionQuery] = useState<string | null>(null);
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const emojiButtonRef = useRef<HTMLButtonElement>(null);
 
     // Detect @mention trigger from textarea content
     const detectMention = useCallback((text: string, cursorPos: number) => {
@@ -153,6 +152,7 @@ export default function CommentForm({
                         />
                         {/* Emoji Picker Button */}
                         <button
+                            ref={emojiButtonRef}
                             type="button"
                             onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                             className="absolute top-3 right-3 p-1.5 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors"
@@ -163,21 +163,7 @@ export default function CommentForm({
 
                         {/* Emoji Picker Popup (lazy-loaded) */}
                         {showEmojiPicker && (
-                            <>
-                                <div
-                                    className="fixed inset-0 z-20"
-                                    onClick={() => setShowEmojiPicker(false)}
-                                />
-                                <div className="absolute bottom-full mb-2 right-0 z-30">
-                                    <Suspense fallback={<div className="w-[350px] h-[400px] animate-pulse bg-surface-100 dark:bg-surface-800 rounded-lg" />}>
-                                        <EmojiPicker
-                                            onEmojiClick={handleEmojiClick}
-                                            autoFocusSearch={false}
-                                            theme={document.documentElement.classList.contains('dark') ? Theme.DARK : Theme.LIGHT}
-                                        />
-                                    </Suspense>
-                                </div>
-                            </>
+                            <EmojiPopover anchorRef={emojiButtonRef} onClose={() => setShowEmojiPicker(false)} onEmojiClick={handleEmojiClick} />
                         )}
 
                         {mentionQuery !== null && (

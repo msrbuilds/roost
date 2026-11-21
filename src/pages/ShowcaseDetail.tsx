@@ -529,6 +529,7 @@ export default function ShowcaseDetail() {
                 >
                     <button
                         onClick={closeLightbox}
+                        aria-label="Close project image"
                         className="absolute top-4 right-4 p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors"
                     >
                         <X className="w-6 h-6" />
@@ -537,6 +538,7 @@ export default function ShowcaseDetail() {
                     {allImages.length > 1 && (
                         <>
                             <button
+                                aria-label="Previous project image"
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     prevImage();
@@ -546,6 +548,7 @@ export default function ShowcaseDetail() {
                                 <ChevronLeft className="w-8 h-8" />
                             </button>
                             <button
+                                aria-label="Next project image"
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     nextImage();

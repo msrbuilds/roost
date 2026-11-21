@@ -417,7 +417,7 @@ export default function AdminShowcases() {
             {/* Reject Modal */}
             {rejectModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-                    <div className="bg-white dark:bg-surface-900 rounded-xl shadow-xl max-w-md w-full p-6">
+                    <div role="dialog" aria-modal="true" aria-label="Reject Showcase" className="bg-white dark:bg-surface-900 rounded-xl shadow-xl max-w-md w-full max-h-[90dvh] overflow-y-auto p-6">
                         <h3 className="text-lg font-semibold text-surface-900 dark:text-surface-100 mb-4">
                             Reject Showcase
                         </h3>

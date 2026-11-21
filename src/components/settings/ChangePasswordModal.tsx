@@ -121,7 +121,7 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
             />
 
             {/* Modal */}
-            <div className="relative w-full max-w-md mx-4 bg-white dark:bg-surface-900 rounded-xl shadow-xl">
+            <div role="dialog" aria-modal="true" aria-label="Change Password" className="relative w-full max-w-md mx-4 bg-white dark:bg-surface-900 rounded-xl shadow-xl max-h-[90dvh] overflow-y-auto">
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-surface-200 dark:border-surface-700">
                     <div className="flex items-center gap-3">
@@ -134,6 +134,7 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
                     </div>
                     <button
                         onClick={handleClose}
+                        aria-label="Close change password dialog"
                         disabled={isLoading}
                         className="p-2 text-surface-500 hover:text-surface-700 dark:text-surface-400 dark:hover:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-800 rounded-lg transition-colors"
                     >
@@ -180,6 +181,8 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
                                     <button
                                         type="button"
                                         onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                                        aria-label={showCurrentPassword ? "Hide current password" : "Show current password"}
+                                        aria-pressed={showCurrentPassword}
                                         className="absolute right-3 top-1/2 -translate-y-1/2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
                                     >
                                         {showCurrentPassword ? (
@@ -210,6 +213,8 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
                                     <button
                                         type="button"
                                         onClick={() => setShowNewPassword(!showNewPassword)}
+                                        aria-label={showNewPassword ? "Hide new password" : "Show new password"}
+                                        aria-pressed={showNewPassword}
                                         className="absolute right-3 top-1/2 -translate-y-1/2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
                                     >
                                         {showNewPassword ? (
@@ -243,6 +248,8 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
                                     <button
                                         type="button"
                                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                        aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+                                        aria-pressed={showConfirmPassword}
                                         className="absolute right-3 top-1/2 -translate-y-1/2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
                                     >
                                         {showConfirmPassword ? (

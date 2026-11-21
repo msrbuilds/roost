@@ -153,7 +153,7 @@ export default function SubmitRequestModal({ isOpen, onClose, onSuccess }: Submi
             />
 
             {/* Modal */}
-            <div className="relative bg-white dark:bg-surface-900 rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+            <div role="dialog" aria-modal="true" aria-label="Submit Request" className="relative bg-white dark:bg-surface-900 rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-surface-200 dark:border-surface-700">
                     <h2 className="text-lg font-semibold text-surface-900 dark:text-surface-100">
@@ -161,6 +161,7 @@ export default function SubmitRequestModal({ isOpen, onClose, onSuccess }: Submi
                     </h2>
                     <button
                         onClick={onClose}
+                        aria-label="Close request dialog"
                         className="p-1.5 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800 text-surface-500 transition-colors"
                     >
                         <X className="w-5 h-5" />

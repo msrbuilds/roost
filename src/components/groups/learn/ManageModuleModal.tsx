@@ -116,6 +116,9 @@ export default function ManageModuleModal({
             onClick={onClose}
         >
             <div
+                role="dialog"
+                aria-modal="true"
+                aria-label={isEditing ? 'Edit Module' : 'Create Module'}
                 className="bg-white dark:bg-surface-900 rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
                 onClick={(e) => e.stopPropagation()}
             >
@@ -126,6 +129,7 @@ export default function ManageModuleModal({
                     </h2>
                     <button
                         onClick={onClose}
+                        aria-label="Close module dialog"
                         className="p-1.5 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-800 rounded-lg transition-colors"
                     >
                         <X className="w-5 h-5" />

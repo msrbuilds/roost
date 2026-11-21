@@ -1,7 +1,7 @@
 import { format, isToday, isYesterday } from 'date-fns';
 import type { MessageWithSender } from '../../services/message';
-import { Image as ImageIcon } from 'lucide-react';
-import { useState } from 'react';
+import { Image as ImageIcon, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useAssetUrl } from '@/hooks/useAssetUrl';
 import type { Asset } from '@/types/database';
 
@@ -32,6 +32,14 @@ interface MessageBubbleProps {
 
 export default function MessageBubble({ message, isSent, showTimestamp = true }: MessageBubbleProps) {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  useEffect(() => {
+    if (!selectedImage) return;
+    const closeWithEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setSelectedImage(null);
+    };
+    document.addEventListener('keydown', closeWithEscape);
+    return () => document.removeEventListener('keydown', closeWithEscape);
+  }, [selectedImage]);
 
   const formatMessageTime = (date: string) => {
     const messageDate = new Date(date);
@@ -79,9 +87,15 @@ export default function MessageBubble({ message, isSent, showTimestamp = true }:
       {/* Lightbox for images */}
       {selectedImage && (
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Image preview"
           className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
           onClick={() => setSelectedImage(null)}
         >
+          <button type="button" aria-label="Close image preview" onClick={() => setSelectedImage(null)} className="absolute top-4 right-4 z-10 p-2 rounded-full bg-white/10 text-white hover:bg-white/20">
+            <X className="w-6 h-6" />
+          </button>
           <img
             src={selectedImage}
             alt="Full size"

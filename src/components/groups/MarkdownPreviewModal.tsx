@@ -247,7 +247,7 @@ export default function MarkdownPreviewModal({
                 if (e.target === e.currentTarget) onClose();
             }}
         >
-            <div className="bg-white dark:bg-surface-900 rounded-xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-xl">
+            <div role="dialog" aria-modal="true" aria-label={fileName} className="bg-white dark:bg-surface-900 rounded-xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-xl">
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-surface-200 dark:border-surface-700 flex-shrink-0">
                     <div className="flex items-center gap-3 min-w-0">

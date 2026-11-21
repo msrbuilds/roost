@@ -29,6 +29,7 @@ export default function GlobalSearch({
     const navigate = useNavigate();
     const inputRef = useRef<HTMLInputElement>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const searchVersion = useRef(0);
 
     const [query, setQuery] = useState('');
     const [results, setResults] = useState<SearchResults>({ users: [], posts: [], groups: [] });
@@ -41,7 +42,7 @@ export default function GlobalSearch({
     // Debounced search function
     const debouncedSearch = useMemo(
         () =>
-            debounce(async (searchQuery: string) => {
+            debounce(async (searchQuery: string, version: number) => {
                 if (searchQuery.trim().length < 2) {
                     setResults({ users: [], posts: [], groups: [] });
                     setIsSearching(false);
@@ -56,13 +57,14 @@ export default function GlobalSearch({
                 setIsSearching(true);
                 try {
                     const searchResults = await globalSearch(searchQuery, user.id, isPremium);
+                    if (version !== searchVersion.current) return;
                     setResults(searchResults);
-                    setIsDropdownOpen(true);
                 } catch (error) {
+                    if (version !== searchVersion.current) return;
                     console.error('Search error:', error);
                     setResults({ users: [], posts: [], groups: [] });
                 } finally {
-                    setIsSearching(false);
+                    if (version === searchVersion.current) setIsSearching(false);
                 }
             }, 300),
         [user, isPremium]
@@ -71,15 +73,19 @@ export default function GlobalSearch({
     // Handle input change
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
+        const version = ++searchVersion.current;
         setQuery(value);
-        if (value.trim().length >= 2) {
-            setIsSearching(true);
-        }
-        debouncedSearch(value);
+        setResults({ users: [], posts: [], groups: [] });
+        setIsSearching(value.trim().length >= 2);
+        setIsDropdownOpen(value.trim().length >= 2);
+        debouncedSearch(value, version);
     };
 
     // Clear search
     const handleClear = () => {
+        debouncedSearch.cancel();
+        searchVersion.current++;
+        setIsSearching(false);
         setQuery('');
         setResults({ users: [], posts: [], groups: [] });
         setIsDropdownOpen(false);
@@ -89,6 +95,9 @@ export default function GlobalSearch({
     // Handle result click
     const handleResultClick = useCallback(
         (result: SearchResultUser | SearchResultPost | SearchResultGroup) => {
+            debouncedSearch.cancel();
+            searchVersion.current++;
+            setIsSearching(false);
             setQuery('');
             setResults({ users: [], posts: [], groups: [] });
             setIsDropdownOpen(false);
@@ -108,7 +117,7 @@ export default function GlobalSearch({
                 }
             }
         },
-        [navigate, isPremium, onClose]
+        [navigate, isPremium, onClose, debouncedSearch]
     );
 
     // Close dropdown on click outside
@@ -143,8 +152,10 @@ export default function GlobalSearch({
 
     // Cleanup debounce on unmount
     useEffect(() => {
+        const invalidatePendingSearch = () => { searchVersion.current++; };
         return () => {
             debouncedSearch.cancel();
+            invalidatePendingSearch();
         };
     }, [debouncedSearch]);
 
@@ -167,14 +178,16 @@ export default function GlobalSearch({
                     onChange={handleInputChange}
                     onFocus={() => query.trim().length >= 2 && setIsDropdownOpen(true)}
                     placeholder={placeholder}
-                    className="w-full pl-10 pr-10 py-2 bg-surface-100 dark:bg-surface-800 border-0 rounded-lg text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:bg-white dark:focus:bg-surface-700 focus:ring-2 focus:ring-primary-500"
+                    aria-label={placeholder}
+                    className="w-full pl-10 pr-16 py-2 bg-surface-100 dark:bg-surface-800 border-0 rounded-lg text-sm text-surface-900 dark:text-surface-100 placeholder:text-surface-500 dark:placeholder:text-surface-400 focus:bg-white dark:focus:bg-surface-700 focus:ring-2 focus:ring-primary-500"
                     autoFocus={autoFocus}
                     name='global-search'
                 />
                 {/* Loading indicator or clear button */}
-                {isSearching ? (
-                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400 animate-spin" />
-                ) : query.length > 0 ? (
+                {isSearching && (
+                    <Loader2 aria-label="Searching" className="absolute right-9 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-500 dark:text-surface-400 animate-spin" />
+                )}
+                {query.length > 0 && (
                     <button
                         aria-label="Clear search"
                         onClick={handleClear}
@@ -182,7 +195,7 @@ export default function GlobalSearch({
                     >
                         <X className="w-4 h-4" />
                     </button>
-                ) : null}
+                )}
             </div>
 
             {/* Search Results Dropdown */}
@@ -192,12 +205,12 @@ export default function GlobalSearch({
                     className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-700 rounded-lg shadow-elevated z-50 max-h-[70vh] overflow-y-auto"
                 >
                     {isSearching && !hasResults ? (
-                        <div className="p-4 text-center text-surface-500">
+                        <div className="p-4 text-center text-surface-500 dark:text-surface-400">
                             <Loader2 className="w-5 h-5 animate-spin mx-auto mb-2" />
                             <span className="text-sm">Searching...</span>
                         </div>
                     ) : !hasResults ? (
-                        <div className="p-4 text-center text-surface-500 text-sm">
+                        <div className="p-4 text-center text-surface-500 dark:text-surface-400 text-sm">
                             No results found for "{query}"
                         </div>
                     ) : (
