@@ -1,22 +1,30 @@
 # Roost product and documentation screenshots
 
-Captured on 2026-11-15 from the full local installation at loopback port 15489.
-All accounts, posts, conversations, projects, and requests are fictional.
-The member is Jamie Carter; admin captures use the separate owner account.
-The public shared demo remains read-only and exposes no admin account.
+The member captures were refreshed on 2026-11-21 from
+https://roost-demo.msrbuilds.com with the shared read-only Demo Explorer account.
+All 28 refreshed images use a **1440 × 900 CSS-pixel viewport**, device scale 1,
+and the real interface in light and dark mode. Dark variants use `-dark.jpg`.
+All accounts, discussions, projects, conversations, and events are fictional.
 
-Desktop captures use the user-selected in-app capture container, approximately
-1363px wide. Mobile calendar captures use a 390px portrait viewport. Screenshots
-include the real interface, with no simulated controls or composited content.
+The current set covers login, feed, classrooms, lessons, messages, members,
+profile, settings, roadmap, leaderboard, and month/week/agenda calendars.
+Week captures advance to the upcoming event's week when necessary. Content,
+images, fonts, and embedded previews finish loading before capture. No interface
+elements are composited, and no controls or sample data are changed for an image.
 
 Astro generates responsive WebP product previews. Original JPEGs remain
-available through full-size links. Member captures are in this directory;
-management captures are in ../admin. Guides reference these same source assets.
+available through full-size links. The product tour offers Light/Dark controls;
+the member guide pairs light screenshots with expandable dark-mode views.
+Admin images in ../admin remain captures from the separate local fictional
+installation on 2026-11-15; the public demo exposes no admin account.
 
 When refreshing, wait for content and embedded previews to load, inspect the
 saved captures, and run the website build and browser suite. Keep credentials,
 real member information, private keys, and browser chrome out of captures.
 
-Tablet calendar captures added 2026-11-15: `calendar-tablet-week.jpg` and `calendar-tablet-agenda.jpg`. Captured from the full local installation with fictional sample data and the owner account, at a 960 × 1280 content viewport (3:4 tablet). Both images preserve the actual interface.
+Historical mobile and tablet calendar images remain from the local fictional
+installation on 2026-11-15. The mobile images are no longer used in the member
+guide; all refreshed screenshots displayed on desktop and mobile are 1440px wide.
 
-Landscape calendar captures added 2026-11-16: `calendar-desktop-week.jpg` and `calendar-desktop-agenda.jpg`. Captured from the same full local sample installation at a 1440px-wide desktop content viewport, for the compact landscape calendar showcase.
+The landscape week and agenda images were refreshed along with the other member
+screens, and show the live demo's rolling upcoming sample event.

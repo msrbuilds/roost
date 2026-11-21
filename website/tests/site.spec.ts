@@ -284,7 +284,7 @@ test('the feature tour keeps its current screenshot until the next one loads', a
     await expect(page.locator('#tour-panel-feed')).toBeVisible();
     releaseImage();
     await expect(tabs.getByRole('tab', { name: 'Classrooms', exact: true })).toHaveAttribute('aria-selected', 'true');
-    await expect.poll(() => page.locator('#tour-panel-classrooms img').evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
+    await expect.poll(() => page.locator('#tour-panel-classrooms img:visible').evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
   } finally {
     releaseImage();
   }
@@ -582,16 +582,16 @@ test('live demo calls to action and the real screenshot tour work with pointer a
         const panel = page.locator('.tour-panel:not([hidden])');
         await expect(panel).toHaveCount(1);
         await expect(panel).toHaveAttribute('aria-labelledby', (await tab.getAttribute('id'))!);
-        await expect(panel.locator('img')).toHaveCount(1);
+        await expect(panel.locator('img:visible')).toHaveCount(1);
         for (const screenshot of await panel.locator('img:visible').all()) {
           await screenshot.scrollIntoViewIfNeeded();
           await expect.poll(() => screenshot.evaluate((element: HTMLImageElement) => element.complete && element.naturalWidth > 0)).toBe(true);
         }
         const heading = await panel.locator('h3').boundingBox();
-        const screenshot = await panel.locator('img').boundingBox();
+        const screenshot = await panel.locator('img:visible').boundingBox();
         expect(heading!.y + heading!.height).toBeLessThan(screenshot!.y);
         expect(screenshot!.width).toBeGreaterThan((await panel.boundingBox())!.width - 4);
-        await expect(panel.getByRole('link', { name: 'Open full-size screenshot', exact: true })).toHaveAttribute('target', '_blank');
+        await expect(panel.getByRole('link', { name: 'Open full-size screenshot', exact: true }).filter({ visible: true })).toHaveAttribute('target', '_blank');
         if (process.env.ROOST_SCREENSHOT_DIR && (await tab.getAttribute('id')) === 'tour-tab-calendar') {
           await panel.screenshot({ path: join(process.env.ROOST_SCREENSHOT_DIR, `features-events-${width}.png`) });
         }
@@ -760,11 +760,12 @@ test('single-line docs commands stay compact and copy their complete contents', 
 
 
 test('illustrated member and admin guides load responsive full-size screenshots', async ({ page, request }) => {
-  test.setTimeout(120000);
+  test.setTimeout(180000);
   for (const width of [390, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     for (const guide of ['using-roost', 'administration', 'self-hosted-setup', 'backups']) {
       await page.goto(`/docs/${guide}/`);
+      for (const summary of await page.locator('.screenshot-variant > summary').all()) await summary.click();
       const pictures = page.locator('.docs-content img');
       expect(await pictures.count()).toBeGreaterThan(0);
       for (const picture of await pictures.all()) {

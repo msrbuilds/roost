@@ -1,5 +1,6 @@
 ---
-import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+import ScreenshotPreview from './ScreenshotPreview.astro';
 import Icon from './Icon.astro';
 import { liveDemo } from '../data/site';
 import feed from '../assets/demo/feed.jpg';
@@ -16,14 +17,16 @@ import liveRoom from '../assets/admin/live-room.jpg';
 import activations from '../assets/admin/activations.jpg';
 interface Props { home?: boolean; }
 const { home = false } = Astro.props;
+const darkCaptures = import.meta.glob<ImageMetadata>('../assets/demo/*-dark.jpg', { eager: true, import: 'default' });
+const darkNames: Record<string, string> = { feed: 'feed', classrooms: 'classrooms', lessons: 'lesson', messages: 'messages', calendar: 'calendar-desktop-week', members: 'members', showcase: 'showcase', roadmap: 'roadmap', leaderboard: 'leaderboard' };
 const screens = [
   { id: 'feed', label: 'Community feed', image: feed, title: 'Keep the conversation close.', description: 'A shared feed with pinned posts, discussions, reactions, and people worth following.', alt: 'Roost demo home feed with a pinned welcome post, member posts, and contributor leaderboard.' },
   { id: 'classrooms', label: 'Classrooms', image: classrooms, title: 'Give learning a place to belong.', description: 'Browse classrooms, see who is inside, and bring related lessons and conversations together.', alt: 'Roost demo classroom directory with Design Studio, Build with Roost, and Learning Lab cards.' },
   { id: 'lessons', label: 'Lessons', image: lesson, title: 'From a first lesson to a new skill.', description: 'Organize videos into modules, track progress, and keep lesson discussions in context.', alt: 'Roost demo lesson with module navigation, an embedded video, and a discussion area.' },
-  { id: 'messages', label: 'Messaging', image: messages, title: 'Keep the connection going.', description: 'One-to-one conversations give your members a space to connect beyond the public feed.', alt: 'Roost demo messaging with a fictional conversation between Jamie Carter and Maya Chen.' },
+  { id: 'messages', label: 'Messaging', image: messages, title: 'Keep the connection going.', description: 'One-to-one conversations give your members a space to connect beyond the public feed.', alt: 'Roost demo messaging with a fictional conversation between Demo Explorer and Maya Chen.' },
   { id: 'calendar', label: 'Calendar', image: calendar, title: 'Make time to come together.', description: 'Plan meetups, workshops, and community calls in one shared calendar, with event details and RSVPs close at hand.', alt: 'Roost desktop week calendar with day columns, a sample community co-working event, and upcoming event details.' },
-  { id: 'members', label: 'Members', image: members, title: 'People, with more than a name.', description: 'Profiles, a searchable directory, and direct connections help members find each other.', alt: 'Roost demo member directory with six fictional members, biographies, and profile links.' },
-  { id: 'showcase', label: 'Showcases', image: showcase, title: 'Give good work a little spotlight.', description: 'A place for members to share projects, discover what others are making, and exchange feedback.', alt: 'Roost demo project detail with a project preview, author, review tab, and website link.' },
+  { id: 'members', label: 'Members', image: members, title: 'People, with more than a name.', description: 'Profiles, a searchable directory, and direct connections help members find each other.', alt: 'Roost demo member directory with five fictional members, biographies, and profile links.' },
+  { id: 'showcase', label: 'Showcases', image: showcase, title: 'Give good work a little spotlight.', description: 'A place for members to share projects, discover what others are making, and exchange feedback.', alt: 'Roost demo showcase directory with a community project, search, and category filters.' },
   { id: 'roadmap', label: 'Roadmap', image: roadmap, title: 'Build the next chapter together.', description: 'Collect ideas and bug reports, let members vote, and show how requests move forward.', alt: 'Roost demo feature roadmap with status filters and a sample community learning request.' },
   { id: 'live-room', label: 'Live rooms', image: liveRoom, title: 'Give live sessions a home.', description: 'Manage a broadcast’s title, video source, and schedule from administration. Configure your video provider and member access before going live.', alt: 'Roost Live Room administration showing a fictional scheduled workshop with no broadcast running.' },
   { id: 'activations', label: 'Activations', image: activations, title: 'Manage product access for your members.', description: 'Define products and review member activation requests in your admin workspace. Share the access information appropriate for each approved member.', alt: 'Roost activation administration showing fictional products and a pending member request using example.com.' },
@@ -33,11 +36,11 @@ const screens = [
 ---
 <section class="container product-tour feature-tour screenshot-tour" id="product-tour" data-screenshot-tour aria-labelledby="product-tour-heading">
   <div class="section-heading"><div><span class="small-label">{home ? 'A CLOSER LOOK' : 'A REAL LOOK INSIDE'}</span><h2 id="product-tour-heading">{home ? 'Your whole community.' : 'Room for your people.'}<br /><em>{home ? 'One connected platform.' : 'Space for what comes next.'}</em></h2></div><a class="text-link" href={liveDemo}>Try Live Demo <Icon name="external" size={17} /></a></div>
-  <p class="tour-intro">Explore real member and admin screens from a local Roost installation with fictional sample data. The shared live demo offers read-only member access.</p>
+  <p class="tour-intro">Explore light and dark member screens from the live demo. Admin previews use a separate local sample community; the shared demo is read-only.</p>
   <div class="tour-tabs" role="tablist" aria-label="Product screenshots">{screens.map((screen, index) => <button type="button" role="tab" id={`tour-tab-${screen.id}`} aria-controls={`tour-panel-${screen.id}`} aria-selected={index === 0 ? 'true' : 'false'} tabindex={index === 0 ? 0 : -1} disabled>{screen.label}</button>)}</div>
   {screens.map((screen, index) => <div role="tabpanel" class="tour-panel" id={`tour-panel-${screen.id}`} aria-labelledby={`tour-tab-${screen.id}`} tabindex="0" hidden={index !== 0}>
     <div class="tour-panel-copy"><h3>{screen.title}</h3><p>{screen.description}</p></div>
-    <figure><a class="tour-screenshot-link" href={screen.image.src} target="_blank" rel="noopener noreferrer" aria-label={`Open full-size ${screen.label.toLowerCase()} screenshot`}><Image src={screen.image} alt={screen.alt} width={1440} widths={[640, 1000, 1440]} sizes="(max-width: 480px) calc(100vw - 74px), (max-width: 800px) calc(100vw - 82px), (max-width: 1344px) calc(100vw - 146px), 1198px" format="webp" loading="lazy" /></a><figcaption class="tour-caption-footer"><span>Roost · fictional sample community{['admin', 'live-room', 'activations'].includes(screen.id) && ' · admin workspace'}</span><a class="text-link" href={screen.image.src} target="_blank" rel="noopener noreferrer">Open full-size screenshot <Icon name="external" size={14} /></a></figcaption></figure>
+    <ScreenshotPreview label={screen.label} image={screen.image} dark={darkCaptures[`../assets/demo/${darkNames[screen.id]}-dark.jpg`]} alt={screen.alt} admin={['admin', 'live-room', 'activations'].includes(screen.id)} />
     {['admin', 'live-room', 'activations'].includes(screen.id) && <p class="admin-guide-link"><a class="text-link" href="/docs/administration/">See the illustrated admin guide <Icon name="arrow" size={17} /></a></p>}
   </div>)}
 </section>

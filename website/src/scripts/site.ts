@@ -151,16 +151,44 @@ for (const screenshot of document.querySelectorAll<HTMLImageElement>(".docs-cont
   link.append(screenshot);
 }
 
+const screenshotPreviews = [...document.querySelectorAll<HTMLElement>('[data-screenshot-preview]')];
+let appearanceRequest = 0;
+for (const preview of screenshotPreviews) {
+  for (const button of preview.querySelectorAll<HTMLButtonElement>('[data-screenshot-mode]')) {
+    button.disabled = false;
+    button.addEventListener('click', async () => {
+      const request = ++appearanceRequest;
+      const mode = button.dataset.screenshotMode;
+      const image = preview.querySelector<HTMLImageElement>(`[data-screenshot-variant="${mode}"] img`);
+      if (!image) return;
+      image.loading = 'eager';
+      try { await image.decode(); } catch { return; }
+      if (request !== appearanceRequest || preview.closest<HTMLElement>('.tour-panel')?.hidden) return;
+      for (const item of screenshotPreviews) {
+        if (!item.querySelector('[data-screenshot-mode]')) continue;
+        for (const control of item.querySelectorAll('[data-screenshot-mode]')) control.setAttribute('aria-pressed', String(control.getAttribute('data-screenshot-mode') === mode));
+        for (const figure of item.querySelectorAll<HTMLElement>('[data-screenshot-variant]')) figure.hidden = figure.dataset.screenshotVariant !== mode;
+      }
+    });
+  }
+}
+
 for (const tour of document.querySelectorAll<HTMLElement>("[data-screenshot-tour]")) {
   const tabs = [...tour.querySelectorAll<HTMLButtonElement>(':scope > .tour-tabs > [role="tab"]')];
   const panels = [...tour.querySelectorAll<HTMLElement>(':scope > [role="tabpanel"]')];
   let request = 0;
   const activate = async (index: number, focus = false) => {
     const currentRequest = ++request;
-    const image = panels[index].querySelector<HTMLImageElement>('figure img');
-    if (image) {
+    // A theme choice can change while a different feature's image is loading.
+    // Decode the final appearance before exposing the next panel.
+    let image = panels[index].querySelector<HTMLImageElement>('figure:not([hidden]) img');
+    while (image) {
       image.loading = 'eager';
       try { await image.decode(); } catch { return; }
+      if (currentRequest !== request) return;
+      const selected = panels[index].querySelector<HTMLImageElement>('figure:not([hidden]) img');
+      if (selected === image) break;
+      image = selected;
     }
     if (currentRequest !== request) return;
     tabs.forEach((tab, position) => {

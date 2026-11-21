@@ -5,6 +5,14 @@
 .screenshot-tour .tour-panel-copy p { max-width: 760px; margin: 0; color: var(--muted); font-size: 14px; line-height: 1.75; }
 .screenshot-tour .tour-panel figure { padding: 0; background: #f5f7fb; }
 .tour-screenshot-link { display: block; }
+.screenshot-appearance { display: flex; align-items: center; gap: 4px; margin-bottom: 12px; }
+.screenshot-appearance > span { margin-right: 8px; color: var(--muted); font-size: 12px; }
+.screenshot-appearance button { min-height: 44px; min-width: 62px; padding: 8px 14px; border: 1px solid var(--line); background: white; color: var(--ink); font-size: 12px; font-weight: 600; }
+.screenshot-appearance button[aria-pressed="true"] { background: var(--blue); border-color: var(--blue); color: white; }
+.screenshot-appearance button:disabled { cursor: wait; }
+.docs-content .screenshot-variant { margin: 12px 0 28px; border: 1px solid var(--line); }
+.docs-content .screenshot-variant summary { padding: 12px 16px; min-height: 44px; cursor: pointer; font-weight: 600; font-size: 14px; }
+.docs-content .screenshot-variant > p { margin: 0; padding: 0 12px 12px; }
 .screenshot-tour .tour-panel img { border: 0; }
 .screenshot-tour .tour-panel .tour-caption-footer { padding: 10px 16px; border-top: 1px solid var(--line); text-align: left; }
 .screenshot-tour .tour-caption-footer .text-link { min-height: 32px; font-size: 12px; }
