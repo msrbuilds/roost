@@ -42,7 +42,7 @@ test.describe('shared demo new-message themes', () => {
         // Selecting a member opens the read-only conversation; no message is sent.
         await result.click();
         await expect(modal).toHaveCount(0);
-        await liveExpect(page.getByRole('heading', { name: 'Maya Chen', exact: true })).toBeVisible();
+        await liveExpect(page.getByRole('heading', { name: 'Maya Chen', exact: true, level: 2 })).toBeVisible();
       });
     }
   }
