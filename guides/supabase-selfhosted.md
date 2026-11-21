@@ -274,4 +274,4 @@ docker compose logs -f
 ## Next Steps
 
 - [Deploy Roost with Docker (VPS)](./docker-vps.md)
-- [Deploy Roost with Dockploy (VPS)](./dockploy-vps.md)
+- [Deploy Roost with Dokploy (VPS)](./dockploy-vps.md)

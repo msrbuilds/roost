@@ -735,7 +735,7 @@ print_step 4 "Deployment target"
 
 ask_choice "Where will you deploy?" \
   "Docker (Self-hosted VPS)" \
-  "Dockploy (Self-hosted VPS)" \
+  "Dokploy (Self-hosted VPS)" \
   "Vercel (Frontend) + Separate Backend" \
   "Netlify (Frontend) + Separate Backend" \
   "Local Development Only"
@@ -790,7 +790,7 @@ if [ "$DEPLOY_TARGET" = "docker" ]; then
 fi
 
 if [ "$DEPLOY_TARGET" = "dockploy" ] && [ "$DB_PROVIDER" != "supabase-selfhosted" ]; then
-  print_warning "Dockploy stack is Supabase self-hosted by design. Switching DB provider to supabase-selfhosted."
+  print_warning "Dokploy stack is Supabase self-hosted by design. Switching DB provider to supabase-selfhosted."
   DB_PROVIDER="supabase-selfhosted"
 fi
 
@@ -1111,7 +1111,7 @@ fi
 # --- Database Setup ---
 if [ "$DEPLOY_TARGET" = "dockploy" ]; then
   echo ""
-  echo -e "${YELLOW}${BOLD}Database Setup (Dockploy):${NC}"
+  echo -e "${YELLOW}${BOLD}Database Setup (Dokploy):${NC}"
   echo "  Supabase self-hosted services are included in docker-compose.dokploy.yml."
   echo "  Use the generated .env.dokploy values in Dokploy or for manual compose deploy."
 elif [ "$DB_PROVIDER" = "supabase-cloud" ] || [ "$DB_PROVIDER" = "supabase-selfhosted" ]; then
@@ -1173,7 +1173,7 @@ esac
 echo ""
 echo -e "${YELLOW}${BOLD}Docs:${NC}"
 echo "  - Docker VPS: guides/docker-vps.md"
-echo "  - Dockploy VPS: guides/dockploy-vps.md"
+echo "  - Dokploy VPS: guides/dockploy-vps.md"
 echo "  - Netlify: guides/netlify.md"
 echo "  - Vercel: guides/vercel.md"
 echo ""

@@ -1,8 +1,8 @@
-# Dockploy VPS Troubleshooting
+# Dokploy VPS Troubleshooting
 
-Troubleshooting playbook for Roost + self-hosted Supabase on Dockploy.
+Troubleshooting playbook for Roost + self-hosted Supabase on Dokploy.
 
-Use with: [Dockploy (VPS) Deployment Guide](./dockploy-vps.md)
+Use with: [Dokploy (VPS) Deployment Guide](./dockploy-vps.md)
 
 ---
 
@@ -312,6 +312,6 @@ If it only happened once and current requests pass, no action required.
 ## Domain Not Reachable
 
 - Verify DNS A record points to VPS.
-- Verify Dockploy domain binding.
-- Verify TLS status in Dockploy.
+- Verify Dokploy domain binding.
+- Verify TLS status in Dokploy.
 - Verify nginx container is up.

@@ -201,5 +201,5 @@ If you want image/file uploads:
 ## Next Steps
 
 - [Deploy with Docker (VPS)](./docker-vps.md)
-- [Deploy with Dockploy (VPS)](./dockploy-vps.md)
+- [Deploy with Dokploy (VPS)](./dockploy-vps.md)
 - [Deploy to Vercel](./vercel.md)
