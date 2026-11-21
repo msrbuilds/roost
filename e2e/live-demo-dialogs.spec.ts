@@ -24,6 +24,7 @@ test.describe('shared demo dialogs and global search', () => {
             await expect(empty).toHaveCSS('color', theme === 'dark' ? 'rgb(163, 163, 163)' : 'rgb(115, 115, 115)');
             await search.press('Escape');
             await expect(empty).toHaveCount(0);
+            if (width < 768) await page.getByRole('button', { name: 'Open search', exact: true }).click();
             await search.fill('Maya');
             await liveExpect(page.getByRole('button', { name: 'Maya Chen @maya', exact: true })).toBeVisible();
             await page.getByRole('button', { name: 'Maya Chen @maya', exact: true }).click();
