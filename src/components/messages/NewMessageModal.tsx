@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import UserSearchInput from './UserSearchInput';
@@ -10,6 +11,8 @@ interface NewMessageModalProps {
 }
 
 export default function NewMessageModal({ isOpen, onClose, onUserSelect }: NewMessageModalProps) {
+  const titleId = useId();
+  const searchId = useId();
   if (!isOpen) return null;
 
   const handleUserSelect = (user: Pick<Profile, 'id' | 'username' | 'display_name' | 'avatar_url' | 'is_online' | 'membership_type'>) => {
@@ -26,13 +29,14 @@ export default function NewMessageModal({ isOpen, onClose, onUserSelect }: NewMe
       />
 
       {/* Modal */}
-      <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md">
+      <div role="dialog" aria-modal="true" aria-labelledby={titleId} className="relative bg-white dark:bg-surface-900 rounded-2xl shadow-xl w-full max-w-md">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-surface-200">
-          <h2 className="text-lg font-semibold text-surface-900">New Message</h2>
+        <div className="flex items-center justify-between p-4 border-b border-surface-200 dark:border-surface-700">
+          <h2 id={titleId} className="text-lg font-semibold text-surface-900 dark:text-surface-100">New Message</h2>
           <button
             onClick={onClose}
-            className="p-1 text-surface-400 hover:text-surface-600 hover:bg-surface-100 rounded-lg transition-colors"
+            aria-label="Close new message"
+            className="p-1 text-surface-500 dark:text-surface-400 hover:text-surface-700 dark:hover:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-800 rounded-lg transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -40,18 +44,19 @@ export default function NewMessageModal({ isOpen, onClose, onUserSelect }: NewMe
 
         {/* Content */}
         <div className="p-4">
-          <label className="block text-sm font-medium text-surface-700 mb-2">
+          <label htmlFor={searchId} className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
             Search for a user to message
           </label>
           <UserSearchInput
+            id={searchId}
             onUserSelect={handleUserSelect}
             placeholder="Search by name or username..."
           />
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-surface-200 bg-surface-50 rounded-b-2xl">
-          <p className="text-xs text-surface-500 text-center">
+        <div className="p-4 border-t border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 rounded-b-2xl">
+          <p className="text-xs text-surface-500 dark:text-surface-400 text-center">
             Start typing to search for users in the community
           </p>
         </div>
